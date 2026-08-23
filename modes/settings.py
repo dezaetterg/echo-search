@@ -103,12 +103,12 @@ class SettingsMode(BaseMode):
         # Тема оформления
         group_appearance.append(self._create_theme_row(cfg))
 
-        # Прозрачность окна
-        trans_val = int((cfg.get("transparency", 0.70) or 0.70) * 100)
+        # Прозрачность окна (0% = непрозрачный, 100% = максимально прозрачный)
+        trans_val = int((cfg.get("transparency", 0.30) if cfg.get("transparency") is not None else 0.30) * 100)
         group_appearance.append(self._create_slider_row(
             "Прозрачность окна",
             trans_val,
-            10, 100, 1,
+            0, 100, 1,
             unit="%",
             callback=lambda val: self._on_setting_changed("transparency", round(val / 100.0, 2))
         ))

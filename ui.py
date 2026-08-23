@@ -61,13 +61,15 @@ class EchoUI(Gtk.Window):
             
         if self.config_manager:
             theme = self.config_manager.get("theme", "light")
-            transparency = self.config_manager.get("transparency", 0.70)
+            transparency = self.config_manager.get("transparency", 0.30)
+            # 0% прозрачности = непрозрачный (alpha=1.0), 100% прозрачности = полностью прозрачный (alpha=0.0)
+            alpha = max(0.0, min(1.0, round(1.0 - float(transparency), 2)))
             blur = self.config_manager.get("blur", True)
             
             if theme == "light":
-                bg_color = f"rgba(240, 240, 245, {transparency})"
+                bg_color = f"rgba(240, 240, 245, {alpha})"
             else:
-                bg_color = f"rgba(40, 40, 45, {transparency})"
+                bg_color = f"rgba(40, 40, 45, {alpha})"
                 
             backdrop = "backdrop-filter: blur(40px);" if blur else "backdrop-filter: none;"
             

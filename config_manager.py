@@ -12,7 +12,7 @@ class ConfigManager:
             "theme": "light",
             "language": "auto",
             "blur": True,
-            "transparency": 0.70,
+            "transparency": 0.30,
             "preview_enabled": True,
             "preview_width": 420,
             "results_limit": 20,
