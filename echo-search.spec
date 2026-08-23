@@ -1,5 +1,5 @@
 Name:           echo-search
-Version:        1.0.3
+Version:        1.0.4
 Release:        1%{?dist}
 Summary:        Fast Spotlight-style desktop search and app launcher for Linux
 License:        GPL-3.0-or-later
@@ -55,5 +55,5 @@ cp -p assets/icons/com.echo.search.svg %{buildroot}%{_datadir}/icons/hicolor/sca
 %{_datadir}/licenses/echo-search/LICENSE
 
 %changelog
-* Fri Aug 21 2026 Echo Contributors <contact@echo-search.org> - 1.0.3-1
+* Fri Aug 21 2026 Echo Contributors <contact@echo-search.org> - 1.0.4-1
 - Update with dynamic capsule expansion, GNOME/Cinnamon fixes, and GPLv3 license
