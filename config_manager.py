@@ -1,6 +1,7 @@
 import os
 import json
 from pathlib import Path
+from i18n import i18n
 
 class ConfigManager:
     def __init__(self):
@@ -9,6 +10,7 @@ class ConfigManager:
         
         self.defaults = {
             "theme": "dark",
+            "language": "auto",
             "blur": True,
             "transparency": 0.70,
             "preview_enabled": True,
@@ -63,6 +65,7 @@ class ConfigManager:
         else:
             self.save()
             
+        i18n.set_language(self.config.get("language", "auto"))
         self._sync_autostart(self.get("launch_at_login"))
 
     def save(self):
@@ -113,8 +116,10 @@ class ConfigManager:
     def set(self, key, value):
         self.config[key] = value
         self.save()
-        if key == "launch_shortcut" or key == "hotkey":
-            self._sync_gnome_hotkey(value)
+        if key == "language":
+            i18n.set_language(value)
+        elif key in ("launch_shortcut", "hotkey"):
+            self._sync_desktop_hotkey(value)
         elif key == "launch_at_login":
             self._sync_autostart(value)
 
@@ -148,23 +153,32 @@ X-GNOME-Autostart-enabled=true
                 except Exception as e:
                     print(f"Error disabling autostart: {e}")
 
-    def _sync_gnome_hotkey(self, hotkey_str):
+    def _sync_desktop_hotkey(self, hotkey_str):
         import subprocess
+        # 1. GNOME / Cinnamon / MATE
         try:
             result = subprocess.run(['gsettings', 'get', 'org.gnome.settings-daemon.plugins.media-keys', 'custom-keybindings'], capture_output=True, text=True)
-            if result.returncode != 0: return
-            
-            bindings = result.stdout.strip()
-            if not bindings or bindings == "@as []": return
-            
-            bindings = bindings.replace('@as', '').strip()
-            
-            import ast
-            paths = ast.literal_eval(bindings) if '[' in bindings else []
-            for path in paths:
-                name_res = subprocess.run(['gsettings', 'get', f'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{path}', 'name'], capture_output=True, text=True)
-                if 'Echo' in name_res.stdout or 'Spotlight Glass' in name_res.stdout or 'echo-search' in name_res.stdout:
-                    subprocess.run(['gsettings', 'set', f'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{path}', 'binding', hotkey_str])
-                    break
-        except Exception as e:
-            print(f"Error applying hotkey: {e}")
+            if result.returncode == 0:
+                bindings = result.stdout.strip().replace('@as', '').strip()
+                import ast
+                paths = ast.literal_eval(bindings) if '[' in bindings else []
+                for path in paths:
+                    name_res = subprocess.run(['gsettings', 'get', f'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{path}', 'name'], capture_output=True, text=True)
+                    if 'Echo' in name_res.stdout or 'Spotlight Glass' in name_res.stdout or 'echo-search' in name_res.stdout:
+                        subprocess.run(['gsettings', 'set', f'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{path}', 'binding', hotkey_str])
+                        break
+        except Exception:
+            pass
+
+        # 2. XFCE
+        try:
+            subprocess.run(['xfconf-query', '-c', 'xfce4-keyboard-shortcuts', '-p', f'/commands/custom/{hotkey_str}', '-n', '-t', 'string', '-s', 'echo-search'], capture_output=True)
+        except Exception:
+            pass
+
+        # 3. KDE Plasma
+        try:
+            kde_tool = 'kwriteconfig6' if subprocess.run(['which', 'kwriteconfig6'], capture_output=True).returncode == 0 else 'kwriteconfig5'
+            subprocess.run([kde_tool, '--file', 'kglobalshortcutsrc', '--group', 'com.echo.search.desktop', '--key', '_launch', f'Meta+Space,none,Echo'], capture_output=True)
+        except Exception:
+            pass

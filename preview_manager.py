@@ -7,6 +7,7 @@ except ValueError:
     pass
 
 from providers import SearchResult
+from i18n import t
 
 class PreviewManager:
     @staticmethod
@@ -167,7 +168,7 @@ class PreviewManager:
         icon.set_opacity(0.3)
         icon.set_margin_bottom(16)
         
-        lbl = Gtk.Label(label="Select an item to preview")
+        lbl = Gtk.Label(label=t("preview_empty_desc"))
         lbl.add_css_class("preview-main-subtitle")
         
         content_box.append(icon)
@@ -188,20 +189,20 @@ class PreviewManager:
         grid = PreviewManager._create_meta_grid()
         col = 0
         if result.preview_data.get("developer"):
-            grid.attach(PreviewManager._create_meta_card("Developer", result.preview_data["developer"]), col, 0, 1, 1)
+            grid.attach(PreviewManager._create_meta_card(t("label_developer"), result.preview_data["developer"]), col, 0, 1, 1)
             col += 1
         if result.preview_data.get("category"):
-            grid.attach(PreviewManager._create_meta_card("Category", result.preview_data["category"]), col, 0, 1, 1)
+            grid.attach(PreviewManager._create_meta_card(t("label_categories"), result.preview_data["category"]), col, 0, 1, 1)
             
         content_box.append(grid)
         
         actions = []
         if result._action_execute:
-            actions.append(("Open", result.execute, False))
+            actions.append((t("action_open"), result.execute, False))
         if result._action_open_location:
-            actions.append(("Reveal", result.open_location, False))
+            actions.append((t("action_open_location"), result.open_location, False))
         if result._action_copy:
-            actions.append(("Copy Path", result.copy_value, False))
+            actions.append((t("action_copy_path"), result.copy_value, False))
             
         root_box.append(PreviewManager._create_action_footer(actions))
         return root_box
@@ -219,20 +220,20 @@ class PreviewManager:
         grid = PreviewManager._create_meta_grid()
         col = 0
         if result.preview_data.get("size") and result.preview_data["size"] != "Unknown":
-            grid.attach(PreviewManager._create_meta_card("Size", result.preview_data["size"]), col, 0, 1, 1)
+            grid.attach(PreviewManager._create_meta_card(t("label_size"), result.preview_data["size"]), col, 0, 1, 1)
             col += 1
         if result.preview_data.get("mtime") and result.preview_data["mtime"] != "Unknown":
-            grid.attach(PreviewManager._create_meta_card("Modified", result.preview_data["mtime"]), col, 0, 1, 1)
+            grid.attach(PreviewManager._create_meta_card(t("label_modified"), result.preview_data["mtime"]), col, 0, 1, 1)
             
         content_box.append(grid)
         
         actions = []
         if result._action_execute:
-            actions.append(("Open File", result.execute, False))
+            actions.append((t("action_open"), result.execute, False))
         if result._action_open_location:
-            actions.append(("Reveal", result.open_location, False))
+            actions.append((t("action_open_location"), result.open_location, False))
         if result._action_copy:
-            actions.append(("Copy", result.copy_value, False))
+            actions.append((t("action_copy"), result.copy_value, False))
             
         root_box.append(PreviewManager._create_action_footer(actions))
         return root_box
@@ -251,23 +252,23 @@ class PreviewManager:
         hero_box.append(lbl)
         content_box.append(hero_box)
         
-        content_box.append(PreviewManager._create_title_block("Clipboard Text", result.preview_data.get("copy_time", "")))
+        content_box.append(PreviewManager._create_title_block(t("clip_copied_text"), result.preview_data.get("copy_time", "")))
         
         grid = PreviewManager._create_meta_grid()
         col = 0
         if result.preview_data.get("chars_count"):
-            grid.attach(PreviewManager._create_meta_card("Characters", str(result.preview_data["chars_count"])), col, 0, 1, 1)
+            grid.attach(PreviewManager._create_meta_card(t("label_history"), str(result.preview_data["chars_count"])), col, 0, 1, 1)
             col += 1
         if result.preview_data.get("lines_count"):
-            grid.attach(PreviewManager._create_meta_card("Lines", str(result.preview_data["lines_count"])), col, 0, 1, 1)
+            grid.attach(PreviewManager._create_meta_card(t("label_type"), str(result.preview_data["lines_count"])), col, 0, 1, 1)
             
         content_box.append(grid)
         
         actions = []
         if result._action_copy:
-            actions.append(("Copy Again", result.copy_value, False))
+            actions.append((t("action_copy"), result.copy_value, False))
         if result._action_delete:
-            actions.append(("Delete", result.delete, True))
+            actions.append((t("action_clear_history"), result.delete, True))
             
         root_box.append(PreviewManager._create_action_footer(actions))
         return root_box
@@ -289,15 +290,15 @@ class PreviewManager:
         
         grid = PreviewManager._create_meta_grid()
         if result.preview_data.get("unicode_code"):
-            grid.attach(PreviewManager._create_meta_card("Unicode", result.preview_data["unicode_code"]), 0, 0, 1, 1)
+            grid.attach(PreviewManager._create_meta_card(t("label_desktop_path"), result.preview_data["unicode_code"]), 0, 0, 1, 1)
             
         content_box.append(grid)
         
         actions = []
         if result._action_copy:
-            actions.append(("Copy Emoji", result.copy_value, False))
+            actions.append((t("action_copy"), result.copy_value, False))
         if result._action_open_location:
-            actions.append(("Copy Unicode", result.open_location, False))
+            actions.append((t("action_copy_path"), result.open_location, False))
             
         root_box.append(PreviewManager._create_action_footer(actions))
         return root_box
@@ -314,11 +315,11 @@ class PreviewManager:
         hero_box.append(lbl)
         content_box.append(hero_box)
         
-        content_box.append(PreviewManager._create_title_block(result.title, "Calculation Result"))
+        content_box.append(PreviewManager._create_title_block(result.title, t("label_result")))
         
         actions = []
         if result._action_copy:
-            actions.append(("Copy Result", result.copy_value, False))
+            actions.append((t("action_copy"), result.copy_value, False))
             
         root_box.append(PreviewManager._create_action_footer(actions))
         return root_box
@@ -338,9 +339,9 @@ class PreviewManager:
         
         actions = []
         if result._action_execute:
-            actions.append(("Execute", result.execute, False))
+            actions.append((t("action_execute"), result.execute, False))
         if result._action_copy:
-            actions.append(("Copy", result.copy_value, False))
+            actions.append((t("action_copy"), result.copy_value, False))
             
         root_box.append(PreviewManager._create_action_footer(actions))
         return root_box

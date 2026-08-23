@@ -13,6 +13,7 @@ except ValueError as e:
 from search_engine import SearchEngine
 from providers import SearchResult
 from modes import ModeManager
+from i18n import t, i18n
 
 class EchoUI(Gtk.Window):
     def __init__(self, application=None, config_manager=None):
@@ -263,7 +264,7 @@ class EchoUI(Gtk.Window):
 
         # Поле ввода
         self.entry = Gtk.Entry()
-        self.entry.set_placeholder_text("Поиск Echo...")
+        self.entry.set_placeholder_text(t("search_placeholder"))
         self.entry.set_hexpand(True)
         self.entry.set_name("search-entry")
         self.entry.connect("changed", self.on_search_changed)

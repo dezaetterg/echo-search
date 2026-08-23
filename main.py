@@ -29,26 +29,30 @@ class EchoApp(Gtk.Application):
             self.config_manager = ConfigManager()
             self.window = EchoUI(application=self, config_manager=self.config_manager)
             
-            # Настройка Gtk4LayerShell
-            Gtk4LayerShell.init_for_window(self.window)
-            Gtk4LayerShell.set_layer(self.window, Gtk4LayerShell.Layer.OVERLAY) # Поверх всего
-            Gtk4LayerShell.set_keyboard_mode(self.window, Gtk4LayerShell.KeyboardMode.ON_DEMAND)
+            # Настройка Gtk4LayerShell (Wayland) с fallback для X11 / других DE
+            is_layer_shell = False
+            try:
+                if Gtk4LayerShell.is_supported():
+                    is_layer_shell = True
+            except Exception:
+                is_layer_shell = False
+
+            if is_layer_shell:
+                Gtk4LayerShell.init_for_window(self.window)
+                Gtk4LayerShell.set_layer(self.window, Gtk4LayerShell.Layer.OVERLAY) # Поверх всего
+                Gtk4LayerShell.set_keyboard_mode(self.window, Gtk4LayerShell.KeyboardMode.ON_DEMAND)
+                
+                # Центрирование с отступом сверху
+                Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.TOP, True)
+                Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.BOTTOM, False)
+                Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.LEFT, False)
+                Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.RIGHT, False)
+                Gtk4LayerShell.set_margin(self.window, Gtk4LayerShell.Edge.TOP, 160)
+            else:
+                # Fallback для X11 и сред без LayerShell
+                self.window.set_decorated(False)
             
-            # Центрирование с отступом сверху
-            Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.TOP, True)
-            Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.BOTTOM, False)
-            Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.LEFT, False)
-            Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.RIGHT, False)
-            
-            # Отступ сверху 20%
-            # Gtk4LayerShell.set_margin_top работает в пикселях. Возьмем ~200px для среднего экрана.
-            Gtk4LayerShell.set_margin(self.window, Gtk4LayerShell.Edge.TOP, 200)
-            
-            # Размеры окна управляются через set_default_size в режимах
-            
-            # Убираем стандартные декорации окна, если они есть
             self.window.set_decorated(False)
-            
             self.window.present()
         else:
             # Тогл видимости окна при повторном запуске (например, шорткатом)

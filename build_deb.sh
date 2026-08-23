@@ -53,7 +53,7 @@ EOF
 chmod 755 "${BUILD_DIR}/usr/bin/echo-search"
 
 # Python код в /usr/lib/echo-search
-cp main.py ui.py config_manager.py search_engine.py preview_manager.py utils.py "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
+cp *.py "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
 cp -r modes providers "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
 
 # Удаление всех __pycache__ и .pyc из пакета

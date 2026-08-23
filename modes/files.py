@@ -17,6 +17,7 @@ except (ValueError, ImportError):
 
 from .base import BaseMode
 from utils import set_icon_safe
+from i18n import t
 
 class FilesMode(BaseMode):
     category_filter = "Files"
@@ -67,7 +68,8 @@ class FilesMode(BaseMode):
         self.filter_buttons = {}
         categories = ["All", "Documents", "Images", "Videos", "Audio", "PDF", "Folders", "Archives"]
         for cat in categories:
-            btn = Gtk.Button(label=cat)
+            label_text = t(f"cat_{cat.lower()}")
+            btn = Gtk.Button(label=label_text)
             btn.add_css_class("apps-filter-pill")
             if cat == "All":
                 btn.add_css_class("active")
@@ -96,7 +98,7 @@ class FilesMode(BaseMode):
         self.suggestions_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.suggestions_box.set_spacing(8)
         
-        self.suggestions_label = Gtk.Label(label="Suggestions")
+        self.suggestions_label = Gtk.Label(label=t("section_suggestions"))
         self.suggestions_label.add_css_class("files-section-title")
         self.suggestions_label.set_halign(Gtk.Align.START)
         self.suggestions_label.set_margin_start(16)
@@ -120,7 +122,7 @@ class FilesMode(BaseMode):
         self.recents_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.recents_box.set_spacing(8)
         
-        self.recents_label = Gtk.Label(label="Recents")
+        self.recents_label = Gtk.Label(label=t("section_recent"))
         self.recents_label.add_css_class("files-section-title")
         self.recents_label.set_halign(Gtk.Align.START)
         self.recents_label.set_margin_start(16)

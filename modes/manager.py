@@ -12,6 +12,8 @@ from .settings import SettingsMode
 from .clipboard import ClipboardMode
 from .emoji import EmojiMode
 
+from i18n import t
+
 class ModeManager:
     def __init__(self, main_window):
         self.main_window = main_window
@@ -56,17 +58,17 @@ class ModeManager:
             
             # Обновление placeholder текста
             if mode_name == "Apps":
-                self.main_window.entry.set_placeholder_text("Applications")
+                self.main_window.entry.set_placeholder_text(t("apps_placeholder"))
             elif mode_name == "Files":
-                self.main_window.entry.set_placeholder_text("Files")
+                self.main_window.entry.set_placeholder_text(t("files_placeholder"))
             elif mode_name == "Clipboard":
-                self.main_window.entry.set_placeholder_text("Clipboard")
+                self.main_window.entry.set_placeholder_text(t("clipboard_placeholder"))
             elif mode_name == "Emoji":
-                self.main_window.entry.set_placeholder_text("Emoji Search")
-            elif mode_name == "Search":
-                self.main_window.entry.set_placeholder_text("Поиск Echo")
+                self.main_window.entry.set_placeholder_text(t("emoji_placeholder"))
+            elif mode_name == "Settings":
+                self.main_window.entry.set_placeholder_text(t("settings_placeholder"))
             else:
-                self.main_window.entry.set_placeholder_text("Поиск Echo")
+                self.main_window.entry.set_placeholder_text(t("search_placeholder"))
                 
             self.modes[mode_name].on_activated()
             self.on_search_changed(self.main_window.entry.get_text())

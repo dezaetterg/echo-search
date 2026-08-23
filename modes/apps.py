@@ -7,6 +7,7 @@ except ValueError:
 
 from .base import BaseMode
 from utils import set_icon_safe
+from i18n import t
 
 class AppItemWrapper(GObject.Object):
     def __init__(self, result):
@@ -28,8 +29,8 @@ class AppsMode(BaseMode):
         self.filters_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
         self.filters_scroll.set_margin_start(32)
         self.filters_scroll.set_margin_end(32)
-        self.filters_scroll.set_margin_top(24)
-        self.filters_scroll.set_margin_bottom(24)
+        self.filters_scroll.set_margin_top(8)
+        self.filters_scroll.set_margin_bottom(16)
         self.filters_scroll.add_css_class("apps-filters-scroll")
         
         hscrollbar = self.filters_scroll.get_hscrollbar()
@@ -55,7 +56,8 @@ class AppsMode(BaseMode):
         }
         
         for cat in categories:
-            btn = Gtk.Button(label=cat)
+            label_text = t(f"cat_{cat.lower()}")
+            btn = Gtk.Button(label=label_text)
             btn.add_css_class("apps-filter-pill")
             if cat == "All":
                 btn.add_css_class("active")
