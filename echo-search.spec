@@ -3,7 +3,7 @@ Version:        1.0.3
 Release:        1%{?dist}
 Summary:        Fast Spotlight-style desktop search and app launcher for Linux
 License:        GPL-3.0-or-later
-URL:            https://github.com/dezaetterg/spotlight_liquidglass
+URL:            https://github.com/dezaetterg/echo-search
 BuildArch:      noarch
 
 Requires:       python3 >= 3.10

@@ -34,8 +34,8 @@
 Скрипт сам определит пакетный менеджер системы (`apt`, `pacman`, `dnf`, `zypper`), установит необходимые библиотеки, развернет бинарник и настроит горячую клавишу **Super + Space**:
 
 ```bash
-git clone https://github.com/dezaetterg/spotlight_liquidglass.git
-cd spotlight_liquidglass
+git clone https://github.com/dezaetterg/echo-search.git
+cd echo_search
 chmod +x install.sh
 ./install.sh
 ```

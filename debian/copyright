@@ -1,7 +1,7 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: echo-search
-Upstream-Contact: Echo Contributors <https://github.com/dezaetterg/spotlight_liquidglass>
-Source: https://github.com/dezaetterg/spotlight_liquidglass
+Upstream-Contact: Echo Contributors <https://github.com/dezaetterg/echo-search>
+Source: https://github.com/dezaetterg/echo-search
 
 Files: *
 Copyright: 2026 Echo Contributors
