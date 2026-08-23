@@ -4,10 +4,9 @@ import gi
 
 try:
     gi.require_version('Gtk', '4.0')
-    gi.require_version('Gtk4LayerShell', '1.0')
-    from gi.repository import Gtk, Gtk4LayerShell, Gdk, GObject, Pango, Gio, GLib
+    from gi.repository import Gtk, Gdk, GObject, Pango, Gio, GLib
 except ValueError as e:
-    print(f"[FATAL] GTK/LayerShell version error: {e}", file=sys.stderr)
+    print(f"[FATAL] GTK version error: {e}", file=sys.stderr)
     sys.exit(1)
 
 from search_engine import SearchEngine

@@ -9,7 +9,7 @@ try:
     import gi
     gi.require_version('Tracker', '3.0')
     from gi.repository import Tracker
-except ValueError:
+except (ValueError, ImportError):
     Tracker = None
 
 class FileProvider(BaseProvider):

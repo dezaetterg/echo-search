@@ -5,10 +5,19 @@ import signal
 try:
     import gi
     gi.require_version('Gtk', '4.0')
-    gi.require_version('Gtk4LayerShell', '1.0')
-    from gi.repository import Gtk, Gtk4LayerShell, Gio, GLib
+    
+    HAS_LAYER_SHELL = False
+    Gtk4LayerShell = None
+    try:
+        gi.require_version('Gtk4LayerShell', '1.0')
+        from gi.repository import Gtk4LayerShell
+        HAS_LAYER_SHELL = True
+    except (ValueError, ImportError):
+        HAS_LAYER_SHELL = False
+
+    from gi.repository import Gtk, Gio, GLib
 except ValueError as e:
-    print(f"[FATAL] GTK/LayerShell version error: {e}", file=sys.stderr)
+    print(f"[FATAL] GTK version error: {e}", file=sys.stderr)
     sys.exit(1)
 except ImportError as e:
     print(f"[FATAL] PyGObject import error: {e}", file=sys.stderr)
@@ -31,11 +40,12 @@ class EchoApp(Gtk.Application):
             
             # Настройка Gtk4LayerShell (Wayland) с fallback для X11 / других DE
             is_layer_shell = False
-            try:
-                if Gtk4LayerShell.is_supported():
-                    is_layer_shell = True
-            except Exception:
-                is_layer_shell = False
+            if HAS_LAYER_SHELL and Gtk4LayerShell is not None:
+                try:
+                    if Gtk4LayerShell.is_supported():
+                        is_layer_shell = True
+                except Exception:
+                    is_layer_shell = False
 
             if is_layer_shell:
                 Gtk4LayerShell.init_for_window(self.window)
