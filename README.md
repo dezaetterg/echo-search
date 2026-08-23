@@ -39,7 +39,7 @@
 
 ```bash
 git clone https://github.com/dezaetterg/echo-search.git
-cd echo_search
+cd echo-search
 chmod +x install.sh
 ./install.sh
 ```
@@ -56,14 +56,14 @@ sudo apt install ./echo-search_1.0.3_all.deb
 
 ```bash
 git clone https://github.com/dezaetterg/echo-search.git
-cd echo_search
+cd echo-search
 makepkg -si
 ```
 
 ### 4. Fedora / openSUSE (RPM)
 ```bash
 git clone https://github.com/dezaetterg/echo-search.git
-cd echo_search
+cd echo-search
 ./build_rpm.sh
 sudo dnf install ./echo-search-1.0.3-1.noarch.rpm
 ```
@@ -71,6 +71,15 @@ sudo dnf install ./echo-search-1.0.3-1.noarch.rpm
 ### 5. Запуск из исходного кода
 ```bash
 python3 main.py
+```
+
+### Если пакеты или репозитории недоступны (Linux Mint / Ubuntu)
+
+Если система сообщает, что пакеты GTK4 или зависимости не найдены, включите репозиторий `universe`:
+
+```bash
+sudo add-apt-repository universe
+sudo apt update
 ```
 
 ## Управление

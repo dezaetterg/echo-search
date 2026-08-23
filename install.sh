@@ -58,17 +58,20 @@ echo -e "${YELLOW}Установка системных зависимостей
 case "$PKG_MGR" in
     apt)
         $SUDO_CMD apt-get update -qq || true
-        $SUDO_CMD apt-get install -y \
-            python3 \
-            python3-gi \
-            python3-gi-cairo \
-            gir1.2-gtk-4.0 \
-            gir1.2-gtk4layershell-1.0 \
-            libgtk4-layer-shell0 \
-            gir1.2-gnomedesktop-4.0 \
-            gir1.2-tracker-3.0 \
-            python3-rapidfuzz \
-            dpkg-dev
+        # Обязательные базовые пакеты
+        $SUDO_CMD apt-get install -y python3 python3-gi python3-gi-cairo gir1.2-gtk-4.0 dpkg-dev || true
+        
+        # Установка rapidfuzz (через apt или pip)
+        if ! $SUDO_CMD apt-get install -y python3-rapidfuzz 2>/dev/null; then
+            if command -v pip3 >/dev/null 2>&1 || command -v pip >/dev/null 2>&1; then
+                pip install --break-system-packages rapidfuzz 2>/dev/null || pip install rapidfuzz 2>/dev/null || true
+            fi
+        fi
+
+        # Опциональные компоненты (Gtk4LayerShell для Wayland, GnomeDesktop, Tracker 3)
+        $SUDO_CMD apt-get install -y gir1.2-gtk4layershell-1.0 libgtk4-layer-shell0 2>/dev/null || true
+        $SUDO_CMD apt-get install -y gir1.2-gnomedesktop-4.0 2>/dev/null || $SUDO_CMD apt-get install -y libgnome-desktop-4-2 2>/dev/null || $SUDO_CMD apt-get install -y gir1.2-gnomedesktop-3.0 2>/dev/null || true
+        $SUDO_CMD apt-get install -y gir1.2-tracker-3.0 2>/dev/null || true
         ;;
     pacman)
         $SUDO_CMD pacman -Sy --noconfirm --needed \
