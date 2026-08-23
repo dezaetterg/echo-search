@@ -1,11 +1,11 @@
 # Maintainer: Echo Search Contributors
 pkgname=echo-search
-pkgver=1.0.0
+pkgver=1.0.3
 pkgrel=1
-pkgdesc="Blazing-fast Spotlight & Raycast-inspired desktop search for Linux"
+pkgdesc="Fast Spotlight-style desktop search and app launcher for Linux"
 arch=('any')
-url="https://github.com/your-username/echo-search"
-license=('MIT')
+url="https://github.com/demid/spotlight_liquidglass"
+license=('GPL-3.0-or-later')
 depends=(
     'python>=3.10'
     'python-gobject'
@@ -30,6 +30,7 @@ package() {
     install -d "$pkgdir/usr/share/echo-search"
     install -d "$pkgdir/usr/share/applications"
     install -d "$pkgdir/usr/share/icons/hicolor/scalable/apps"
+    install -d "$pkgdir/usr/share/licenses/echo-search"
     
     # Python code
     install -m 644 *.py "$pkgdir/usr/lib/echo-search/"
@@ -39,6 +40,7 @@ package() {
     # Assets
     install -m 644 style.css "$pkgdir/usr/share/echo-search/"
     install -m 644 emoji.json "$pkgdir/usr/share/echo-search/"
+    install -m 644 LICENSE "$pkgdir/usr/share/licenses/echo-search/LICENSE"
     
     # Bin wrapper
     cat << 'EOF' > "$pkgdir/usr/bin/echo-search"

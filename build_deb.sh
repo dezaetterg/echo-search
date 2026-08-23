@@ -74,6 +74,12 @@ for s in 48 64 128 256 512; do
     fi
 done
 
+# Документация и лицензия
+mkdir -p "${BUILD_DIR}/usr/share/doc/${PKG_NAME}"
+cp debian/copyright "${BUILD_DIR}/usr/share/doc/${PKG_NAME}/copyright"
+cp LICENSE "${BUILD_DIR}/usr/share/doc/${PKG_NAME}/LICENSE"
+cp README.md "${BUILD_DIR}/usr/share/doc/${PKG_NAME}/"
+
 # Файлы управления DEBIAN
 echo "[4/6] Подготовка метаданных пакета..."
 cp debian/control "${BUILD_DIR}/DEBIAN/control"
@@ -95,6 +101,9 @@ chmod 755 "${BUILD_DIR}/DEBIAN/postinst" "${BUILD_DIR}/DEBIAN/postrm"
 # 6. Сборка deb-пакета
 echo "[6/6] Сборка .deb архива..."
 dpkg-deb --build --root-owner-group "$BUILD_DIR" "$OUTPUT_DEB"
+
+# Обновление latest симлинка
+cp -f "$OUTPUT_DEB" "${DIST_DIR}/${PKG_NAME}_latest.deb"
 
 # Генерация контрольной суммы
 cd "$DIST_DIR"
