@@ -159,41 +159,125 @@ X-GNOME-Autostart-enabled=true
                     print(f"Error disabling autostart: {e}")
 
     def _sync_desktop_hotkey(self, hotkey_str):
-        import subprocess
+        import subprocess, re, ast
+
+        EN_TO_RU = {
+            'q': 'Cyrillic_shorti', 'w': 'Cyrillic_tse', 'e': 'Cyrillic_u', 'r': 'Cyrillic_ka', 't': 'Cyrillic_ie',
+            'y': 'Cyrillic_en', 'u': 'Cyrillic_ge', 'i': 'Cyrillic_sha', 'o': 'Cyrillic_shcha', 'p': 'Cyrillic_ze',
+            'a': 'Cyrillic_ef', 's': 'Cyrillic_yeru', 'd': 'Cyrillic_ve', 'f': 'Cyrillic_a', 'g': 'Cyrillic_pe',
+            'h': 'Cyrillic_er', 'j': 'Cyrillic_o', 'k': 'Cyrillic_el', 'l': 'Cyrillic_de',
+            'z': 'Cyrillic_ya', 'x': 'Cyrillic_che', 'c': 'Cyrillic_es', 'v': 'Cyrillic_em', 'b': 'Cyrillic_i',
+            'n': 'Cyrillic_te', 'm': 'Cyrillic_softsign', 'bracketleft': 'Cyrillic_ha', 'bracketright': 'Cyrillic_hardsign',
+            'semicolon': 'Cyrillic_zhe', 'apostrophe': 'Cyrillic_e', 'comma': 'Cyrillic_be', 'period': 'Cyrillic_yu',
+            'grave': 'Cyrillic_io'
+        }
+
+        # Calculate companion Cyrillic binding for multi-layout support
+        ru_binding = None
+        m = re.search(r'^(<.*>)(.*)$', hotkey_str)
+        if m:
+            mods, key = m.group(1), m.group(2).lower()
+            if key in EN_TO_RU:
+                ru_binding = f"{mods}{EN_TO_RU[key]}"
+
         # 1. GNOME / Budgie / Unity
         try:
-            result = subprocess.run(['gsettings', 'get', 'org.gnome.settings-daemon.plugins.media-keys', 'custom-keybindings'], capture_output=True, text=True)
-            if result.returncode == 0:
-                bindings = result.stdout.strip().replace('@as', '').strip()
-                import ast
-                paths = ast.literal_eval(bindings) if '[' in bindings else []
-                for path in paths:
-                    name_res = subprocess.run(['gsettings', 'get', f'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{path}', 'name'], capture_output=True, text=True)
-                    if 'Echo' in name_res.stdout or 'echo-search' in name_res.stdout:
-                        subprocess.run(['gsettings', 'set', f'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{path}', 'binding', hotkey_str])
+            MEDIA_KEYS = 'org.gnome.settings-daemon.plugins.media-keys'
+            CUSTOM_SCHEMA = 'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding'
+            res = subprocess.run(['gsettings', 'get', MEDIA_KEYS, 'custom-keybindings'], capture_output=True, text=True)
+            if res.returncode == 0:
+                raw = res.stdout.strip().replace('@as', '').strip()
+                current_paths = ast.literal_eval(raw) if '[' in raw else []
+                
+                primary_slot = None
+                for path in current_paths:
+                    n = subprocess.run(['gsettings', 'get', f'{CUSTOM_SCHEMA}:{path}', 'name'], capture_output=True, text=True)
+                    if n.stdout.strip().strip("'") == 'Echo Search':
+                        primary_slot = path
                         break
-        except Exception:
-            pass
+                        
+                if not primary_slot:
+                    for i in range(16):
+                        candidate = f'/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom{i}/'
+                        if candidate not in current_paths:
+                            primary_slot = candidate
+                            current_paths.append(candidate)
+                            break
+                            
+                if primary_slot:
+                    subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{primary_slot}', 'name', 'Echo Search'])
+                    subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{primary_slot}', 'command', 'echo-search'])
+                    subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{primary_slot}', 'binding', hotkey_str])
 
-        # 2. Cinnamon (Linux Mint)
+                # RU companion slot for layout independence
+                ru_slot = None
+                for path in current_paths:
+                    n = subprocess.run(['gsettings', 'get', f'{CUSTOM_SCHEMA}:{path}', 'name'], capture_output=True, text=True)
+                    if n.stdout.strip().strip("'") == 'Echo Search (RU)':
+                        ru_slot = path
+                        break
+
+                if ru_binding:
+                    if not ru_slot:
+                        for i in range(16):
+                            candidate = f'/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom{i}/'
+                            if candidate not in current_paths:
+                                ru_slot = candidate
+                                current_paths.append(candidate)
+                                break
+                    if ru_slot:
+                        subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{ru_slot}', 'name', 'Echo Search (RU)'])
+                        subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{ru_slot}', 'command', 'echo-search'])
+                        subprocess.run(['gsettings', f'set', f'{CUSTOM_SCHEMA}:{ru_slot}', 'binding', ru_binding])
+                else:
+                    if ru_slot and ru_slot in current_paths:
+                        subprocess.run(['gsettings', 'reset-recursively', f'{CUSTOM_SCHEMA}:{ru_slot}'])
+                        current_paths.remove(ru_slot)
+
+                subprocess.run(['gsettings', 'set', MEDIA_KEYS, 'custom-keybindings', str(current_paths)])
+        except Exception as e:
+            print(f'Error syncing GNOME hotkey: {e}')
+
+        # 2. Cinnamon (Linux Mint) - Supports multiple bindings per slot natively
         try:
-            result = subprocess.run(['gsettings', 'get', 'org.cinnamon.desktop.keybindings', 'custom-list'], capture_output=True, text=True)
-            if result.returncode == 0:
-                import ast
-                raw = result.stdout.strip().replace('@as', '').strip()
+            CINNAMON_MAIN = 'org.cinnamon.desktop.keybindings'
+            CINNAMON_CUSTOM = 'org.cinnamon.desktop.keybindings.custom-keybinding'
+            res = subprocess.run(['gsettings', 'get', CINNAMON_MAIN, 'custom-list'], capture_output=True, text=True)
+            if res.returncode == 0:
+                raw = res.stdout.strip().replace('@as', '').strip()
                 slots = ast.literal_eval(raw) if '[' in raw else []
+                found_slot = None
                 for slot in slots:
                     path = f'/org/cinnamon/desktop/keybindings/custom-keybindings/{slot}/'
-                    name_res = subprocess.run(['gsettings', 'get', f'org.cinnamon.desktop.keybindings.custom-keybinding:{path}', 'name'], capture_output=True, text=True)
-                    if 'Echo' in name_res.stdout or 'echo-search' in name_res.stdout:
-                        subprocess.run(['gsettings', 'set', f'org.cinnamon.desktop.keybindings.custom-keybinding:{path}', 'binding', f'["{hotkey_str}"]'])
+                    n = subprocess.run(['gsettings', 'get', f'{CINNAMON_CUSTOM}:{path}', 'name'], capture_output=True, text=True)
+                    if 'Echo' in n.stdout:
+                        found_slot = slot
                         break
-        except Exception:
-            pass
+                if not found_slot:
+                    for i in range(16):
+                        candidate = f'custom{i}'
+                        if candidate not in slots:
+                            found_slot = candidate
+                            slots.append(candidate)
+                            break
+                            
+                if found_slot:
+                    path = f'/org/cinnamon/desktop/keybindings/custom-keybindings/{found_slot}/'
+                    cinnamon_bindings = [hotkey_str]
+                    if ru_binding:
+                        cinnamon_bindings.append(ru_binding)
+                    subprocess.run(['gsettings', 'set', f'{CINNAMON_CUSTOM}:{path}', 'name', 'Echo Search'])
+                    subprocess.run(['gsettings', 'set', f'{CINNAMON_CUSTOM}:{path}', 'command', 'echo-search'])
+                    subprocess.run(['gsettings', 'set', f'{CINNAMON_CUSTOM}:{path}', 'binding', str(cinnamon_bindings)])
+                    subprocess.run(['gsettings', 'set', CINNAMON_MAIN, 'custom-list', str(slots)])
+        except Exception as e:
+            print(f'Error syncing Cinnamon hotkey: {e}')
 
         # 3. XFCE
         try:
             subprocess.run(['xfconf-query', '-c', 'xfce4-keyboard-shortcuts', '-p', f'/commands/custom/{hotkey_str}', '-n', '-t', 'string', '-s', 'echo-search'], capture_output=True)
+            if ru_binding:
+                subprocess.run(['xfconf-query', '-c', 'xfce4-keyboard-shortcuts', '-p', f'/commands/custom/{ru_binding}', '-n', '-t', 'string', '-s', 'echo-search'], capture_output=True)
         except Exception:
             pass
 

@@ -79,18 +79,43 @@ class ShortcutButton(Gtk.Button):
         if state & Gdk.ModifierType.SUPER_MASK:
             mod_str += "<Super>"
 
-        key_name = Gdk.keyval_name(keyval)
-        if not key_name:
-            return False
+        # Привязка по физическому скан-коду (работает одинаково при любой раскладке)
+        KEYCODE_TO_KEY = {
+            65: 'space', 36: 'Return', 104: 'Return', 23: 'Tab',
+            24: 'q', 25: 'w', 26: 'e', 27: 'r', 28: 't', 29: 'y', 30: 'u', 31: 'i', 32: 'o', 33: 'p', 34: 'bracketleft', 35: 'bracketright',
+            38: 'a', 39: 's', 40: 'd', 41: 'f', 42: 'g', 43: 'h', 44: 'j', 45: 'k', 46: 'l', 47: 'semicolon', 48: 'apostrophe',
+            52: 'z', 53: 'x', 54: 'c', 55: 'v', 56: 'b', 57: 'n', 58: 'm', 59: 'comma', 60: 'period', 61: 'slash',
+            10: '1', 11: '2', 12: '3', 13: '4', 14: '5', 15: '6', 16: '7', 17: '8', 18: '9', 19: '0', 20: 'minus', 21: 'equal',
+            67: 'F1', 68: 'F2', 69: 'F3', 70: 'F4', 71: 'F5', 72: 'F6', 73: 'F7', 74: 'F8', 75: 'F9', 76: 'F10', 95: 'F11', 96: 'F12'
+        }
 
-        if keyval == Gdk.KEY_space:
-            key_str = "space"
-        elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
-            key_str = "Return"
-        elif len(key_name) == 1:
-            key_str = key_name.lower()
+        CYRILLIC_KEYSYM_TO_EN = {
+            'cyrillic_shorti': 'q', 'cyrillic_tse': 'w', 'cyrillic_u': 'e', 'cyrillic_ka': 'r', 'cyrillic_ie': 't',
+            'cyrillic_en': 'y', 'cyrillic_ge': 'u', 'cyrillic_sha': 'i', 'cyrillic_shcha': 'o', 'cyrillic_ze': 'p',
+            'cyrillic_ha': 'bracketleft', 'cyrillic_hardsign': 'bracketright',
+            'cyrillic_ef': 'a', 'cyrillic_yeru': 's', 'cyrillic_ve': 'd', 'cyrillic_a': 'f', 'cyrillic_pe': 'g',
+            'cyrillic_er': 'h', 'cyrillic_o': 'j', 'cyrillic_el': 'k', 'cyrillic_de': 'l', 'cyrillic_zhe': 'semicolon',
+            'cyrillic_e': 'apostrophe',
+            'cyrillic_ya': 'z', 'cyrillic_che': 'x', 'cyrillic_es': 'c', 'cyrillic_em': 'v', 'cyrillic_i': 'b',
+            'cyrillic_te': 'n', 'cyrillic_softsign': 'm', 'cyrillic_be': 'comma', 'cyrillic_yu': 'period', 'cyrillic_io': 'grave'
+        }
+
+        key_str = ""
+        if keycode in KEYCODE_TO_KEY:
+            key_str = KEYCODE_TO_KEY[keycode]
         else:
-            key_str = key_name.lower()
+            key_name = (Gdk.keyval_name(keyval) or "").lower()
+            if key_name in CYRILLIC_KEYSYM_TO_EN:
+                key_str = CYRILLIC_KEYSYM_TO_EN[key_name]
+            elif keyval == Gdk.KEY_space:
+                key_str = "space"
+            elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+                key_str = "Return"
+            else:
+                key_str = key_name
+
+        if not key_str:
+            return False
 
         if not mod_str and not key_str.startswith("f"):
             mod_str = "<Super>"
