@@ -55,31 +55,44 @@ window {
 }
 
 /* Поле ввода */
-#search-entry {
-    background-color: rgba(255, 255, 255, 0.05); 
-    border-radius: 12px; 
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
+#search-entry,
+#search-entry text,
+entry#search-entry,
+entry#search-entry text,
+.search-wrapper entry,
+.search-wrapper text {
+    background: transparent; 
+    background-color: transparent;
+    border-radius: 0; 
+    border: none;
+    color: inherit;
     font-family: "SF Pro Display", -apple-system, sans-serif;
-    font-size: 24px;
-    font-weight: 500; /* Medium */
+    font-size: 20px;
+    font-weight: 500;
     caret-color: #007aff;
-    min-height: 48px;
-    padding: 4px 12px; 
+    min-height: 40px;
+    padding: 0 8px; 
     transition: all 0.2s ease-in-out;
     box-shadow: none;
     outline: none;
 }
 
-#search-entry:focus, #search-entry:focus-visible, #search-entry:focus-within {
+#search-entry:focus, 
+#search-entry:focus-visible, 
+#search-entry:focus-within,
+#search-entry text:focus,
+.search-wrapper entry:focus {
     outline: none;
     outline-color: transparent;
     outline-width: 0px;
     box-shadow: none;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    border: none;
+    background: transparent;
+    background-color: transparent;
 }
 
-#search-entry selection {
+#search-entry selection,
+#search-entry text selection {
     background-color: rgba(0, 122, 255, 0.5);
 }
 

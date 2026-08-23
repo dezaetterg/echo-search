@@ -5,7 +5,7 @@ set -e
 # Echo Search - Debian Package Builder
 # ==========================================
 
-VERSION="1.0.0"
+VERSION="1.0.1"
 PKG_NAME="echo-search"
 ARCH="all"
 DIST_DIR="$(pwd)/dist"

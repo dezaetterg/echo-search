@@ -84,16 +84,26 @@ class EchoUI(Gtk.Window):
                     box-shadow: 0 4px 14px rgba(0,0,0,0.05);
                 }
                 
-                .capsule-window-ui #search-entry { 
+                .capsule-window-ui #search-entry,
+                .capsule-window-ui #search-entry text,
+                .capsule-window-ui .search-wrapper entry,
+                .capsule-window-ui .search-wrapper text { 
                     background: transparent;
+                    background-color: transparent;
                     color: #1c1c1e; 
                     caret-color: #007aff; 
                     border: none;
                     box-shadow: none;
+                    outline: none;
                 }
-                .capsule-window-ui #search-entry:focus { 
+                .capsule-window-ui #search-entry:focus,
+                .capsule-window-ui #search-entry text:focus,
+                .capsule-window-ui .search-wrapper entry:focus { 
                     border: none;
                     box-shadow: none; 
+                    outline: none;
+                    background: transparent;
+                    background-color: transparent;
                 }
                 
                 .capsule-window-ui label.result-title { color: #1c1c1e; }
@@ -216,16 +226,26 @@ class EchoUI(Gtk.Window):
                     box-shadow: 0 4px 14px rgba(0,0,0,0.2);
                 }
                 
-                .capsule-window-ui #search-entry { 
+                .capsule-window-ui #search-entry,
+                .capsule-window-ui #search-entry text,
+                .capsule-window-ui .search-wrapper entry,
+                .capsule-window-ui .search-wrapper text { 
                     background: transparent;
+                    background-color: transparent;
                     color: #ffffff; 
                     caret-color: #007aff; 
                     border: none;
                     box-shadow: none;
+                    outline: none;
                 }
-                .capsule-window-ui #search-entry:focus { 
+                .capsule-window-ui #search-entry:focus,
+                .capsule-window-ui #search-entry text:focus,
+                .capsule-window-ui .search-wrapper entry:focus { 
                     border: none;
                     box-shadow: none; 
+                    outline: none;
+                    background: transparent;
+                    background-color: transparent;
                 }
                 
                 .capsule-window-ui .mode-button {
