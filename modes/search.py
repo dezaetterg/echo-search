@@ -1,0 +1,260 @@
+import os
+try:
+    import gi
+    gi.require_version('Gtk', '4.0')
+    from gi.repository import GLib, Gtk, Gdk, Pango
+except ValueError:
+    pass
+
+from .base import BaseMode
+import preview_manager
+from utils import set_icon_safe
+
+class SearchMode(BaseMode):
+    category_filter = "All"
+    
+    def _create_widget(self) -> Gtk.Widget:
+        self.current_results = []
+        self.selected_index = -1
+        self.is_scrolling = False
+        
+        self.main_split = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        
+        self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.left_box.set_size_request(650, -1)
+        self.left_box.set_vexpand(True)
+        
+        # Разделитель
+        self.separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        self.separator.add_css_class("main-separator")
+        self.separator.set_visible(False)
+        self.left_box.append(self.separator)
+        
+        # Список результатов
+        self.results_listbox = Gtk.ListBox()
+        self.results_listbox.set_name("results-list")
+        self.results_listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.results_listbox.connect("row-activated", self.on_row_activated)
+        
+        self.scroll = Gtk.ScrolledWindow()
+        self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.scroll.set_vexpand(True)
+        
+        self.left_box.append(self.results_listbox)
+        self.main_split.append(self.left_box)
+        
+        # Превью панель (Новая версия)
+        self.preview_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.preview_container.add_css_class("preview-panel")
+        preview_width = self.main_window.config_manager.get("preview_width") if getattr(self.main_window, "config_manager", None) else 420
+        self.preview_container.set_size_request(preview_width, -1)
+        self.main_split.append(self.preview_container)
+        
+        self.pool = []
+        for i in range(25): # На случай если limit увеличат
+            row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            row_box.add_css_class("result-row")
+            
+            icon = Gtk.Image()
+            icon.add_css_class("result-icon")
+            icon.set_valign(Gtk.Align.CENTER)
+            row_box.append(icon)
+            
+            text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+            text_box.set_valign(Gtk.Align.CENTER)
+            text_box.set_hexpand(True)
+            
+            title = Gtk.Label()
+            title.set_xalign(0)
+            title.add_css_class("result-title")
+            title.set_ellipsize(Pango.EllipsizeMode.END)
+            text_box.append(title)
+            
+            desc = Gtk.Label()
+            desc.set_xalign(0)
+            desc.set_ellipsize(Pango.EllipsizeMode.END)
+            desc.add_css_class("result-desc")
+            text_box.append(desc)
+            
+            row_box.append(text_box)
+            
+            row = Gtk.ListBoxRow()
+            row.set_child(row_box)
+            row.set_visible(False)
+            
+            self.results_listbox.append(row)
+            
+            self.pool.append({
+                'row': row,
+                'icon': icon,
+                'title': title,
+                'desc': desc
+            })
+            
+        return self.main_split
+
+    def render(self, results: list):
+        query = self.main_window.entry.get_text().strip()
+        
+        limit = self.main_window.config_manager.get("results_limit") if getattr(self.main_window, "config_manager", None) else 20
+        self.current_results = results[:limit]
+        
+        if not query or not self.current_results:
+            self.current_results = []
+            self.separator.set_visible(False)
+            if self.is_scrolling:
+                self.scroll.set_visible(False)
+            self.results_listbox.set_visible(False)
+            
+            for row_data in self.pool:
+                row_data['row'].set_visible(False)
+                
+            self.preview_container.set_visible(False)
+            self.main_window.set_default_size(650, 1)
+            self.main_window.queue_resize()
+            
+            # Принудительная перерисовка при изменении высоты и ширины
+            GLib.timeout_add(100, lambda: self.main_window.queue_draw() if self.main_window else False)
+            GLib.timeout_add(250, lambda: self.main_window.queue_draw() if self.main_window else False)
+            return
+            
+        self.separator.set_visible(True)
+        if len(self.current_results) > 5:
+            if not self.is_scrolling:
+                self.left_box.remove(self.results_listbox)
+                self.scroll.set_child(self.results_listbox)
+                self.left_box.append(self.scroll)
+                self.is_scrolling = True
+            self.scroll.set_visible(True)
+            self.results_listbox.set_visible(True)
+        else:
+            if self.is_scrolling:
+                self.left_box.remove(self.scroll)
+                self.scroll.set_child(None)
+                self.left_box.append(self.results_listbox)
+                self.is_scrolling = False
+            self.results_listbox.set_visible(True)
+            
+        for i, row_data in enumerate(self.pool):
+            if i < len(self.current_results):
+                result = self.current_results[i]
+                row_data['row'].result = result
+                row_data['title'].set_label(result.title)
+                
+                if result.subtitle:
+                    row_data['desc'].set_label(result.subtitle)
+                    row_data['desc'].set_visible(True)
+                else:
+                    row_data['desc'].set_visible(False)
+                    
+                # Загружаем иконку
+                icon_widget = row_data['icon']
+                try:
+                    if result.icon and os.path.isabs(result.icon) and os.path.exists(result.icon):
+                        from gi.repository import GdkPixbuf
+                        pixbuf = GdkPixbuf.Pixbuf.new_from_file(result.icon)
+                        w, h = pixbuf.get_width(), pixbuf.get_height()
+                        size = min(w, h)
+                        pixbuf = pixbuf.new_subpixbuf((w - size) // 2, (h - size) // 2, size, size)
+                        pixbuf = pixbuf.scale_simple(48, 48, GdkPixbuf.InterpType.BILINEAR)
+                        set_icon_safe(icon_widget, None, raw_pixbuf=pixbuf, pixel_size=48)
+                    else:
+                        set_icon_safe(icon_widget, result.icon, fallback_icon="application-x-executable", pixel_size=48)
+                except Exception as e:
+                    print(f"Error preparing icon for search result: {e}")
+                    set_icon_safe(icon_widget, None, fallback_icon="application-x-executable", pixel_size=48)
+                    
+                row_data['row'].set_visible(True)
+            else:
+                row_data['row'].set_visible(False)
+                row_data['row'].result = None
+            
+        if self.current_results:
+            self.selected_index = 0
+            self.update_selection()
+        else:
+            self.selected_index = -1
+            
+        # Принудительная перерисовка при изменении высоты
+        GLib.timeout_add(100, lambda: self.main_window.queue_draw() if self.main_window else False)
+        GLib.timeout_add(250, lambda: self.main_window.queue_draw() if self.main_window else False)
+
+    def update_selection(self):
+        row = self.results_listbox.get_row_at_index(self.selected_index)
+        if row:
+            self.results_listbox.select_row(row)
+            if hasattr(row, 'result') and row.result:
+                # Очищаем старое превью
+                while widget := self.preview_container.get_first_child():
+                    self.preview_container.remove(widget)
+                
+                preview_enabled = self.main_window.config_manager.get("preview_enabled") if getattr(self.main_window, "config_manager", None) else True
+                
+                if preview_enabled:
+                    # Рендерим новое
+                    preview_widget = preview_manager.PreviewManager.render(row.result)
+                    self.preview_container.append(preview_widget)
+                    self.preview_container.set_visible(True)
+                    preview_width = self.main_window.config_manager.get("preview_width") if getattr(self.main_window, "config_manager", None) else 420
+                    self.main_window.set_default_size(650 + preview_width, 1)
+                else:
+                    self.preview_container.set_visible(False)
+                    self.main_window.set_default_size(650, 1)
+
+    def on_row_activated(self, listbox, row):
+        if hasattr(row, 'result') and row.result:
+            self._launch_app(row.result)
+
+    def _launch_app(self, result):
+        current_query = self.main_window.entry.get_text().strip()
+        if hasattr(self.main_window, 'engine'):
+            self.main_window.engine.record_launch(result.id, current_query)
+        result.execute()
+        self.main_window.hide()
+        self.main_window.entry.set_text("")
+
+    def on_key_pressed(self, keyval, state, current_results: list) -> bool:
+        if keyval == Gdk.KEY_Down:
+            if current_results and self.selected_index < len(current_results) - 1:
+                self.selected_index += 1
+                self.update_selection()
+            return True
+            
+        elif keyval == Gdk.KEY_Up:
+            if current_results and self.selected_index > 0:
+                self.selected_index -= 1
+                self.update_selection()
+            return True
+            
+        elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+            if current_results and self.selected_index >= 0:
+                result = current_results[self.selected_index]
+                if state & Gdk.ModifierType.SHIFT_MASK:
+                    result.open_location()
+                    self.main_window.hide()
+                    self.main_window.entry.set_text("")
+                elif state & Gdk.ModifierType.ALT_MASK:
+                    # Функционал свойств пока не реализован. Отключаем действие, чтобы избежать AttributeError.
+                    pass
+                else:
+                    self._launch_app(result)
+                return True
+            return False
+            
+        elif (keyval == Gdk.KEY_c or keyval == Gdk.KEY_C) and (state & Gdk.ModifierType.CONTROL_MASK):
+            if current_results and self.selected_index >= 0:
+                result = current_results[self.selected_index]
+                result.copy_value()
+                self.main_window.hide()
+                self.main_window.entry.set_text("")
+                return True
+                
+        elif keyval == Gdk.KEY_Tab:
+            if current_results and self.selected_index >= 0:
+                result = current_results[self.selected_index]
+                if not result.id.startswith("math_") and not result.id.startswith("unit_"):
+                    self.main_window.entry.set_text(result.title)
+                    self.main_window.entry.set_position(-1)
+            return True
+            
+        return False

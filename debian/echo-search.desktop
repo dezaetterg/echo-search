@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Echo
+GenericName=Spotlight Search Launcher
+Comment=Modern Liquid Glass Spotlight launcher and workflow engine
+Exec=echo-search
+Icon=com.echo.search
+Terminal=false
+Categories=Utility;Core;System;
+Keywords=search;launcher;spotlight;raycast;alfred;run;
+StartupWMClass=com.echo.search
+X-GNOME-Autostart-enabled=true

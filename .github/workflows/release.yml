@@ -1,0 +1,68 @@
+name: Release Debian Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to release (e.g. v1.0.0)'
+        required: false
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg-dev
+
+      - name: Build Debian Package
+        run: |
+          chmod +x build_deb.sh
+          ./build_deb.sh
+
+      - name: Generate Release Notes
+        id: release_notes
+        run: |
+          echo "## Echo Search Debian Release" > RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### 📦 Установка в Ubuntu / Debian / Pop!_OS / Linux Mint / PikaOS:" >> RELEASE_NOTES.md
+          echo '```bash' >> RELEASE_NOTES.md
+          echo 'sudo apt install ./echo-search_*_all.deb' >> RELEASE_NOTES.md
+          echo '```' >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### 🔑 Хоткей по умолчанию:" >> RELEASE_NOTES.md
+          echo "Нажмите **Super + Space** (Win + Пробел) для вызова лаунчера." >> RELEASE_NOTES.md
+          echo "" >> RELEASE_NOTES.md
+          echo "### 🛡 Контрольные суммы (SHA256):" >> RELEASE_NOTES.md
+          echo '```' >> RELEASE_NOTES.md
+          cat dist/*.sha256 >> RELEASE_NOTES.md
+          echo '```' >> RELEASE_NOTES.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: |
+            dist/*.deb
+            dist/*.sha256
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

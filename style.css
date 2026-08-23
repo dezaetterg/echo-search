@@ -1,0 +1,689 @@
+/* Делаем само окно GTK полностью прозрачным */
+window {
+    background-color: transparent;
+}
+
+/* Обертка для корневого бокса, чтобы тень рисовалась внутри Wayland surface */
+.root-box {
+    padding: 100px;
+    background-color: rgba(0, 0, 0, 0.01); /* Фейковый фон для принудительной перерисовки пикселей */
+}
+
+/* Наружный контейнер-обертка для создания 30% градиентной окантовки в углах */
+.outer-border-box {
+    /* 135deg градиент: яркий (0-30%) -> прозрачный (30-70%) -> яркий (70-100%) */
+    background-image: linear-gradient(135deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 30%, rgba(255,255,255,0) 70%, rgba(255,255,255,0.7) 100%);
+    padding: 1px;
+    border-radius: 25px; 
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+/* Основное окно (Светлое чистое стекло, без матовости) */
+.capsule-window-ui {
+    background-color: rgba(40, 40, 45, 0.70); 
+    border-radius: 24px; 
+    border: none;
+    
+    /* Блики */
+    box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.2), 
+                inset -1px -1px 0px rgba(0, 0, 0, 0.2);
+    color: white;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    padding-bottom: 4px;
+}
+
+/* Контейнер поиска */
+.search-container {
+    padding: 12px 16px;
+}
+
+/* Разделитель по центру */
+.main-separator {
+    min-height: 1px;
+    background-color: rgba(255, 255, 255, 0.1);
+    margin-left: 16px;
+    margin-right: 16px;
+    margin-top: 0;
+    margin-bottom: 8px;
+    border: none;
+}
+
+/* Иконка поиска */
+.search-icon {
+    color: rgba(255, 255, 255, 0.7);
+    margin-right: 12px;
+}
+
+/* Поле ввода */
+#search-entry {
+    background-color: rgba(255, 255, 255, 0.05); 
+    border-radius: 12px; 
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    font-family: "SF Pro Display", -apple-system, sans-serif;
+    font-size: 24px;
+    font-weight: 500; /* Medium */
+    caret-color: #007aff;
+    min-height: 48px;
+    padding: 4px 12px; 
+    transition: all 0.2s ease-in-out;
+    box-shadow: none;
+    outline: none;
+}
+
+#search-entry:focus, #search-entry:focus-visible, #search-entry:focus-within {
+    outline: none;
+    outline-color: transparent;
+    outline-width: 0px;
+    box-shadow: none;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+#search-entry selection {
+    background-color: rgba(0, 122, 255, 0.5);
+}
+
+/* Панель чипсов */
+.chips-box {
+    padding: 0 16px 8px 16px;
+}
+
+.chip {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 4px 16px;
+    margin-right: 8px;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    transition: all 0.2s;
+}
+
+.chip:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.chip.active {
+    background-color: rgba(255, 255, 255, 0.2); 
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Список результатов */
+#results-list {
+    background: transparent;
+    padding: 0 12px;
+}
+
+row, .result-row {
+    padding: 8px 12px;
+    border-radius: 0;
+    margin-bottom: 0;
+    background-color: transparent;
+    transition: background-color 0.15s, box-shadow 0.15s;
+}
+
+/* Скругления для элементов списка */
+row:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
+row:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
+row:only-child { border-radius: 12px; }
+
+row:selected, .result-row:selected, row:selected:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: white;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3),
+                inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+    outline: none;
+}
+
+row:hover, .result-row:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Иконки и текст */
+.result-icon {
+    margin-right: 12px;
+}
+
+.result-title {
+    font-family: "SF Pro Display", -apple-system, sans-serif;
+    font-size: 16px;
+    font-weight: 600; /* Semibold */
+    margin-bottom: 2px;
+    color: white;
+}
+
+.result-desc {
+    font-family: "SF Pro Text", -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 400; /* Regular */
+    color: rgba(255, 255, 255, 0.6);
+}
+.results-container {
+    padding: 12px 20px 20px 20px;
+}
+
+.thumbnail-icon { border-radius: 8px; }
+
+.mode-button {
+    background: rgba(40, 40, 45, 0.70);
+    border-radius: 50%;
+    min-width: 40px;
+    min-height: 40px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid rgba(255, 255, 255, 0.08); /* Очень тонкий светлый бордер */
+    outline: none;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 150ms cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.1), 
+                inset -1px -1px 0px rgba(0, 0, 0, 0.2); /* Возвращены тонкие блики стекла */
+}
+
+.mode-button:hover {
+    background: rgba(40, 40, 45, 0.65); /* Почти незаметный hover */
+    color: white;
+    box-shadow: none;
+}
+
+.mode-button.active {
+    background: rgba(255, 255, 255, 0.12); /* Слегка более светлое стекло */
+    color: white;
+    box-shadow: none; /* Никакого яркого свечения или толстых теней */
+}
+
+/* Сетка приложений и Emoji */
+.app-card-container {
+    padding: 4px;
+    border-radius: 16px;
+    transition: all 150ms ease-out;
+}
+
+.app-card-container:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.2), 0 4px 15px rgba(255, 255, 255, 0.05);
+}
+
+.app-card-container:selected {
+    background-color: rgba(255, 255, 255, 0.12);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25), 0 4px 15px rgba(255, 255, 255, 0.05);
+}
+
+.app-card {
+    background: transparent;
+}
+
+.app-card-title {
+    font-family: "SF Pro Text", -apple-system, sans-serif;
+    font-size: 13px; /* 12-13px */
+    font-weight: 400; /* Regular */
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+}
+
+/* Скроллбары (менее заметные) */
+scrollbar {
+    background-color: transparent;
+}
+scrollbar slider {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    min-width: 4px;
+    margin: 2px;
+}
+scrollbar slider:hover {
+    background-color: rgba(255, 255, 255, 0.25);
+}
+
+/* --- AppsMode Specific --- */
+.apps-header-icon {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.apps-header-title {
+    font-family: "SF Pro Display", -apple-system, sans-serif;
+    font-size: 22px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.apps-more-button {
+    background: transparent;
+    border-radius: 50%;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 0;
+    margin: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.7);
+    box-shadow: none;
+    transition: all 150ms ease;
+}
+.apps-more-button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.apps-filter-pill {
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 4px 12px;
+    font-family: "SF Pro Text", -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    transition: all 150ms ease;
+    outline: none;
+    box-shadow: none;
+}
+.apps-filter-pill:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+}
+.apps-filter-pill.active {
+    background: rgba(255, 255, 255, 0.25);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.apps-filters-scroll scrollbar.horizontal {
+    opacity: 0;
+    min-height: 0;
+}
+
+.apps-separator {
+    background: rgba(255, 255, 255, 0.1);
+    min-height: 1px;
+    margin: 8px 24px;
+}
+
+/* FilesMode */
+.files-section-title {
+    font-family: "SF Pro Text", -apple-system, sans-serif;
+    font-size: 16px;
+    font-weight: 800;
+    color: white;
+    opacity: 0.95;
+    margin-bottom: 8px;
+    margin-top: 12px;
+}
+
+.file-title {
+    font-family: "SF Pro Text", -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: white;
+    opacity: 0.85;
+    margin-top: 8px;
+    line-height: 1.2;
+}
+
+.file-card {
+    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    border-radius: 12px;
+    padding: 8px;
+}
+
+.file-card:hover {
+    transform: scale(1.05);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.file-icon-img {
+    border-radius: 8px;
+    opacity: 0.5;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.file-icon-img.loaded {
+    opacity: 1.0;
+}
+
+.emoji-icon {
+    font-size: 48px;
+}
+
+.app-icon-squircle {
+    border-radius: 25%;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.filters-edge-fade {
+    background: linear-gradient(to left, rgba(40, 40, 45, 1.0), transparent);
+}
+
+/* Preview Panel */
+.preview-panel {
+    background: rgba(30, 30, 35, 0.4);
+    border-left: 1px solid rgba(255, 255, 255, 0.1);
+    transition: opacity 0.3s ease;
+}
+
+.preview-panel.loading {
+    opacity: 0.5;
+}
+
+.preview-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: white;
+    margin-bottom: 4px;
+}
+
+.preview-subtitle {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 16px;
+}
+
+.preview-detail-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+}
+
+.preview-detail-value {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.calc-history-row {
+    padding: 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* Clipboard Empty State */
+.clipboard-empty-state {
+    opacity: 0.6;
+}
+
+.clipboard-empty-icon {
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 8px;
+}
+
+.clipboard-empty-label {
+    font-family: "SF Pro Display", -apple-system, sans-serif;
+    font-size: 20px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.clipboard-list-view {
+    background: transparent;
+}
+
+/* Emoji Mode */
+/* ==============================
+   Emoji Grid
+   ============================== */
+
+.emoji-card {
+    padding: 8px;
+    border-radius: 20px;
+    background: transparent;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    min-height: 80px;
+}
+
+.emoji-card:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: scale(1.05);
+}
+
+.emoji-card:selected,
+.emoji-card.selected {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    transform: scale(1.05);
+}
+
+.emoji-char {
+    font-size: 42px;
+    margin-bottom: 8px;
+    transition: text-shadow 0.25s ease;
+}
+
+.emoji-card:hover .emoji-char,
+.emoji-card:selected .emoji-char {
+    text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+
+.emoji-title {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* ==============================
+   Unified Preview Panel UX - HERO
+   ============================== */
+
+.preview-panel {
+    background: rgba(255, 255, 255, 0.02);
+    border-left: 1px solid rgba(255, 255, 255, 0.05);
+    padding: 32px;
+}
+
+.preview-hero-container {
+    margin-bottom: 32px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 24px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+}
+
+.preview-hero-icon {
+    border-radius: 16px;
+}
+
+.preview-hero-emoji {
+    font-size: 110px;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    text-shadow: 0 10px 20px rgba(0,0,0,0.5);
+}
+
+.preview-hero-text {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 14px;
+    color: rgba(255,255,255,0.9);
+    padding: 8px;
+}
+
+.preview-main-title {
+    font-family: "SF Pro Display", "Inter", sans-serif;
+    font-size: 32px;
+    font-weight: 800;
+    color: white;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+}
+
+.preview-main-subtitle {
+    font-family: "SF Pro Display", "Inter", sans-serif;
+    font-size: 18px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.7);
+    margin-bottom: 32px;
+}
+
+.preview-meta-grid {
+    margin-bottom: 32px;
+}
+
+.preview-meta-card {
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.preview-meta-key {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.5);
+    margin-bottom: 6px;
+    letter-spacing: 0.8px;
+}
+
+.preview-meta-val {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.preview-action-box {
+    margin-top: 16px;
+}
+
+.preview-btn {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 10px 24px;
+    font-weight: 600;
+    font-size: 15px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.preview-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.3);
+    transform: scale(1.02);
+}
+
+.preview-btn.destructive {
+    color: #ff5555;
+    background: rgba(255, 85, 85, 0.1);
+    border-color: rgba(255, 85, 85, 0.2);
+}
+
+.preview-btn.destructive:hover {
+    background: rgba(255, 85, 85, 0.2);
+    border-color: rgba(255, 85, 85, 0.4);
+}
+
+/* ==============================
+   Launchpad Grid (Apps)
+   ============================== */
+
+.apps-glass-container {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    margin: 0 32px 32px 32px;
+    padding: 24px;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.05), 0 10px 20px rgba(0,0,0,0.2);
+}
+
+/* Force transparent backgrounds for GTK viewports and scrolled windows */
+.apps-glass-container scrolledwindow,
+.apps-glass-container viewport,
+.apps-glass-container gridview {
+    background: transparent;
+    background-color: transparent;
+}
+
+/* Override default GTK selection background for the grid children */
+gridview > child:selected, 
+gridview > child:selected:hover {
+    background: transparent;
+    border: none;
+    outline: none;
+    box-shadow: none;
+}
+
+.launchpad-card {
+    padding: 16px;
+    border-radius: 20px;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    background: transparent;
+    border: 1px solid transparent;
+}
+
+.launchpad-card:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.launchpad-card.selected,
+.launchpad-card:selected {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(0, 150, 255, 0.3);
+    box-shadow: 0 0 20px rgba(0, 150, 255, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    transform: scale(1.03);
+}
+
+.launchpad-icon {
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    margin-bottom: 16px;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.launchpad-card:hover .launchpad-icon,
+.launchpad-card.selected .launchpad-icon,
+.launchpad-card:selected .launchpad-icon {
+    transform: scale(1.1);
+    filter: drop-shadow(0 8px 16px rgba(0,0,0,0.4));
+}
+
+.launchpad-title {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    transition: color 0.3s ease;
+}
+
+.launchpad-card.selected .launchpad-title,
+.launchpad-card:selected .launchpad-title {
+    color: white;
+    font-weight: 600;
+}
+
+/* ==============================
+   Finder Grid (Files)
+   ============================== */
+
+.finder-card {
+    padding: 12px;
+    border-radius: 16px;
+    transition: all 0.2s ease;
+    background: transparent;
+}
+
+.finder-card:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.finder-card.selected,
+.finder-card:selected {
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+}
+
+.finder-icon {
+    border-radius: 8px;
+    margin-bottom: 8px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.finder-title {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+}
+

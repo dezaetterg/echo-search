@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bg-grad" x1="64" y1="32" x2="448" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1E202C"/>
+      <stop offset="50%" stop-color="#14151E"/>
+      <stop offset="100%" stop-color="#0B0C12"/>
+    </linearGradient>
+
+    <!-- Glass Rim Highlight Gradient -->
+    <linearGradient id="rim-grad" x1="96" y1="64" x2="416" y2="448" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6"/>
+      <stop offset="30%" stop-color="#60A5FA" stop-opacity="0.3"/>
+      <stop offset="70%" stop-color="#38BDF8" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#818CF8" stop-opacity="0.5"/>
+    </linearGradient>
+
+    <!-- Inner Glow Lens Gradient -->
+    <radialGradient id="lens-glow" cx="230" cy="220" r="160" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#38BDF8" stop-opacity="0.45"/>
+      <stop offset="40%" stop-color="#6366F1" stop-opacity="0.25"/>
+      <stop offset="80%" stop-color="#0EA5E9" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Search Glass Ring Gradient -->
+    <linearGradient id="ring-grad" x1="150" y1="140" x2="330" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="45%" stop-color="#93C5FD" stop-opacity="0.75"/>
+      <stop offset="80%" stop-color="#60A5FA" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.85"/>
+    </linearGradient>
+
+    <!-- Handle Gradient -->
+    <linearGradient id="handle-grad" x1="290" y1="290" x2="390" y2="390" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#A5B4FC"/>
+      <stop offset="50%" stop-color="#6366F1"/>
+      <stop offset="100%" stop-color="#38BDF8"/>
+    </linearGradient>
+
+    <!-- Drop Shadow Filter -->
+    <filter id="squircle-shadow" x="0" y="8" width="512" height="504" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="24" stdDeviation="32" flood-color="#000000" flood-opacity="0.55"/>
+      <feDropShadow dx="0" dy="4" stdDeviation="12" flood-color="#0EA5E9" flood-opacity="0.15"/>
+    </filter>
+
+    <filter id="lens-glow-filter" x="80" y="80" width="350" height="350" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="12" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+
+  <!-- Squircle Base -->
+  <rect x="48" y="48" width="416" height="416" rx="104" fill="url(#bg-grad)" filter="url(#squircle-shadow)"/>
+  <rect x="48.5" y="48.5" width="415" height="415" rx="103.5" stroke="url(#rim-grad)" stroke-width="2"/>
+
+  <!-- Subtle Liquid Wave Accents in Background -->
+  <path d="M70 280 C 140 220, 220 340, 300 270 C 370 210, 410 240, 440 220" stroke="#38BDF8" stroke-width="1.5" stroke-opacity="0.2" fill="none"/>
+  <path d="M80 320 C 160 270, 240 370, 320 310 C 390 260, 420 280, 442 270" stroke="#818CF8" stroke-width="1.5" stroke-opacity="0.15" fill="none"/>
+
+  <!-- Echo Sound/Search Waves (Concentric Frosted Glass Arcs) -->
+  <path d="M 120 180 A 130 130 0 0 1 200 110" stroke="#38BDF8" stroke-width="4" stroke-linecap="round" stroke-opacity="0.4"/>
+  <path d="M 100 200 A 160 160 0 0 1 220 90" stroke="#818CF8" stroke-width="3" stroke-linecap="round" stroke-opacity="0.25"/>
+
+  <!-- Ambient Light Center -->
+  <circle cx="230" cy="220" r="130" fill="url(#lens-glow)" filter="url(#lens-glow-filter)"/>
+
+  <!-- Glass Spotlight Search Lens Ring -->
+  <circle cx="224" cy="216" r="92" stroke="url(#ring-grad)" stroke-width="18" fill="#1E2438" fill-opacity="0.35"/>
+  <circle cx="224" cy="216" r="82" stroke="#FFFFFF" stroke-width="1.5" stroke-opacity="0.4" fill="none"/>
+  
+  <!-- Lens Flare Specular Reflection -->
+  <ellipse cx="184" cy="174" rx="36" ry="18" transform="rotate(-40 184 174)" fill="#FFFFFF" fill-opacity="0.45"/>
+  <ellipse cx="172" cy="164" rx="14" ry="7" transform="rotate(-40 172 164)" fill="#FFFFFF" fill-opacity="0.8"/>
+
+  <!-- Spotlight Search Handle with Liquid Glass Style -->
+  <path d="M 292 284 L 372 364" stroke="url(#handle-grad)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M 294 286 L 370 362" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-opacity="0.6"/>
+
+  <!-- Inner Sparkle Star -->
+  <path d="M 240 190 Q 240 210 260 210 Q 240 210 240 230 Q 240 210 220 210 Q 240 210 240 190 Z" fill="#38BDF8" fill-opacity="0.85"/>
+</svg>
