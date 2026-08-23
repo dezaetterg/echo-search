@@ -96,7 +96,8 @@ class ModeManager:
                 active_mode.render(self.current_results)
             return
                 
-        limit = 100 if category in ("Apps", "Settings") else 20
+        cfg_limit = self.main_window.config_manager.get("results_limit", 20) if self.main_window.config_manager else 20
+        limit = 100 if category in ("Apps", "Settings") else cfg_limit
         self.engine.search_async(query, limit=limit, category_filter=category, callback=self._on_search_completed)
 
     def _on_search_completed(self, results, search_id):

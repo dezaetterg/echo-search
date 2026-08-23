@@ -18,15 +18,15 @@ class SettingsMode(BaseMode):
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.scroll.set_min_content_height(420)
-        self.scroll.set_max_content_height(480)
+        self.scroll.set_max_content_height(520)
         self.scroll.set_hexpand(True)
         self.scroll.set_vexpand(True)
         self.scroll.add_css_class("settings-scrolled")
 
-        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
-        self.content_box.set_margin_start(24)
-        self.content_box.set_margin_end(24)
-        self.content_box.set_margin_top(16)
+        self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=18)
+        self.content_box.set_margin_start(20)
+        self.content_box.set_margin_end(20)
+        self.content_box.set_margin_top(14)
         self.content_box.set_margin_bottom(24)
 
         self._build_settings_ui()
@@ -42,107 +42,171 @@ class SettingsMode(BaseMode):
 
         cfg = self.main_window.config_manager
 
-        # --- Section 1: Внешний вид ---
-        group_appearance = self._create_group("Внешний вид")
+        # ========================================================
+        # 1. ОСНОВНЫЕ ПАРАМЕТРЫ (General)
+        # ========================================================
+        group_general = self._create_group("ОСНОВНЫЕ ПАРАМЕТРЫ")
         
-        # Тема
-        theme_row = self._create_theme_row(cfg)
-        group_appearance.append(theme_row)
-        
-        # Размытие
-        blur_row = self._create_switch_row(
-            "Размытие фона (Blur)",
-            "Эффект матового стекла под окном лаунчера",
-            cfg.get("blur", True),
-            lambda active: self._on_setting_changed("blur", active)
-        )
-        group_appearance.append(blur_row)
-
-        # Анимации
-        anim_row = self._create_switch_row(
-            "Плавные анимации",
-            "Анимации открытия категорий и результатов",
-            cfg.get("animations", True),
-            lambda active: self._on_setting_changed("animations", active)
-        )
-        group_appearance.append(anim_row)
-
-        self.content_box.append(group_appearance)
-
-        # --- Section 2: Источники поиска ---
-        group_search = self._create_group("Источники поиска")
-        
-        group_search.append(self._create_switch_row(
-            "Приложения",
-            "Поиск и запуск установленных программ",
-            cfg.get("applications", True),
-            lambda active: self._on_setting_changed("applications", active)
-        ))
-
-        group_search.append(self._create_switch_row(
-            "Файлы и документы",
-            "Глубокий поиск файлов через GNOME Tracker 3",
-            cfg.get("files", True),
-            lambda active: self._on_setting_changed("files", active)
-        ))
-
-        group_search.append(self._create_switch_row(
-            "История буфера обмена",
-            "Сохранение и быстрый поиск скопированного текста",
-            cfg.get("clipboard", True),
-            lambda active: self._on_setting_changed("clipboard", active)
-        ))
-
-        group_search.append(self._create_switch_row(
-            "Калькулятор и конвертер",
-            "Подсчет формул и перевод единиц измерения в строке ввода",
-            cfg.get("calculator", True),
-            lambda active: self._on_setting_changed("calculator", active)
-        ))
-
-        group_search.append(self._create_switch_row(
-            "Эмодзи и символы",
-            "Поиск смайлов по названию и ключевым словам",
-            cfg.get("emoji", True),
-            lambda active: self._on_setting_changed("emoji", active)
-        ))
-
-        group_search.append(self._create_switch_row(
-            "Системные команды",
-            "Быстрые действия (Перезагрузка, Выключение, Блокировка)",
-            cfg.get("commands", True),
-            lambda active: self._on_setting_changed("commands", active)
-        ))
-
-        self.content_box.append(group_search)
-
-        # --- Section 3: Система и интерфейс ---
-        group_system = self._create_group("Система и поведение")
-
-        group_system.append(self._create_switch_row(
-            "Автозапуск при входе",
-            "Запускать фоновую службу Echo Search при старте системы",
+        # Запуск при входе
+        group_general.append(self._create_switch_row(
+            "Запуск при входе в систему",
+            None,
             cfg.get("launch_at_login", False),
             lambda active: self._on_setting_changed("launch_at_login", active)
         ))
 
-        group_system.append(self._create_switch_row(
-            "Панель предпросмотра",
-            "Отображать панель деталей и превью файлов справа",
-            cfg.get("preview_enabled", True),
-            lambda active: self._on_setting_changed("preview_enabled", active)
-        ))
+        # Сочетание клавиш
+        shortcut_row = self._create_shortcut_row(
+            "Сочетание клавиш запуска",
+            cfg.get("launch_shortcut", "<Super>space")
+        )
+        group_general.append(shortcut_row)
 
-        group_system.append(self._create_switch_row(
+        # История поиска
+        group_general.append(self._create_switch_row(
             "История поиска",
-            "Предлагать недавние запросы при пустом поиске",
+            None,
             cfg.get("search_history", True),
             lambda active: self._on_setting_changed("search_history", active)
         ))
 
-        self.content_box.append(group_system)
+        # Показывать недавние элементы
+        group_general.append(self._create_switch_row(
+            "Показывать недавние элементы",
+            None,
+            cfg.get("recent_when_empty", True),
+            lambda active: self._on_setting_changed("recent_when_empty", active)
+        ))
 
-        # --- Кнопка сброса ---
+        self.content_box.append(group_general)
+
+        # ========================================================
+        # 2. ПАРАМЕТРЫ ВЫДАЧИ (Search Parameters)
+        # ========================================================
+        group_params = self._create_group("ПАРАМЕТРЫ ВЫДАЧИ")
+
+        group_params.append(self._create_slider_row(
+            "Количество результатов",
+            cfg.get("results_limit", 20),
+            5, 50, 1,
+            unit="",
+            callback=lambda val: self._on_setting_changed("results_limit", int(val))
+        ))
+
+        self.content_box.append(group_params)
+
+        # ========================================================
+        # 3. ОФОРМЛЕНИЕ (Appearance)
+        # ========================================================
+        group_appearance = self._create_group("ОФОРМЛЕНИЕ")
+        
+        # Тема оформления
+        group_appearance.append(self._create_theme_row(cfg))
+
+        # Прозрачность окна
+        trans_val = int((cfg.get("transparency", 0.70) or 0.70) * 100)
+        group_appearance.append(self._create_slider_row(
+            "Прозрачность окна",
+            trans_val,
+            10, 100, 1,
+            unit="%",
+            callback=lambda val: self._on_setting_changed("transparency", round(val / 100.0, 2))
+        ))
+
+        # Размытие фона
+        group_appearance.append(self._create_switch_row(
+            "Размытие фона (Blur)",
+            None,
+            cfg.get("blur", True),
+            lambda active: self._on_setting_changed("blur", active)
+        ))
+
+        # Анимации интерфейса
+        group_appearance.append(self._create_switch_row(
+            "Анимации интерфейса",
+            None,
+            cfg.get("animations", True),
+            lambda active: self._on_setting_changed("animations", active)
+        ))
+
+        self.content_box.append(group_appearance)
+
+        # ========================================================
+        # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА (Preview Panel)
+        # ========================================================
+        group_preview = self._create_group("ПАНЕЛЬ ПРЕДПРОСМОТРА")
+
+        # Панель быстрого просмотра
+        group_preview.append(self._create_switch_row(
+            "Панель быстрого просмотра",
+            None,
+            cfg.get("preview_enabled", True),
+            lambda active: self._on_setting_changed("preview_enabled", active)
+        ))
+
+        # Ширина предпросмотра
+        group_preview.append(self._create_slider_row(
+            "Ширина предпросмотра",
+            cfg.get("preview_width", 420),
+            200, 800, 10,
+            unit="px",
+            callback=lambda val: self._on_setting_changed("preview_width", int(val))
+        ))
+
+        self.content_box.append(group_preview)
+
+        # ========================================================
+        # 5. КАТЕГОРИИ ПОИСКА (Search Categories)
+        # ========================================================
+        group_categories = self._create_group("КАТЕГОРИИ ПОИСКА")
+
+        group_categories.append(self._create_switch_row(
+            "Приложения",
+            None,
+            cfg.get("applications", True),
+            lambda active: self._on_setting_changed("applications", active)
+        ))
+
+        group_categories.append(self._create_switch_row(
+            "Файлы и документы",
+            None,
+            cfg.get("files", True),
+            lambda active: self._on_setting_changed("files", active)
+        ))
+
+        group_categories.append(self._create_switch_row(
+            "Буфер обмена",
+            None,
+            cfg.get("clipboard", True),
+            lambda active: self._on_setting_changed("clipboard", active)
+        ))
+
+        group_categories.append(self._create_switch_row(
+            "Символы и эмодзи",
+            None,
+            cfg.get("emoji", True),
+            lambda active: self._on_setting_changed("emoji", active)
+        ))
+
+        group_categories.append(self._create_switch_row(
+            "Калькулятор и конвертер",
+            None,
+            cfg.get("calculator", True),
+            lambda active: self._on_setting_changed("calculator", active)
+        ))
+
+        group_categories.append(self._create_switch_row(
+            "Системные команды",
+            None,
+            cfg.get("commands", True),
+            lambda active: self._on_setting_changed("commands", active)
+        ))
+
+        self.content_box.append(group_categories)
+
+        # ========================================================
+        # 6. КНОПКА СБРОСА
+        # ========================================================
         reset_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         reset_box.set_halign(Gtk.Align.CENTER)
         reset_box.set_margin_top(8)
@@ -198,35 +262,64 @@ class SettingsMode(BaseMode):
 
         return row
 
+    def _create_slider_row(self, title: str, current_val: int, min_val: int, max_val: int, step: int, unit: str, callback) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        title_lbl = Gtk.Label(label=title)
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.set_hexpand(True)
+        title_lbl.set_valign(Gtk.Align.CENTER)
+        title_lbl.add_css_class("settings-row-title")
+        row.append(title_lbl)
+
+        ctrl_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        ctrl_box.set_valign(Gtk.Align.CENTER)
+
+        scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, min_val, max_val, step)
+        scale.set_value(current_val)
+        scale.set_size_request(150, -1)
+        scale.set_draw_value(False)
+        scale.add_css_class("settings-slider")
+
+        val_lbl = Gtk.Label(label=f"{int(current_val)}{unit}")
+        val_lbl.set_size_request(45, -1)
+        val_lbl.set_halign(Gtk.Align.END)
+        val_lbl.set_valign(Gtk.Align.CENTER)
+        val_lbl.add_css_class("settings-value-label")
+
+        def on_slider_change(sc):
+            v = sc.get_value()
+            val_lbl.set_text(f"{int(v)}{unit}")
+            callback(v)
+
+        scale.connect("value-changed", on_slider_change)
+
+        ctrl_box.append(scale)
+        ctrl_box.append(val_lbl)
+        row.append(ctrl_box)
+        return row
+
     def _create_theme_row(self, cfg) -> Gtk.Box:
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         row.add_css_class("settings-row")
 
-        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        label_box.set_hexpand(True)
-        label_box.set_valign(Gtk.Align.CENTER)
-
         title_lbl = Gtk.Label(label="Тема оформления")
         title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.set_hexpand(True)
+        title_lbl.set_valign(Gtk.Align.CENTER)
         title_lbl.add_css_class("settings-row-title")
-        label_box.append(title_lbl)
+        row.append(title_lbl)
 
-        sub_lbl = Gtk.Label(label="Стиль стеклянного интерфейса и подсветки")
-        sub_lbl.set_halign(Gtk.Align.START)
-        sub_lbl.add_css_class("settings-row-subtitle")
-        label_box.append(sub_lbl)
-
-        row.append(label_box)
-
-        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
         btn_box.set_valign(Gtk.Align.CENTER)
         btn_box.add_css_class("settings-theme-selector")
 
-        current_theme = cfg.get("theme", "silver")
+        current_theme = cfg.get("theme", "light")
         themes = [
             ("silver", "Liquid Glass"),
-            ("dark", "Dark"),
-            ("light", "Light")
+            ("light", "Светлая"),
+            ("dark", "Тёмная")
         ]
 
         for code, name in themes:
@@ -238,6 +331,24 @@ class SettingsMode(BaseMode):
             btn_box.append(btn)
 
         row.append(btn_box)
+        return row
+
+    def _create_shortcut_row(self, title: str, shortcut_text: str) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        title_lbl = Gtk.Label(label=title)
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.set_hexpand(True)
+        title_lbl.set_valign(Gtk.Align.CENTER)
+        title_lbl.add_css_class("settings-row-title")
+        row.append(title_lbl)
+
+        badge = Gtk.Label(label="⌘ Space")
+        badge.set_valign(Gtk.Align.CENTER)
+        badge.add_css_class("shortcut-badge")
+        row.append(badge)
+
         return row
 
     def _on_theme_selected(self, theme_code: str):

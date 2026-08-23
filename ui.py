@@ -211,6 +211,65 @@ class EchoUI(Gtk.Window):
                     color: #1c1c1e;
                     box-shadow: 0 4px 16px rgba(0,0,0,0.1);
                 }
+                
+                /* Настройки в светлой теме */
+                .capsule-window-ui .settings-group-title {
+                    color: rgba(60, 60, 67, 0.65);
+                }
+                .capsule-window-ui .settings-card {
+                    background: #ffffff;
+                    border: 1px solid rgba(0, 0, 0, 0.06);
+                    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+                }
+                .capsule-window-ui .settings-row {
+                    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+                }
+                .capsule-window-ui .settings-row:hover {
+                    background: rgba(0, 0, 0, 0.02);
+                }
+                .capsule-window-ui .settings-row-title {
+                    color: #1c1c1e;
+                }
+                .capsule-window-ui .settings-row-subtitle {
+                    color: rgba(60, 60, 67, 0.7);
+                }
+                .capsule-window-ui .settings-value-label {
+                    color: #1c1c1e;
+                }
+                .capsule-window-ui .shortcut-badge {
+                    background: #f2f2f7;
+                    color: #1c1c1e;
+                    border: 1px solid rgba(0, 0, 0, 0.08);
+                }
+                .capsule-window-ui .settings-theme-selector {
+                    background: #e5e5ea;
+                    border: 1px solid rgba(0, 0, 0, 0.04);
+                }
+                .capsule-window-ui .theme-pill {
+                    color: #636366;
+                }
+                .capsule-window-ui .theme-pill:hover {
+                    color: #000000;
+                    background: rgba(0, 0, 0, 0.04);
+                }
+                .capsule-window-ui .theme-pill.active {
+                    background: #ffffff;
+                    color: #000000;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                }
+                .capsule-window-ui scale.settings-slider trough {
+                    background: rgba(0, 0, 0, 0.12);
+                }
+                .capsule-window-ui .settings-reset-btn {
+                    background: #ffffff;
+                    border: 1px solid rgba(255, 59, 48, 0.3);
+                    color: #ff3b30;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+                }
+                .capsule-window-ui .settings-reset-btn:hover {
+                    background: rgba(255, 59, 48, 0.1);
+                    color: #d70015;
+                }
                 """
             else:
                 # Темная тема в стиле Liquid Glass
@@ -264,6 +323,65 @@ class EchoUI(Gtk.Window):
                     color: #ffffff;
                     border: 1px solid rgba(255, 255, 255, 0.3);
                     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+                }
+                
+                /* Настройки в темной теме */
+                .capsule-window-ui .settings-group-title {
+                    color: rgba(255, 255, 255, 0.45);
+                }
+                .capsule-window-ui .settings-card {
+                    background: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+                }
+                .capsule-window-ui .settings-row {
+                    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+                }
+                .capsule-window-ui .settings-row:hover {
+                    background: rgba(255, 255, 255, 0.03);
+                }
+                .capsule-window-ui .settings-row-title {
+                    color: rgba(255, 255, 255, 0.9);
+                }
+                .capsule-window-ui .settings-row-subtitle {
+                    color: rgba(255, 255, 255, 0.45);
+                }
+                .capsule-window-ui .settings-value-label {
+                    color: rgba(255, 255, 255, 0.85);
+                }
+                .capsule-window-ui .shortcut-badge {
+                    background: rgba(255, 255, 255, 0.08);
+                    color: rgba(255, 255, 255, 0.85);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                }
+                .capsule-window-ui .settings-theme-selector {
+                    background: rgba(0, 0, 0, 0.3);
+                    border: 1px solid rgba(255, 255, 255, 0.06);
+                }
+                .capsule-window-ui .theme-pill {
+                    color: rgba(255, 255, 255, 0.6);
+                }
+                .capsule-window-ui .theme-pill:hover {
+                    color: rgba(255, 255, 255, 0.9);
+                    background: rgba(255, 255, 255, 0.05);
+                }
+                .capsule-window-ui .theme-pill.active {
+                    background: rgba(255, 255, 255, 0.18);
+                    color: #ffffff;
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+                }
+                .capsule-window-ui scale.settings-slider trough {
+                    background: rgba(255, 255, 255, 0.15);
+                }
+                .capsule-window-ui .settings-reset-btn {
+                    background: rgba(255, 255, 255, 0.06);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    color: rgba(255, 255, 255, 0.65);
+                }
+                .capsule-window-ui .settings-reset-btn:hover {
+                    background: rgba(255, 59, 48, 0.15);
+                    border-color: rgba(255, 59, 48, 0.3);
+                    color: #ff453a;
                 }
                 """
                 
