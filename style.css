@@ -814,15 +814,30 @@ switch:focus {
     color: rgba(255, 255, 255, 0.85);
 }
 
-.shortcut-badge {
+.shortcut-button {
     background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.85);
+    color: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 8px;
-    padding: 4px 10px;
-    font-family: "SF Pro Text", "Inter", sans-serif;
+    padding: 5px 12px;
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
     font-size: 12px;
     font-weight: 500;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.shortcut-button:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+}
+
+.shortcut-button.recording {
+    background: rgba(0, 122, 255, 0.2);
+    border-color: #007aff;
+    color: #007aff;
+    font-weight: 600;
 }
 
 .settings-slider {

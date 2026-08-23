@@ -8,6 +8,103 @@ except ValueError:
 from .base import BaseMode
 from i18n import t
 
+class ShortcutButton(Gtk.Button):
+    def __init__(self, current_shortcut: str, on_changed_callback):
+        super().__init__()
+        self.current_shortcut = current_shortcut or "<Super>space"
+        self.on_changed_callback = on_changed_callback
+        self.is_recording = False
+        
+        self.add_css_class("shortcut-button")
+        self.set_valign(Gtk.Align.CENTER)
+        self.update_label()
+        
+        self.connect("clicked", self._on_clicked)
+        
+        self.key_ctrl = Gtk.EventControllerKey.new()
+        self.key_ctrl.connect("key-pressed", self._on_key_pressed)
+        self.add_controller(self.key_ctrl)
+
+    def _format_display(self, shortcut: str) -> str:
+        if not shortcut: return "Не задано"
+        s = shortcut
+        s = s.replace("<Super>", "Super + ")
+        s = s.replace("<Ctrl>", "Ctrl + ")
+        s = s.replace("<Alt>", "Alt + ")
+        s = s.replace("<Shift>", "Shift + ")
+        parts = s.split(" + ")
+        if len(parts) > 1:
+            return " + ".join(parts[:-1]) + " + " + parts[-1].capitalize()
+        return s.capitalize()
+
+    def update_label(self):
+        if self.is_recording:
+            self.set_label("Нажмите клавиши...")
+            self.add_css_class("recording")
+        else:
+            self.set_label(self._format_display(self.current_shortcut))
+            self.remove_css_class("recording")
+
+    def _on_clicked(self, btn):
+        self.is_recording = not self.is_recording
+        self.update_label()
+        if self.is_recording:
+            self.grab_focus()
+
+    def _on_key_pressed(self, controller, keyval, keycode, state):
+        if not self.is_recording:
+            return False
+
+        # Отмена по Escape
+        if keyval == Gdk.KEY_Escape:
+            self.is_recording = False
+            self.update_label()
+            return True
+
+        # Игнорируем нажатия только клавиш-модификаторов
+        if keyval in (Gdk.KEY_Control_L, Gdk.KEY_Control_R,
+                      Gdk.KEY_Shift_L, Gdk.KEY_Shift_R,
+                      Gdk.KEY_Alt_L, Gdk.KEY_Alt_R,
+                      Gdk.KEY_Super_L, Gdk.KEY_Super_R,
+                      Gdk.KEY_Meta_L, Gdk.KEY_Meta_R):
+            return True
+
+        mod_str = ""
+        if state & Gdk.ModifierType.CONTROL_MASK:
+            mod_str += "<Ctrl>"
+        if state & Gdk.ModifierType.ALT_MASK:
+            mod_str += "<Alt>"
+        if state & Gdk.ModifierType.SHIFT_MASK:
+            mod_str += "<Shift>"
+        if state & Gdk.ModifierType.SUPER_MASK:
+            mod_str += "<Super>"
+
+        key_name = Gdk.keyval_name(keyval)
+        if not key_name:
+            return False
+
+        if keyval == Gdk.KEY_space:
+            key_str = "space"
+        elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+            key_str = "Return"
+        elif len(key_name) == 1:
+            key_str = key_name.lower()
+        else:
+            key_str = key_name.lower()
+
+        if not mod_str and not key_str.startswith("f"):
+            mod_str = "<Super>"
+
+        new_shortcut = f"{mod_str}{key_str}"
+        self.current_shortcut = new_shortcut
+        self.is_recording = False
+        self.update_label()
+        
+        if self.on_changed_callback:
+            self.on_changed_callback(new_shortcut)
+            
+        return True
+
 class SettingsMode(BaseMode):
     category_filter = "Settings"
     
@@ -36,18 +133,16 @@ class SettingsMode(BaseMode):
         return self.box
 
     def _build_settings_ui(self):
-        # Clear existing
         while child := self.content_box.get_first_child():
             self.content_box.remove(child)
 
         cfg = self.main_window.config_manager
 
         # ========================================================
-        # 1. ОСНОВНЫЕ ПАРАМЕТРЫ (General)
+        # 1. ОСНОВНЫЕ ПАРАМЕТРЫ
         # ========================================================
         group_general = self._create_group("ОСНОВНЫЕ ПАРАМЕТРЫ")
         
-        # Запуск при входе
         group_general.append(self._create_switch_row(
             "Запуск при входе в систему",
             None,
@@ -55,14 +150,12 @@ class SettingsMode(BaseMode):
             lambda active: self._on_setting_changed("launch_at_login", active)
         ))
 
-        # Сочетание клавиш
         shortcut_row = self._create_shortcut_row(
             "Сочетание клавиш запуска",
             cfg.get("launch_shortcut", "<Super>space")
         )
         group_general.append(shortcut_row)
 
-        # История поиска
         group_general.append(self._create_switch_row(
             "История поиска",
             None,
@@ -70,7 +163,6 @@ class SettingsMode(BaseMode):
             lambda active: self._on_setting_changed("search_history", active)
         ))
 
-        # Показывать недавние элементы
         group_general.append(self._create_switch_row(
             "Показывать недавние элементы",
             None,
@@ -81,7 +173,7 @@ class SettingsMode(BaseMode):
         self.content_box.append(group_general)
 
         # ========================================================
-        # 2. ПАРАМЕТРЫ ВЫДАЧИ (Search Parameters)
+        # 2. ПАРАМЕТРЫ ВЫДАЧИ
         # ========================================================
         group_params = self._create_group("ПАРАМЕТРЫ ВЫДАЧИ")
 
@@ -96,14 +188,12 @@ class SettingsMode(BaseMode):
         self.content_box.append(group_params)
 
         # ========================================================
-        # 3. ОФОРМЛЕНИЕ (Appearance)
+        # 3. ОФОРМЛЕНИЕ
         # ========================================================
         group_appearance = self._create_group("ОФОРМЛЕНИЕ")
         
-        # Тема оформления
         group_appearance.append(self._create_theme_row(cfg))
 
-        # Прозрачность окна (0% = непрозрачный, 100% = максимально прозрачный)
         trans_val = int((cfg.get("transparency", 0.30) if cfg.get("transparency") is not None else 0.30) * 100)
         group_appearance.append(self._create_slider_row(
             "Прозрачность окна",
@@ -113,7 +203,6 @@ class SettingsMode(BaseMode):
             callback=lambda val: self._on_setting_changed("transparency", round(val / 100.0, 2))
         ))
 
-        # Размытие фона
         group_appearance.append(self._create_switch_row(
             "Размытие фона (Blur)",
             None,
@@ -121,7 +210,6 @@ class SettingsMode(BaseMode):
             lambda active: self._on_setting_changed("blur", active)
         ))
 
-        # Анимации интерфейса
         group_appearance.append(self._create_switch_row(
             "Анимации интерфейса",
             None,
@@ -132,11 +220,10 @@ class SettingsMode(BaseMode):
         self.content_box.append(group_appearance)
 
         # ========================================================
-        # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА (Preview Panel)
+        # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА
         # ========================================================
         group_preview = self._create_group("ПАНЕЛЬ ПРЕДПРОСМОТРА")
 
-        # Панель быстрого просмотра
         group_preview.append(self._create_switch_row(
             "Панель быстрого просмотра",
             None,
@@ -144,7 +231,6 @@ class SettingsMode(BaseMode):
             lambda active: self._on_setting_changed("preview_enabled", active)
         ))
 
-        # Ширина предпросмотра
         group_preview.append(self._create_slider_row(
             "Ширина предпросмотра",
             cfg.get("preview_width", 420),
@@ -156,7 +242,7 @@ class SettingsMode(BaseMode):
         self.content_box.append(group_preview)
 
         # ========================================================
-        # 5. КАТЕГОРИИ ПОИСКА (Search Categories)
+        # 5. КАТЕГОРИИ ПОИСКА
         # ========================================================
         group_categories = self._create_group("КАТЕГОРИИ ПОИСКА")
 
@@ -344,11 +430,11 @@ class SettingsMode(BaseMode):
         title_lbl.add_css_class("settings-row-title")
         row.append(title_lbl)
 
-        badge = Gtk.Label(label="⌘ Space")
-        badge.set_valign(Gtk.Align.CENTER)
-        badge.add_css_class("shortcut-badge")
-        row.append(badge)
-
+        btn = ShortcutButton(
+            shortcut_text,
+            lambda new_sc: self._on_setting_changed("launch_shortcut", new_sc)
+        )
+        row.append(btn)
         return row
 
     def _on_theme_selected(self, theme_code: str):

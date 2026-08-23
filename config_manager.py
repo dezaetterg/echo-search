@@ -160,7 +160,7 @@ X-GNOME-Autostart-enabled=true
 
     def _sync_desktop_hotkey(self, hotkey_str):
         import subprocess
-        # 1. GNOME / Cinnamon / MATE
+        # 1. GNOME / Budgie / Unity
         try:
             result = subprocess.run(['gsettings', 'get', 'org.gnome.settings-daemon.plugins.media-keys', 'custom-keybindings'], capture_output=True, text=True)
             if result.returncode == 0:
@@ -169,21 +169,38 @@ X-GNOME-Autostart-enabled=true
                 paths = ast.literal_eval(bindings) if '[' in bindings else []
                 for path in paths:
                     name_res = subprocess.run(['gsettings', 'get', f'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{path}', 'name'], capture_output=True, text=True)
-                    if 'Echo' in name_res.stdout or 'Spotlight Glass' in name_res.stdout or 'echo-search' in name_res.stdout:
+                    if 'Echo' in name_res.stdout or 'echo-search' in name_res.stdout:
                         subprocess.run(['gsettings', 'set', f'org.gnome.settings-daemon.plugins.media-keys.custom-keybinding:{path}', 'binding', hotkey_str])
                         break
         except Exception:
             pass
 
-        # 2. XFCE
+        # 2. Cinnamon (Linux Mint)
+        try:
+            result = subprocess.run(['gsettings', 'get', 'org.cinnamon.desktop.keybindings', 'custom-list'], capture_output=True, text=True)
+            if result.returncode == 0:
+                import ast
+                raw = result.stdout.strip().replace('@as', '').strip()
+                slots = ast.literal_eval(raw) if '[' in raw else []
+                for slot in slots:
+                    path = f'/org/cinnamon/desktop/keybindings/custom-keybindings/{slot}/'
+                    name_res = subprocess.run(['gsettings', 'get', f'org.cinnamon.desktop.keybindings.custom-keybinding:{path}', 'name'], capture_output=True, text=True)
+                    if 'Echo' in name_res.stdout or 'echo-search' in name_res.stdout:
+                        subprocess.run(['gsettings', 'set', f'org.cinnamon.desktop.keybindings.custom-keybinding:{path}', 'binding', f'["{hotkey_str}"]'])
+                        break
+        except Exception:
+            pass
+
+        # 3. XFCE
         try:
             subprocess.run(['xfconf-query', '-c', 'xfce4-keyboard-shortcuts', '-p', f'/commands/custom/{hotkey_str}', '-n', '-t', 'string', '-s', 'echo-search'], capture_output=True)
         except Exception:
             pass
 
-        # 3. KDE Plasma
+        # 4. KDE Plasma
         try:
             kde_tool = 'kwriteconfig6' if subprocess.run(['which', 'kwriteconfig6'], capture_output=True).returncode == 0 else 'kwriteconfig5'
-            subprocess.run([kde_tool, '--file', 'kglobalshortcutsrc', '--group', 'com.echo.search.desktop', '--key', '_launch', f'Meta+Space,none,Echo'], capture_output=True)
+            kde_hotkey = hotkey_str.replace('<Super>', 'Meta+').replace('<Ctrl>', 'Ctrl+').replace('<Alt>', 'Alt+').replace('<Shift>', 'Shift+')
+            subprocess.run([kde_tool, '--file', 'kglobalshortcutsrc', '--group', 'com.echo.search.desktop', '--key', '_launch', f'{kde_hotkey},none,Echo'], capture_output=True)
         except Exception:
             pass

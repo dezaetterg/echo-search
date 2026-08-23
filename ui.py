@@ -238,10 +238,20 @@ class EchoUI(Gtk.Window):
                 .capsule-window-ui .settings-value-label {
                     color: #1c1c1e;
                 }
-                .capsule-window-ui .shortcut-badge {
+                .capsule-window-ui .shortcut-button {
                     background: #f2f2f7;
                     color: #1c1c1e;
-                    border: 1px solid rgba(0, 0, 0, 0.08);
+                    border: 1px solid rgba(0, 0, 0, 0.1);
+                    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+                }
+                .capsule-window-ui .shortcut-button:hover {
+                    background: #e5e5ea;
+                    color: #000000;
+                }
+                .capsule-window-ui .shortcut-button.recording {
+                    background: rgba(0, 122, 255, 0.1);
+                    border-color: #007aff;
+                    color: #007aff;
                 }
                 .capsule-window-ui .settings-theme-selector {
                     background: #e5e5ea;
@@ -351,10 +361,19 @@ class EchoUI(Gtk.Window):
                 .capsule-window-ui .settings-value-label {
                     color: rgba(255, 255, 255, 0.85);
                 }
-                .capsule-window-ui .shortcut-badge {
+                .capsule-window-ui .shortcut-button {
                     background: rgba(255, 255, 255, 0.08);
-                    color: rgba(255, 255, 255, 0.85);
+                    color: rgba(255, 255, 255, 0.9);
                     border: 1px solid rgba(255, 255, 255, 0.12);
+                }
+                .capsule-window-ui .shortcut-button:hover {
+                    background: rgba(255, 255, 255, 0.14);
+                    color: #ffffff;
+                }
+                .capsule-window-ui .shortcut-button.recording {
+                    background: rgba(0, 122, 255, 0.2);
+                    border-color: #007aff;
+                    color: #007aff;
                 }
                 .capsule-window-ui .settings-theme-selector {
                     background: rgba(0, 0, 0, 0.3);
