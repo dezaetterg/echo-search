@@ -38,19 +38,31 @@ class EchoUI(Gtk.Window):
 
     def _setup_css(self):
         provider = Gtk.CssProvider()
-        css_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'style.css')
-        if os.path.exists(css_path):
-            provider.load_from_path(css_path)
-            Gtk.StyleContext.add_provider_for_display(
-                Gdk.Display.get_default(),
-                provider,
-                Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-            )
+        css_paths = [
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), 'style.css'),
+            "/usr/lib/echo-search/style.css",
+            "/usr/share/echo-search/style.css",
+            "/usr/local/share/echo-search/style.css",
+            os.path.expanduser("~/.local/share/echo-search/style.css")
+        ]
+        
+        for path in css_paths:
+            if os.path.exists(path):
+                try:
+                    provider.load_from_path(path)
+                    Gtk.StyleContext.add_provider_for_display(
+                        Gdk.Display.get_default(),
+                        provider,
+                        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
+                    )
+                    break
+                except Exception as e:
+                    print(f"Error loading CSS from {path}: {e}")
             
         if self.config_manager:
-            theme = self.config_manager.get("theme")
-            transparency = self.config_manager.get("transparency")
-            blur = self.config_manager.get("blur")
+            theme = self.config_manager.get("theme", "light")
+            transparency = self.config_manager.get("transparency", 0.70)
+            blur = self.config_manager.get("blur", True)
             
             if theme == "light":
                 bg_color = f"rgba(240, 240, 245, {transparency})"
@@ -191,7 +203,49 @@ class EchoUI(Gtk.Window):
                 }
                 """
             else:
-                theme_css = ""
+                # Темная тема в стиле Liquid Glass
+                theme_css = """
+                .capsule-window-ui { color: #f5f5f7; }
+                .capsule-window-ui .search-icon { color: rgba(255, 255, 255, 0.7); }
+                
+                .capsule-window-ui .search-wrapper {
+                    background-color: rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                    border-radius: 16px;
+                    padding: 4px 12px;
+                    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+                }
+                
+                .capsule-window-ui #search-entry { 
+                    background: transparent;
+                    color: #ffffff; 
+                    caret-color: #007aff; 
+                    border: none;
+                    box-shadow: none;
+                }
+                .capsule-window-ui #search-entry:focus { 
+                    border: none;
+                    box-shadow: none; 
+                }
+                
+                .capsule-window-ui .mode-button {
+                    background: rgba(255, 255, 255, 0.08);
+                    color: rgba(255, 255, 255, 0.7);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+                }
+                .capsule-window-ui .mode-button:hover {
+                    background: rgba(255, 255, 255, 0.14);
+                    color: #ffffff;
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+                }
+                .capsule-window-ui .mode-button.active {
+                    background: rgba(255, 255, 255, 0.22);
+                    color: #ffffff;
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+                }
+                """
                 
             dynamic_css = f"""
             .capsule-window-ui {{

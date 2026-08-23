@@ -52,8 +52,8 @@ exec /usr/bin/python3 /usr/lib/echo-search/main.py "$@"
 EOF
 chmod 755 "${BUILD_DIR}/usr/bin/echo-search"
 
-# Python код в /usr/lib/echo-search
-cp *.py "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
+# Python код и стили в /usr/lib/echo-search
+cp *.py style.css emoji.json "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
 cp -r modes providers "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
 
 # Удаление всех __pycache__ и .pyc из пакета

@@ -124,7 +124,7 @@ else
         $SUDO_CMD mkdir -p "/usr/share/icons/hicolor/${s}x${s}/apps"
     done
 
-    $SUDO_CMD cp *.py /usr/lib/echo-search/
+    $SUDO_CMD cp *.py style.css emoji.json /usr/lib/echo-search/
     $SUDO_CMD cp modes/*.py /usr/lib/echo-search/modes/
     $SUDO_CMD cp providers/*.py /usr/lib/echo-search/providers/
     $SUDO_CMD cp style.css emoji.json /usr/share/echo-search/

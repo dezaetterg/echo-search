@@ -9,7 +9,7 @@ class ConfigManager:
         self.config_file = self.config_dir / "config.json"
         
         self.defaults = {
-            "theme": "dark",
+            "theme": "light",
             "language": "auto",
             "blur": True,
             "transparency": 0.70,
