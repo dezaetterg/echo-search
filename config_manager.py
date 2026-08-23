@@ -78,7 +78,7 @@ class ConfigManager:
         except Exception as e:
             print(f"Error saving config: {e}")
 
-    def get(self, key):
+    def get(self, key, default=None):
         if key == "enabled_modes":
             modes = []
             if self.config.get("applications", True): modes.append("Apps")
@@ -87,7 +87,12 @@ class ConfigManager:
             if self.config.get("emoji", True): modes.append("Emoji")
             if self.config.get("settings", True): modes.append("Settings")
             return modes
-        return self.config.get(key, self.defaults.get(key))
+        val = self.config.get(key)
+        if val is not None:
+            return val
+        if default is not None:
+            return default
+        return self.defaults.get(key)
 
     def apply_to_engine(self, engine):
         if not hasattr(self, '_all_providers_cache') or not self._all_providers_cache:
