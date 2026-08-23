@@ -2,27 +2,49 @@ import sys
 import os
 import signal
 
-try:
-    import gi
-    gi.require_version('Gtk', '4.0')
-    
-    HAS_LAYER_SHELL = False
-    Gtk4LayerShell = None
+# --- Проверка критических зависимостей с понятными подсказками по установке ---
+def _check_system_dependencies():
+    missing = []
     try:
-        gi.require_version('Gtk4LayerShell', '1.0')
-        from gi.repository import Gtk4LayerShell
-        HAS_LAYER_SHELL = True
-    except (ValueError, ImportError):
-        HAS_LAYER_SHELL = False
+        import gi
+        gi.require_version("Gtk", "4.0")
+        from gi.repository import Gtk, Gio, GLib
+    except Exception:
+        missing.append("GTK4 / PyGObject (gir1.2-gtk-4.0, python3-gi)")
 
-    from gi.repository import Gtk, Gio, GLib
-except ValueError as e:
-    print(f"[FATAL] GTK version error: {e}", file=sys.stderr)
-    sys.exit(1)
-except ImportError as e:
-    print(f"[FATAL] PyGObject import error: {e}", file=sys.stderr)
-    sys.exit(1)
+    try:
+        import rapidfuzz
+    except ImportError:
+        missing.append("rapidfuzz (python3-rapidfuzz или pip install rapidfuzz)")
 
+    if missing:
+        print("\n=======================================================", file=sys.stderr)
+        print("🌊 Echo Search — Не найдены необходимые зависимости:", file=sys.stderr)
+        for item in missing:
+            print(f"  • {item}", file=sys.stderr)
+        print("\nУстановите зависимости с помощью пакетного менеджера вашей системы:", file=sys.stderr)
+        print("  Debian / Ubuntu / Mint: sudo apt install python3-gi gir1.2-gtk-4.0 python3-rapidfuzz", file=sys.stderr)
+        print("  Arch Linux:             sudo pacman -S python-gobject gtk4 python-rapidfuzz", file=sys.stderr)
+        print("  Fedora:                 sudo dnf install python3-gobject gtk4 python3-rapidfuzz", file=sys.stderr)
+        print("  openSUSE:               sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 python3-rapidfuzz", file=sys.stderr)
+        print("  Или выполните:          ./install.sh", file=sys.stderr)
+        print("=======================================================\n", file=sys.stderr)
+        sys.exit(1)
+
+_check_system_dependencies()
+
+import gi
+gi.require_version("Gtk", "4.0")
+HAS_LAYER_SHELL = False
+Gtk4LayerShell = None
+try:
+    gi.require_version("Gtk4LayerShell", "1.0")
+    from gi.repository import Gtk4LayerShell
+    HAS_LAYER_SHELL = True
+except (ValueError, ImportError):
+    HAS_LAYER_SHELL = False
+
+from gi.repository import Gtk, Gio, GLib
 from config_manager import ConfigManager
 from ui import EchoUI
 

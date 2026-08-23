@@ -113,7 +113,7 @@ echo -e "\n${YELLOW}[2/4] Установка Echo Search в системные �
 if [ "$PKG_MGR" = "apt" ]; then
     # Если на Debian/Ubuntu - собираем и ставим чистый .deb пакет
     ./build_deb.sh
-    $SUDO_CMD apt-get install -y ./dist/echo-search_1.0.0_all.deb
+    $SUDO_CMD apt-get install -y ./dist/echo-search_latest.deb
 else
     # Универсальная прямая установка FHS
     $SUDO_CMD mkdir -p /usr/lib/echo-search/modes /usr/lib/echo-search/providers
