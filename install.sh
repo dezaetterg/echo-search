@@ -163,14 +163,71 @@ EOF'
 fi
 
 # 5. Определение Desktop Environment и настройка горячей клавиши
-echo -e "\n${YELLOW}[3/4] Настройка глобального хоткея Super + Space...${RESET}"
+echo -e "
+${YELLOW}[3/4] Настройка глобального хоткея Super + Space...${RESET}"
+
+# Функция выполнения от имени реального пользователя десктопа (даже если скрипт запущен через sudo)
+run_desktop_cmd() {
+    if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+        local user_uid
+        user_uid=$(id -u "$SUDO_USER" 2>/dev/null || echo "1000")
+        local dbus_bus="unix:path=/run/user/${user_uid}/bus"
+        sudo -u "$SUDO_USER" DBUS_SESSION_BUS_ADDRESS="$dbus_bus" "$@" 2>/dev/null ||         sudo -u "$SUDO_USER" "$@" 2>/dev/null ||         "$@" 2>/dev/null || true
+    else
+        "$@" 2>/dev/null || true
+    fi
+}
 
 DE="${XDG_CURRENT_DESKTOP:-$DESKTOP_SESSION}"
 DE_LOWER=$(echo "$DE" | tr '[:upper:]' '[:lower:]')
 HOTKEY_CONFIGURED=false
 
-# GNOME / Cinnamon
-if [[ "$DE_LOWER" == *"gnome"* ]] || [[ "$DE_LOWER" == *"cinnamon"* ]] || [[ "$DE_LOWER" == *"budgie"* ]]; then
+# Cinnamon (Linux Mint)
+if [[ "$DE_LOWER" == *"cinnamon"* ]] || [[ "$XDG_CURRENT_DESKTOP" == *"X-Cinnamon"* ]]; then
+    if command -v gsettings >/dev/null 2>&1; then
+        # Отключаем конфликтующие системные хоткеи Cinnamon на Super+Space
+        run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-to-workspace-left "['']"
+        run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-to-workspace-down "['']"
+
+        CUSTOM_SCHEMA="org.cinnamon.desktop.keybindings.custom-keybinding"
+        MAIN_SCHEMA="org.cinnamon.desktop.keybindings"
+
+        CURRENT_LIST=$(run_desktop_cmd gsettings get "$MAIN_SCHEMA" custom-list 2>/dev/null || echo "@as []")
+        
+        FOUND_SLOT=""
+        FOUND_PATH=""
+        for i in {0..15}; do
+            SLOT_ID="custom$i"
+            SLOT_PATH="/org/cinnamon/desktop/keybindings/custom-keybindings/custom$i/"
+            NAME=$(run_desktop_cmd gsettings get "${CUSTOM_SCHEMA}:${SLOT_PATH}" name 2>/dev/null || true)
+            if [ -z "$NAME" ] || [ "$NAME" = "''" ] || [ "$NAME" = "@as []" ] || [[ "$NAME" == *"Echo"* ]]; then
+                FOUND_SLOT="$SLOT_ID"
+                FOUND_PATH="$SLOT_PATH"
+                break
+            fi
+        done
+
+        if [ -n "$FOUND_SLOT" ]; then
+            run_desktop_cmd gsettings set "${CUSTOM_SCHEMA}:${FOUND_PATH}" name 'Echo Search'
+            run_desktop_cmd gsettings set "${CUSTOM_SCHEMA}:${FOUND_PATH}" command 'echo-search'
+            run_desktop_cmd gsettings set "${CUSTOM_SCHEMA}:${FOUND_PATH}" binding "['<Super>space']"
+
+            if [[ "$CURRENT_LIST" != *"$FOUND_SLOT"* ]]; then
+                if [ "$CURRENT_LIST" = "@as []" ] || [ -z "$CURRENT_LIST" ] || [ "$CURRENT_LIST" = "[]" ]; then
+                    NEW_LIST="['$FOUND_SLOT']"
+                else
+                    NEW_LIST=$(echo "$CURRENT_LIST" | sed "s/]$/, '$FOUND_SLOT']/")
+                fi
+                run_desktop_cmd gsettings set "$MAIN_SCHEMA" custom-list "$NEW_LIST"
+            fi
+            echo -e "${GREEN}✓ Хоткей Super + Space зарегистрирован в Cinnamon (Linux Mint)!${RESET}"
+            HOTKEY_CONFIGURED=true
+        fi
+    fi
+fi
+
+# GNOME / Budgie / Unity
+if [ "$HOTKEY_CONFIGURED" = false ] && ([[ "$DE_LOWER" == *"gnome"* ]] || [[ "$DE_LOWER" == *"budgie"* ]] || [[ "$DE_LOWER" == *"unity"* ]]); then
     if command -v gsettings >/dev/null 2>&1; then
         HOTKEY="<Super>space"
         CUSTOM_KEY_SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
@@ -179,7 +236,7 @@ if [[ "$DE_LOWER" == *"gnome"* ]] || [[ "$DE_LOWER" == *"cinnamon"* ]] || [[ "$D
         FOUND_SLOT=""
         for i in {0..15}; do
             KEY_PATH="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom$i/"
-            EXISTING_NAME=$(gsettings get "${CUSTOM_KEY_SCHEMA}:${KEY_PATH}" name 2>/dev/null || true)
+            EXISTING_NAME=$(run_desktop_cmd gsettings get "${CUSTOM_KEY_SCHEMA}:${KEY_PATH}" name 2>/dev/null || true)
             if [ -z "$EXISTING_NAME" ] || [ "$EXISTING_NAME" = "''" ] || [ "$EXISTING_NAME" = "@as []" ] || [[ "$EXISTING_NAME" == *"Echo"* ]]; then
                 FOUND_SLOT="$KEY_PATH"
                 break
@@ -187,20 +244,20 @@ if [[ "$DE_LOWER" == *"gnome"* ]] || [[ "$DE_LOWER" == *"cinnamon"* ]] || [[ "$D
         done
 
         if [ -n "$FOUND_SLOT" ]; then
-            gsettings set "${CUSTOM_KEY_SCHEMA}:${FOUND_SLOT}" name 'Echo'
-            gsettings set "${CUSTOM_KEY_SCHEMA}:${FOUND_SLOT}" command 'echo-search'
-            gsettings set "${CUSTOM_KEY_SCHEMA}:${FOUND_SLOT}" binding "$HOTKEY"
+            run_desktop_cmd gsettings set "${CUSTOM_KEY_SCHEMA}:${FOUND_SLOT}" name 'Echo Search'
+            run_desktop_cmd gsettings set "${CUSTOM_KEY_SCHEMA}:${FOUND_SLOT}" command 'echo-search'
+            run_desktop_cmd gsettings set "${CUSTOM_KEY_SCHEMA}:${FOUND_SLOT}" binding "$HOTKEY"
 
-            CURRENT_BINDINGS=$(gsettings get "$MEDIA_KEYS" custom-keybindings 2>/dev/null || echo "[]")
+            CURRENT_BINDINGS=$(run_desktop_cmd gsettings get "$MEDIA_KEYS" custom-keybindings 2>/dev/null || echo "[]")
             if [[ "$CURRENT_BINDINGS" != *"$FOUND_SLOT"* ]]; then
                 if [ "$CURRENT_BINDINGS" = "@as []" ] || [ -z "$CURRENT_BINDINGS" ] || [ "$CURRENT_BINDINGS" = "[]" ]; then
                     NEW_BINDINGS="['$FOUND_SLOT']"
                 else
                     NEW_BINDINGS=$(echo "$CURRENT_BINDINGS" | sed "s/]$/, '$FOUND_SLOT']/")
                 fi
-                gsettings set "$MEDIA_KEYS" custom-keybindings "$NEW_BINDINGS"
+                run_desktop_cmd gsettings set "$MEDIA_KEYS" custom-keybindings "$NEW_BINDINGS"
             fi
-            echo -e "${GREEN}✓ Хоткей ${HOTKEY} зарегистрирован в GNOME/Cinnamon!${RESET}"
+            echo -e "${GREEN}✓ Хоткей ${HOTKEY} зарегистрирован в GNOME!${RESET}"
             HOTKEY_CONFIGURED=true
         fi
     fi
@@ -209,13 +266,13 @@ fi
 # KDE Plasma 5/6
 if [[ "$DE_LOWER" == *"kde"* ]] || [[ "$DE_LOWER" == *"plasma"* ]]; then
     if command -v kwriteconfig6 >/dev/null 2>&1; then
-        kwriteconfig6 --file kglobalshortcutsrc --group "com.echo.search.desktop" --key "_launch" "Meta+Space,none,Echo"
-        qdbus org.kde.KGlobalAccel /KGlobalAccel reloadConfig >/dev/null 2>&1 || true
+        run_desktop_cmd kwriteconfig6 --file kglobalshortcutsrc --group "com.echo.search.desktop" --key "_launch" "Meta+Space,none,Echo"
+        run_desktop_cmd qdbus org.kde.KGlobalAccel /KGlobalAccel reloadConfig >/dev/null 2>&1 || true
         echo -e "${GREEN}✓ Хоткей Meta+Space зарегистрирован в KDE Plasma 6!${RESET}"
         HOTKEY_CONFIGURED=true
     elif command -v kwriteconfig5 >/dev/null 2>&1; then
-        kwriteconfig5 --file kglobalshortcutsrc --group "com.echo.search.desktop" --key "_launch" "Meta+Space,none,Echo"
-        qdbus org.kde.KGlobalAccel /KGlobalAccel reloadConfig >/dev/null 2>&1 || true
+        run_desktop_cmd kwriteconfig5 --file kglobalshortcutsrc --group "com.echo.search.desktop" --key "_launch" "Meta+Space,none,Echo"
+        run_desktop_cmd qdbus org.kde.KGlobalAccel /KGlobalAccel reloadConfig >/dev/null 2>&1 || true
         echo -e "${GREEN}✓ Хоткей Meta+Space зарегистрирован в KDE Plasma 5!${RESET}"
         HOTKEY_CONFIGURED=true
     fi
@@ -224,10 +281,28 @@ fi
 # XFCE
 if [[ "$DE_LOWER" == *"xfce"* ]]; then
     if command -v xfconf-query >/dev/null 2>&1; then
-        xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Super>space" -n -t string -s "echo-search" 2>/dev/null || \
-        xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Super>space" -s "echo-search"
+        run_desktop_cmd xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Super>space" -n -t string -s "echo-search" 2>/dev/null ||         run_desktop_cmd xfconf-query -c xfce4-keyboard-shortcuts -p "/commands/custom/<Super>space" -s "echo-search"
         echo -e "${GREEN}✓ Хоткей Super+Space зарегистрирован в XFCE!${RESET}"
         HOTKEY_CONFIGURED=true
+    fi
+fi
+
+# MATE
+if [[ "$DE_LOWER" == *"mate"* ]]; then
+    if command -v gsettings >/dev/null 2>&1; then
+        MATE_CUSTOM="org.mate.SettingsDaemon.plugins.media-keys.custom-keybinding"
+        for i in {0..15}; do
+            MATE_PATH="/org/mate/settings-daemon/plugins/media-keys/custom-keybindings/custom$i/"
+            NAME=$(run_desktop_cmd gsettings get "${MATE_CUSTOM}:${MATE_PATH}" name 2>/dev/null || true)
+            if [ -z "$NAME" ] || [ "$NAME" = "''" ] || [[ "$NAME" == *"Echo"* ]]; then
+                run_desktop_cmd gsettings set "${MATE_CUSTOM}:${MATE_PATH}" name 'Echo Search'
+                run_desktop_cmd gsettings set "${MATE_CUSTOM}:${MATE_PATH}" action 'echo-search'
+                run_desktop_cmd gsettings set "${MATE_CUSTOM}:${MATE_PATH}" binding '<Super>space'
+                echo -e "${GREEN}✓ Хоткей Super+Space зарегистрирован в MATE!${RESET}"
+                HOTKEY_CONFIGURED=true
+                break
+            fi
+        done
     fi
 fi
 

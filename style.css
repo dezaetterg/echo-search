@@ -700,3 +700,120 @@ gridview > child:selected:hover {
     color: rgba(255, 255, 255, 0.85);
 }
 
+
+
+/* ==============================
+   In-App Settings Mode
+   ============================== */
+
+.settings-main-container {
+    background: transparent;
+}
+
+.settings-scrolled {
+    background: transparent;
+}
+
+.settings-group-box {
+    margin-bottom: 8px;
+}
+
+.settings-group-title {
+    font-family: "SF Pro Display", "Inter", sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: rgba(255, 255, 255, 0.45);
+    margin-left: 8px;
+    margin-bottom: 6px;
+}
+
+.settings-card {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 2px 0;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+}
+
+.settings-row {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    transition: background 0.15s ease;
+}
+
+.settings-row:last-child {
+    border-bottom: none;
+}
+
+.settings-row:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.settings-row-title {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.settings-row-subtitle {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 11px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.settings-switch {
+    margin-right: 4px;
+}
+
+.settings-theme-selector {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 8px;
+    padding: 3px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.theme-pill {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    border: none;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 11px;
+    font-weight: 500;
+    transition: all 0.15s ease;
+    box-shadow: none;
+}
+
+.theme-pill:hover {
+    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.theme-pill.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.settings-reset-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.65);
+    border-radius: 10px;
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.settings-reset-btn:hover {
+    background: rgba(255, 59, 48, 0.15);
+    border-color: rgba(255, 59, 48, 0.3);
+    color: #ff453a;
+}

@@ -486,15 +486,6 @@ class EchoUI(Gtk.Window):
                 btn.remove_css_class("active")
 
     def on_mode_button_clicked(self, button, mode_name):
-        if mode_name == "Settings":
-            import subprocess
-            try:
-                subprocess.Popen(["gtk-launch", "echo-settings"])
-            except Exception as e:
-                print(f"Failed to launch settings: {e}")
-            self.hide()
-            return
-
         if self.mode_manager.active_mode_name == mode_name:
             # Toggle back to search if clicking the same mode
             self.mode_manager.set_mode("Search")
@@ -526,6 +517,11 @@ class EchoUI(Gtk.Window):
         elif query == "/emoji" and self.mode_manager:
             self.entry.set_text("")
             self.mode_manager.set_mode("Emoji")
+            self.update_revealer_state()
+            return
+        elif query == "/settings" and self.mode_manager:
+            self.entry.set_text("")
+            self.mode_manager.set_mode("Settings")
             self.update_revealer_state()
             return
         # -------------------------------
