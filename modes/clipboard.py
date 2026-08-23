@@ -1,11 +1,14 @@
+import datetime
 try:
     import gi
     gi.require_version('Gtk', '4.0')
-    from gi.repository import Gtk, Gdk, Pango, Gio, GObject
+    from gi.repository import Gtk, Gdk, Pango, Gio, GObject, GLib
 except ValueError:
     pass
 
 from .base import BaseMode
+import preview_manager
+from i18n import t
 
 class ClipboardItemWrapper(GObject.Object):
     def __init__(self, result):
@@ -18,27 +21,40 @@ class ClipboardMode(BaseMode):
     def _create_widget(self) -> Gtk.Widget:
         self.current_results = []
         
-
+        # Основной сплит-контейнер (слева список, справа предпросмотр)
+        self.main_split = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        
         self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.left_box.set_hexpand(True)
+        self.left_box.set_size_request(600, -1)
         
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
+        self.stack.set_transition_duration(150)
         
-        # --- Empty State ---
-        self.empty_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        # --- Пустое состояние (Empty State) ---
+        self.empty_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
         self.empty_box.set_valign(Gtk.Align.CENTER)
         self.empty_box.set_halign(Gtk.Align.CENTER)
+        self.empty_box.set_min_content_height(350) if hasattr(self.empty_box, 'set_min_content_height') else None
+        self.empty_box.set_margin_top(40)
+        self.empty_box.set_margin_bottom(40)
         self.empty_box.add_css_class("clipboard-empty-state")
         
-        empty_icon = Gtk.Image.new_from_icon_name("edit-paste")
-        empty_icon.set_pixel_size(72)
+        empty_icon = Gtk.Image.new_from_icon_name("edit-paste-symbolic")
+        empty_icon.set_pixel_size(64)
+        empty_icon.set_opacity(0.4)
         empty_icon.add_css_class("clipboard-empty-icon")
         self.empty_box.append(empty_icon)
         
-        empty_label = Gtk.Label(label="No Clipboard History")
+        empty_label = Gtk.Label(label=t("clipboard_placeholder"))
         empty_label.add_css_class("clipboard-empty-label")
         self.empty_box.append(empty_label)
+        
+        empty_desc = Gtk.Label(label=t("preview_empty_desc"))
+        empty_desc.add_css_class("result-desc")
+        empty_desc.set_opacity(0.6)
+        self.empty_box.append(empty_desc)
         
         self.stack.add_named(self.empty_box, "empty")
         
@@ -46,6 +62,7 @@ class ClipboardMode(BaseMode):
         self.list_store = Gio.ListStore.new(ClipboardItemWrapper)
         self.selection_model = Gtk.SingleSelection.new(self.list_store)
         self.selection_model.set_autoselect(True)
+        self.selection_model.connect("notify::selected", self._on_selection_changed)
         
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._on_factory_setup)
@@ -59,8 +76,8 @@ class ClipboardMode(BaseMode):
         
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.scroll.set_min_content_height(400)
-        self.scroll.set_max_content_height(400)
+        self.scroll.set_min_content_height(380)
+        self.scroll.set_max_content_height(420)
         self.scroll.set_child(self.list_view)
         
         self.stack.add_named(self.scroll, "list")
@@ -71,8 +88,16 @@ class ClipboardMode(BaseMode):
         self.glass_container.append(self.stack)
         
         self.left_box.append(self.glass_container)
-
-        # Attempt to hook into provider live updates
+        self.main_split.append(self.left_box)
+        
+        # --- Правая панель предварительного просмотра ---
+        self.preview_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.preview_container.add_css_class("preview-panel")
+        preview_width = self.main_window.config_manager.get("preview_width", 420) if getattr(self.main_window, "config_manager", None) else 420
+        self.preview_container.set_size_request(preview_width, -1)
+        self.main_split.append(self.preview_container)
+        
+        # Подписка на обновление буфера обмена из провайдера
         try:
             for provider in self.main_window.engine.providers:
                 if type(provider).__name__ == "ClipboardProvider":
@@ -81,27 +106,29 @@ class ClipboardMode(BaseMode):
         except Exception:
             pass
         
-        return self.left_box
+        return self.main_split
 
     def _on_factory_setup(self, factory, list_item):
         row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         row_box.add_css_class("result-row")
+        row_box.set_spacing(12)
         
-        icon = Gtk.Image.new_from_icon_name("edit-paste")
-        icon.set_pixel_size(32)
+        icon = Gtk.Image.new_from_icon_name("edit-paste-symbolic")
+        icon.set_pixel_size(24)
         icon.add_css_class("result-icon")
         icon.set_valign(Gtk.Align.CENTER)
         row_box.append(icon)
         
         text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         text_box.set_valign(Gtk.Align.CENTER)
+        text_box.set_hexpand(True)
         
         title = Gtk.Label()
         title.set_xalign(0)
-        title.set_max_width_chars(80)
+        title.set_max_width_chars(60)
         title.set_wrap(True)
         title.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
-        title.set_lines(3)
+        title.set_lines(2)
         title.set_ellipsize(Pango.EllipsizeMode.END)
         title.add_css_class("result-title")
         text_box.append(title)
@@ -116,37 +143,65 @@ class ClipboardMode(BaseMode):
 
     def _on_factory_bind(self, factory, list_item):
         row_box = list_item.get_child()
+        if not row_box:
+            return
         text_box = row_box.get_last_child()
+        if not text_box:
+            return
         title = text_box.get_first_child()
         desc = text_box.get_last_child()
         
         wrapper = list_item.get_item()
         if wrapper and wrapper.result:
-            title.set_label(wrapper.result.title)
+            title.set_label(wrapper.result.title or "")
             desc.set_label(wrapper.result.subtitle or "")
 
+    def _on_selection_changed(self, selection_model, param):
+        pos = selection_model.get_selected()
+        if pos != Gtk.INVALID_LIST_POSITION and pos < self.list_store.get_n_items():
+            wrapper = self.list_store.get_item(pos)
+            if wrapper and wrapper.result:
+                self._update_preview(wrapper.result)
+                return
+        self._update_preview(None)
+
+    def _update_preview(self, result=None):
+        if not hasattr(self, 'preview_container') or self.preview_container is None:
+            return
+            
+        while self.preview_container.get_first_child():
+            self.preview_container.remove(self.preview_container.get_first_child())
+            
+        if result is not None:
+            widget = preview_manager.PreviewManager.render(result)
+            if widget:
+                self.preview_container.append(widget)
+                self.preview_container.set_visible(True)
+        else:
+            empty_widget = preview_manager.PreviewManager.render(None)
+            if empty_widget:
+                self.preview_container.append(empty_widget)
+            self.preview_container.set_visible(True)
+
     def render(self, results: list):
-        self.current_results = results
+        self.current_results = results or []
         self.list_store.remove_all()
         
-        for result in results:
+        for result in self.current_results:
             self.list_store.append(ClipboardItemWrapper(result))
             
-        if len(results) > 0:
+        if len(self.current_results) > 0:
             self.stack.set_visible_child_name("list")
             self.selection_model.set_selected(0)
-            self._update_preview()
+            self._update_preview(self.current_results[0])
         else:
-            self.list_view.set_visible(False)
-            self.preview_container.set_visible(False)
+            self.stack.set_visible_child_name("empty")
+            self._update_preview(None)
             
         self.main_window.set_default_size(1050, 1)
         self.main_window.queue_resize()
 
-
-
     def on_new_clipboard_item(self, result):
-        # We do this update if no query is actively filtering
         query = self.main_window.entry.get_text().strip()
         if not query:
             self.list_store.insert(0, ClipboardItemWrapper(result))
@@ -155,11 +210,14 @@ class ClipboardMode(BaseMode):
             
             if self.list_store.get_n_items() > 0:
                 self.stack.set_visible_child_name("list")
+                if self.selection_model.get_selected() == Gtk.INVALID_LIST_POSITION:
+                    self.selection_model.set_selected(0)
 
     def on_item_activated(self, list_view, position):
-        wrapper = self.list_store.get_item(position)
-        if wrapper and wrapper.result:
-            self._launch_app(wrapper.result)
+        if position < self.list_store.get_n_items():
+            wrapper = self.list_store.get_item(position)
+            if wrapper and wrapper.result:
+                self._launch_app(wrapper.result)
 
     def _launch_app(self, result):
         if getattr(result, 'execute', None):
@@ -187,7 +245,7 @@ class ClipboardMode(BaseMode):
             return True
         elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
             pos = self.selection_model.get_selected()
-            if pos != Gtk.INVALID_LIST_POSITION:
+            if pos != Gtk.INVALID_LIST_POSITION and pos < n_items:
                 self.on_item_activated(self.list_view, pos)
                 return True
         return False

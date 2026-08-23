@@ -371,6 +371,15 @@ class EchoUI(Gtk.Window):
             ("Settings", "preferences-system-symbolic")
         ]
         
+        # Проверка поддержки буфера обмена на текущем дисплее/сервере
+        clipboard_supported = True
+        try:
+            disp = Gdk.Display.get_default()
+            if not disp or not disp.get_clipboard():
+                clipboard_supported = False
+        except Exception:
+            clipboard_supported = False
+
         enabled_modes_list = self.config_manager.get("enabled_modes") if self.config_manager else [m[0] for m in all_modes]
         self.mode_buttons = {}
         for name, icon_name in all_modes:
@@ -383,7 +392,12 @@ class EchoUI(Gtk.Window):
             image.set_pixel_size(16)
             btn.set_child(image)
             btn.connect("clicked", self.on_mode_button_clicked, name)
-            btn.set_visible(name in enabled_modes_list)
+            
+            is_visible = (name in enabled_modes_list)
+            if name == "Clipboard" and not clipboard_supported:
+                is_visible = False
+                
+            btn.set_visible(is_visible)
             self.mode_buttons_box.append(btn)
             self.mode_buttons[name] = btn
             
