@@ -1,37 +1,55 @@
+<div align="center">
+
+<img src="assets/icons/com.echo.search.svg" alt="Echo Search Logo" width="128" height="128">
+
 # Echo Search
 
-Быстрый поисковый лаунчер для Linux в стиле Spotlight с интерфейсом из матового стекла (Liquid Glass). Написан на Python и GTK4, работает в Wayland и X11 окружениях (GNOME, Cinnamon, KDE Plasma, XFCE, Hyprland, Sway).
+### 🌊 Элегантный лаунчер и центр продуктивности в стиле Liquid Glass для Linux
 
-***
+[![Version](https://img.shields.io/badge/version-1.0.3-blue.svg?style=for-the-badge)](https://github.com/dezaetterg/echo-search/releases)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg?style=for-the-badge)](LICENSE)
+[![Platform](https://img.shields.io/badge/Platform-Linux%20(Wayland%20%7C%20X11)-orange.svg?style=for-the-badge)](https://github.com/dezaetterg/echo-search)
+[![GTK4](https://img.shields.io/badge/UI-GTK%204%20%2B%20Libadwaita-brightgreen.svg?style=for-the-badge)](https://www.gtk.org/)
+[![Python](https://img.shields.io/badge/Python-3.10%2B-yellow.svg?style=for-the-badge)](https://www.python.org/)
 
-## Возможности
+<p align="center">
+  <b>Echo Search</b> — сверхбыстрый и визуально совершенный Spotlight-лаунчер для рабочего стола Linux.<br>
+  Создан для моментального поиска файлов, запуска приложений, управления буфером обмена и быстрых расчетов.
+</p>
 
-* **Мгновенный поиск программ**: нечеткий поиск приложений по имени, описанию и ключевым словам с поддержкой русской транслитерации (например, запрос «стим» находит Steam).
-* **Поиск файлов и документов**: интеграция с поисковым движком GNOME Tracker 3 и быстрый локальный поиск по домашней папке.
-* **Менеджер буфера обмена**: сохранение истории скопированного текста и изображений с предпросмотром и вставкой по нажатию Enter.
-* **Встроенный калькулятор**: вычисление математических выражений, тригонометрии, корней и логарифмов прямо в строке ввода.
-* **Каталог эмодзи и символов**: поиск смайликов и специальных типографических символов.
-* **Адаптивный интерфейс**: компактная поисковая строка (капсула) в режиме покоя, которая плавно раскрывается при вводе текста или выборе категории.
-* **13 языков интерфейса**: русский, английский, испанский, немецкий, французский, китайский, японский, итальянский, португальский, турецкий, украинский, казахский и арабский с автоопределением из системной локали.
+</div>
 
-***
+---
 
-## Системные требования
+## ✨ Ключевые возможности
 
-* Python 3.10 или новее
-* GTK 4 и PyGObject (`python3-gi`, `gir1.2-gtk-4.0`)
-* `python3-rapidfuzz` (для быстрого нечеткого поиска)
-* `gir1.2-gtk4layershell-1.0` (для нативного оверлея в Wayland сессиях)
-* `tracker3` / `gir1.2-tracker-3.0` (опционально, для глубокого поиска файлов)
-* `wl-clipboard` (для буфера обмена в Wayland) или `xclip` (для X11)
+* 🚀 **Умный запуск приложений**
+  Нечеткий (fuzzy) поиск установленных программ с автоматической поддержкой транслитерации раскладки клавиатуры (например, `ghbdtn` мгновенно найдет нужное приложение).
 
-***
+* 📂 **Глубокий поиск файлов и документов**
+  Интеграция с GNOME Tracker 3 SPARQL. Мгновенная фильтрация по категориям (Документы, Изображения, Видео, Аудио, Архивы) и встроенный предпросмотр содержимого.
 
-## Установка
+* 📋 **Менеджер буфера обмена**
+  История скопированных фрагментов текста с интерактивной панелью предпросмотра, быстрым поиском и копированием в 1 клик. Поддерживает Wayland (`wl-clipboard`) и X11 (`xclip`).
 
-### 1. Автоматическая установка через скрипт
+* 🧮 **Калькулятор и конвертер единиц**
+  Вычисление математических выражений, процентов и конвертация величин прямо в поисковой строке.
 
-Скрипт сам определит пакетный менеджер системы (`apt`, `pacman`, `dnf`, `zypper`), установит необходимые библиотеки, развернет бинарник и настроит горячую клавишу **Super + Space**:
+* 🎭 **База эмодзи и символов**
+  Быстрый поиск смайлов по ключевым словам и эмоциям с мгновенной вставкой.
+
+* 🎨 **Эстетика Liquid Glass**
+  Полупрозрачный стеклянный интерфейс с мягким размытием фона, динамическим изменением размера окна и плавной анимацией открытия.
+
+* 🌍 **Мультиязычность**
+  Полный перевод интерфейса на 13 языков, включая русский, английский, испанский, немецкий, французский, китайский и японский.
+
+---
+
+## 📥 Установка
+
+### Вариант 1. Универсальный установщик (Рекомендуется)
+Автоматически определяет дистрибутив, ставит зависимости, собирает пакет и настраивает горячую клавишу **Super + Space**:
 
 ```bash
 git clone https://github.com/dezaetterg/echo-search.git
@@ -40,117 +58,75 @@ chmod +x install.sh
 ./install.sh
 ```
 
-***
-
-### 2. Установка готового .deb пакета (Ubuntu, Debian, Linux Mint, PikaOS)
-
-Соберите пакет локально или возьмите готовый из папки `dist/`:
+### Вариант 2. Debian / Ubuntu / Linux Mint / PikaOS (.deb)
+Скачайте готовый пакет со страницы [Releases](https://github.com/dezaetterg/echo-search/releases) и установите:
 
 ```bash
-# Сборка deb пакета:
-./build_deb.sh
-
-# Установка:
-sudo apt install ./dist/echo-search_1.0.3_all.deb
+sudo apt install ./echo-search_1.0.3_all.deb
 ```
 
-***
-
-### 3. Arch Linux, Manjaro, EndeavourOS
-
-Сборка через `makepkg`:
-
+### Вариант 3. Arch Linux / Manjaro (PKGBUILD)
 ```bash
+git clone https://github.com/dezaetterg/echo-search.git
+cd echo_search
 makepkg -si
 ```
 
-***
-
-### 4. Fedora, openSUSE (RPM)
-
-Сборка и установка через `build_rpm.sh`:
-
+### Вариант 4. Fedora / RHEL / openSUSE (RPM)
 ```bash
+git clone https://github.com/dezaetterg/echo-search.git
+cd echo_search
+chmod +x build_rpm.sh
 ./build_rpm.sh
-sudo dnf install ./dist/rpm/echo-search-1.0.3-1.*.noarch.rpm
+sudo dnf install ./echo-search-1.0.3-1.noarch.rpm
 ```
 
-***
+### Вариант 5. Прямой запуск из исходного кода
+```bash
+# Установка базовых библиотек (на примере Ubuntu/Debian)
+sudo apt install python3-gi gir1.2-gtk-4.0 python3-rapidfuzz gir1.2-gtk4layershell-1.0 gir1.2-tracker-3.0
 
-## Горячие клавиши и управление
+# Запуск приложения
+python3 main.py
+```
 
-| Сочетание клавиш | Действие |
-| :- | :- |
-| **Super + Space** | Открыть или скрыть поисковую строку Echo |
-| **Esc** | Очистить запрос или закрыть окно |
-| **Enter** | Запустить выбранное приложение или открыть файл |
-| **Стрелки Вверх / Вниз** | Навигация по списку результатов |
-| **Tab** | Переход между списком и панелью предпросмотра |
-| **Ctrl + L** | Выделить весь текст в строке ввода |
-| **Ctrl + K** | Быстро очистить поле ввода |
+---
 
-### Команды быстрого перехода:
+## ⌨️ Горячие клавиши и управление
 
-* `/apps` — список установленных приложений
-* `/files` — поиск и просмотр файлов
-* `/clip` — история буфера обмена
-* `/emoji` — подбор эмодзи и символов
-* `/calc` — режим математического калькулятора
-* `/settings` — открытие центра управления Echo Settings
+| Клавиша | Действие |
+| :--- | :--- |
+| **Super + Space** | Открыть или скрыть Echo Search |
+| **Стрелки ↑ / ↓** | Навигация по списку найденных результатов |
+| **Enter** | Запустить приложение или открыть выбранный файл |
+| **Tab** | Быстрое переключение между категориями и фильтрами |
+| **Esc** | Очистить поле ввода или закрыть лаунчер |
 
-***
+---
 
-## Настройки
+## ⚙️ Настройка и кастомизация
 
-Конфигурация хранится в формате JSON по пути:
+Файл пользовательской конфигурации создается автоматически при первом запуске:
 `~/.config/echo-search/config.json`
 
-Файл создается автоматически при первом старте:
+В нем можно настраивать:
+* Темы оформления (Liquid Glass Silver, Dark, Light)
+* Степень прозрачности и эффект размытия фона
+* Позицию и отступы окна на экране
+* Набор активных провайдеров поиска
 
-```json
-{
-    "language": "auto",
-    "theme": "dark",
-    "blur": true,
-    "transparency": 0.70,
-    "preview_enabled": true,
-    "preview_width": 420,
-    "results_limit": 20,
-    "animations": true,
-    "launch_at_login": false,
-    "launch_shortcut": "<Super>space",
-    "recent_when_empty": true,
-    "search_history": true,
-    "enabled_modes": [
-        "apps",
-        "files",
-        "clipboard",
-        "emoji",
-        "calculator"
-    ]
-}
-```
+---
 
-Все параметры можно менять как вручную через JSON, так и графически через приложение **Echo Settings** в разделе Spotlight.
+## 🛠️ Стек технологий
 
-***
+* **Графический стек:** Python 3.10+, GTK 4, Libadwaita, Gtk4LayerShell (Wayland Layer Shell Protocol)
+* **Поисковый движок:** RapidFuzz (нечеткое сопоставление C++ бэкендом), GNOME Tracker 3 SPARQL
+* **Система:** D-Bus, Freedesktop Desktop Entry Specification, XDG Base Directory
 
-## Удаление
+---
 
-Чтобы удалить Echo Search из системы:
+## 📄 Лицензия
 
-```bash
-# Через встроенный деинсталлятор (очистит бинарники и хоткеи):
-./uninstall.sh
+Проект распространяется под свободной лицензией **GNU General Public License v3.0 (GPLv3)**. Подробности в файле [LICENSE](LICENSE).
 
-# Либо через менеджер пакетов:
-# Debian / Mint / Ubuntu: sudo apt remove echo-search
-# Arch Linux:             sudo pacman -R echo-search
-# Fedora:                 sudo dnf remove echo-search
-```
-
-***
-
-## Лицензия
-
-Проект распространяется на условиях свободной лицензии **GNU General Public License v3.0 (GPLv3)**. Подробный текст лицензии находится в файле [LICENSE](LICENSE).
+Автор: **[@dezaetterg](https://github.com/dezaetterg)**
