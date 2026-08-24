@@ -776,7 +776,6 @@ switch:focus {
     border-radius: 14px;
     padding: 2px 0;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-    overflow: hidden;
 }
 
 .settings-row {

@@ -195,8 +195,6 @@ class SettingsMode(BaseMode):
             lambda active: self._on_setting_changed("recent_when_empty", active)
         ))
 
-        self.content_box.append(group_general)
-
         # ========================================================
         # 2. ПАРАМЕТРЫ ВЫДАЧИ
         # ========================================================
@@ -209,8 +207,6 @@ class SettingsMode(BaseMode):
             unit="",
             callback=lambda val: self._on_setting_changed("results_limit", int(val))
         ))
-
-        self.content_box.append(group_params)
 
         # ========================================================
         # 3. ОФОРМЛЕНИЕ
@@ -242,8 +238,6 @@ class SettingsMode(BaseMode):
             lambda active: self._on_setting_changed("animations", active)
         ))
 
-        self.content_box.append(group_appearance)
-
         # ========================================================
         # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА
         # ========================================================
@@ -263,8 +257,6 @@ class SettingsMode(BaseMode):
             unit="px",
             callback=lambda val: self._on_setting_changed("preview_width", int(val))
         ))
-
-        self.content_box.append(group_preview)
 
         # ========================================================
         # 5. КАТЕГОРИИ ПОИСКА
@@ -313,8 +305,6 @@ class SettingsMode(BaseMode):
             lambda active: self._on_setting_changed("commands", active)
         ))
 
-        self.content_box.append(group_categories)
-
         # ========================================================
         # 6. КНОПКА СБРОСА
         # ========================================================
@@ -330,7 +320,7 @@ class SettingsMode(BaseMode):
         self.content_box.append(reset_box)
 
     def _create_group(self, title: str) -> Gtk.Box:
-        group_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        group_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         group_box.add_css_class("settings-group-box")
 
         header_label = Gtk.Label(label=title)
@@ -341,6 +331,8 @@ class SettingsMode(BaseMode):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         card.add_css_class("settings-card")
         group_box.append(card)
+
+        self.content_box.append(group_box)
         return card
 
     def _create_switch_row(self, title: str, subtitle: str, active: bool, callback) -> Gtk.Box:

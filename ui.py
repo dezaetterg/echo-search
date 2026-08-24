@@ -689,7 +689,7 @@ class EchoUI(Gtk.Window):
             self.config_manager.apply_to_engine(self.engine)
             
         # Обновляем режимы
-        enabled_modes_list = self.config_manager.get("enabled_modes") if self.config_manager else ["Apps", "Files", "Clipboard", "Emoji"]
+        enabled_modes_list = self.config_manager.get("enabled_modes") if self.config_manager else ["Apps", "Files", "Clipboard", "Emoji", "Settings"]
         for name, btn in self.mode_buttons.items():
             btn.set_visible(name in enabled_modes_list)
             
