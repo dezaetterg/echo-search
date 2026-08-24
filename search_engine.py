@@ -46,6 +46,11 @@ class SearchEngine:
             print(f"Error in {provider.__class__.__name__}: {e}")
             return []
 
+    def reload_providers(self):
+        for provider in self.providers:
+            if hasattr(provider, 'reload_apps'):
+                provider.reload_apps()
+
     def get_all_apps(self) -> list[SearchResult]:
         for provider in self.providers:
             if isinstance(provider, AppProvider):

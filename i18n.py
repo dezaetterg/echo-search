@@ -1719,18 +1719,34 @@ class I18nManager:
 
     def _detect_system_language(self) -> str:
         try:
-            for env_var in (LC_ALL, LC_MESSAGES, LANG):
-                val = os.environ.get(env_var)
-                if val:
-                    code = val.split(".")[0].split("_")[0].lower()
+            # 1. Проверяем GLib (наиболее точный метод для GTK приложений на Linux)
+            try:
+                from gi.repository import GLib
+                for name in GLib.get_language_names():
+                    code = name.split(".")[0].split("_")[0].lower()
                     if code in SUPPORTED_LANGUAGES:
                         return code
-            
-            loc = locale.getdefaultlocale()[0]
-            if loc:
-                code = loc.split("_")[0].lower()
-                if code in SUPPORTED_LANGUAGES:
-                    return code
+            except Exception:
+                pass
+
+            # 2. Проверяем стандартные переменные окружения локали
+            for env_var in ("LANGUAGE", "LC_ALL", "LC_MESSAGES", "LANG"):
+                val = os.environ.get(env_var)
+                if val:
+                    for part in val.split(":"):
+                        code = part.split(".")[0].split("_")[0].lower()
+                        if code in SUPPORTED_LANGUAGES:
+                            return code
+
+            # 3. Fallback на locale
+            try:
+                loc = locale.getlocale()[0]
+                if loc:
+                    code = loc.split("_")[0].lower()
+                    if code in SUPPORTED_LANGUAGES:
+                        return code
+            except Exception:
+                pass
         except Exception:
             pass
         return "en"

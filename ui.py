@@ -760,6 +760,8 @@ class EchoUI(Gtk.Window):
         # Применяем фильтр источников к движку
         if self.config_manager and hasattr(self, 'engine'):
             self.config_manager.apply_to_engine(self.engine)
+            if hasattr(self.engine, 'reload_providers'):
+                self.engine.reload_providers()
             
         # Обновляем режимы
         enabled_modes_list = self.config_manager.get("enabled_modes") if self.config_manager else ["Apps", "Files", "Clipboard", "Emoji", "Settings"]
