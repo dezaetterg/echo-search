@@ -61,14 +61,19 @@ chmod +x install.sh
 ```
 
 ### 2. Debian / Ubuntu / Linux Mint / PikaOS (.deb)
-Готовый пакет доступен на странице [Releases](https://github.com/dezaetterg/echo-search/releases):
+Готовый `.deb` пакет доступен на странице **[Releases](https://github.com/dezaetterg/echo-search/releases)**:
 
 ```bash
-sudo apt install ./echo-search_1.0.6_all.deb
+# Если файл скачан через браузер:
+sudo apt install ~/Загрузки/echo-search_*.deb || sudo apt install ~/Downloads/echo-search_*.deb
+
+# Либо одной командой через терминал:
+wget -O /tmp/echo-search.deb https://github.com/dezaetterg/echo-search/releases/latest/download/echo-search_1.0.6_all.deb
+sudo apt install /tmp/echo-search.deb
 ```
 
 ### 3. Arch Linux / Manjaro
-Сборка локального пакета через `makepkg` или скрипт:
+Сборка локального пакета через `makepkg`:
 
 ```bash
 git clone https://github.com/dezaetterg/echo-search.git
@@ -77,11 +82,17 @@ makepkg -si
 ```
 
 ### 4. Fedora / openSUSE (RPM)
+Готовый `.rpm` пакет доступен на странице **[Releases](https://github.com/dezaetterg/echo-search/releases)**:
+
 ```bash
+# Если файл скачан через браузер:
+sudo dnf install ~/Загрузки/echo-search-*.rpm || sudo dnf install ~/Downloads/echo-search-*.rpm
+
+# Либо сборка из исходников:
 git clone https://github.com/dezaetterg/echo-search.git
 cd echo-search
 ./build_rpm.sh
-sudo dnf install ./echo-search-1.0.6-1.noarch.rpm
+sudo dnf install ./dist/echo-search-1.0.6-1.noarch.rpm
 ```
 
 ### 5. Запуск из исходного кода
