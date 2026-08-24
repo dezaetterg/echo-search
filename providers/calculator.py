@@ -32,6 +32,9 @@ class SafeMathEval(ast.NodeVisitor):
         left = self.visit(node.left)
         right = self.visit(node.right)
         op_type = type(node.op)
+        if op_type is ast.Pow:
+            if isinstance(right, (int, float)) and abs(right) > 1000:
+                raise ValueError("Exponent too large")
         if op_type in self.operators:
             return self.operators[op_type](left, right)
         raise ValueError("Unsupported operation")
@@ -135,9 +138,14 @@ class CalculatorProvider(BaseProvider):
     def search(self, query: str, limit: int = 10, category_filter: str = None) -> list[SearchResult]:
         if category_filter not in (None, "All"):
             return []
-            
-        math_res = safe_eval(query)
-        if math_res is not None:
-            self._save_history(query, str(math_res))
-            return [self._create_result(query, math_res)]
+        try:
+            math_res = safe_eval(query)
+            if math_res is not None:
+                res_str = str(math_res)
+                if len(res_str) > 500:
+                    res_str = res_str[:50] + "..."
+                self._save_history(query, res_str)
+                return [self._create_result(query, math_res)]
+        except Exception:
+            return []
         return []
