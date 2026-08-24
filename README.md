@@ -6,7 +6,7 @@
 
 **Современный быстрый лаунчер приложений и файлов для Linux с интерфейсом Liquid Glass (GTK 4 / Wayland / X11)**
 
-[![Version](https://img.shields.io/badge/version-1.0.6-blue.svg?style=flat-square)](https://github.com/dezaetterg/echo-search/releases)
+[![Version](https://img.shields.io/badge/version-1.0.7-blue.svg?style=flat-square)](https://github.com/dezaetterg/echo-search/releases)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux-orange.svg?style=flat-square)](https://github.com/dezaetterg/echo-search)
 [![GTK4](https://img.shields.io/badge/UI-GTK%204-brightgreen.svg?style=flat-square)](https://www.gtk.org/)
@@ -68,7 +68,7 @@ chmod +x install.sh
 sudo apt install ~/Загрузки/echo-search_*.deb || sudo apt install ~/Downloads/echo-search_*.deb
 
 # Либо одной командой через терминал:
-wget -O /tmp/echo-search.deb https://github.com/dezaetterg/echo-search/releases/latest/download/echo-search_1.0.6_all.deb
+wget -O /tmp/echo-search.deb https://github.com/dezaetterg/echo-search/releases/latest/download/echo-search_1.0.7_all.deb
 sudo apt install /tmp/echo-search.deb
 ```
 
@@ -81,18 +81,14 @@ cd echo-search
 makepkg -si
 ```
 
-### 4. Fedora / openSUSE (RPM)
-Готовый `.rpm` пакет доступен на странице **[Releases](https://github.com/dezaetterg/echo-search/releases)**:
+### 4. Fedora / openSUSE / RHEL
+Установка через универсальный установщик или сборка локального RPM:
 
 ```bash
-# Если файл скачан через браузер:
-sudo dnf install ~/Загрузки/echo-search-*.rpm || sudo dnf install ~/Downloads/echo-search-*.rpm
-
-# Либо сборка из исходников:
 git clone https://github.com/dezaetterg/echo-search.git
 cd echo-search
-./build_rpm.sh
-sudo dnf install ./dist/echo-search-1.0.6-1.noarch.rpm
+chmod +x install.sh
+./install.sh
 ```
 
 ### 5. Запуск из исходного кода
