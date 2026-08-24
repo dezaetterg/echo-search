@@ -1,12 +1,12 @@
 try:
     import gi
-    gi.require_version('Gtk', '4.0')
+    gi.require_version("Gtk", "4.0")
     from gi.repository import Gtk, Gdk, Pango
 except ValueError:
     pass
 
 from .base import BaseMode
-from i18n import t
+from i18n import t, SUPPORTED_LANGUAGES
 
 class ShortcutButton(Gtk.Button):
     def __init__(self, current_shortcut: str, on_changed_callback):
@@ -26,7 +26,7 @@ class ShortcutButton(Gtk.Button):
         self.add_controller(self.key_ctrl)
 
     def _format_display(self, shortcut: str) -> str:
-        if not shortcut: return "Не задано"
+        if not shortcut: return "-"
         s = shortcut
         s = s.replace("<Super>", "Super + ")
         s = s.replace("<Ctrl>", "Ctrl + ")
@@ -39,7 +39,7 @@ class ShortcutButton(Gtk.Button):
 
     def update_label(self):
         if self.is_recording:
-            self.set_label("Нажмите клавиши...")
+            self.set_label(t("settings_recording_shortcut"))
             self.add_css_class("recording")
         else:
             self.set_label(self._format_display(self.current_shortcut))
@@ -81,23 +81,23 @@ class ShortcutButton(Gtk.Button):
 
         # Привязка по физическому скан-коду (работает одинаково при любой раскладке)
         KEYCODE_TO_KEY = {
-            65: 'space', 36: 'Return', 104: 'Return', 23: 'Tab',
-            24: 'q', 25: 'w', 26: 'e', 27: 'r', 28: 't', 29: 'y', 30: 'u', 31: 'i', 32: 'o', 33: 'p', 34: 'bracketleft', 35: 'bracketright',
-            38: 'a', 39: 's', 40: 'd', 41: 'f', 42: 'g', 43: 'h', 44: 'j', 45: 'k', 46: 'l', 47: 'semicolon', 48: 'apostrophe',
-            52: 'z', 53: 'x', 54: 'c', 55: 'v', 56: 'b', 57: 'n', 58: 'm', 59: 'comma', 60: 'period', 61: 'slash',
-            10: '1', 11: '2', 12: '3', 13: '4', 14: '5', 15: '6', 16: '7', 17: '8', 18: '9', 19: '0', 20: 'minus', 21: 'equal',
-            67: 'F1', 68: 'F2', 69: 'F3', 70: 'F4', 71: 'F5', 72: 'F6', 73: 'F7', 74: 'F8', 75: 'F9', 76: 'F10', 95: 'F11', 96: 'F12'
+            65: "space", 36: "Return", 104: "Return", 23: "Tab",
+            24: "q", 25: "w", 26: "e", 27: "r", 28: "t", 29: "y", 30: "u", 31: "i", 32: "o", 33: "p", 34: "bracketleft", 35: "bracketright",
+            38: "a", 39: "s", 40: "d", 41: "f", 42: "g", 43: "h", 44: "j", 45: "k", 46: "l", 47: "semicolon", 48: "apostrophe",
+            52: "z", 53: "x", 54: "c", 55: "v", 56: "b", 57: "n", 58: "m", 59: "comma", 60: "period", 61: "slash",
+            10: "1", 11: "2", 12: "3", 13: "4", 14: "5", 15: "6", 16: "7", 17: "8", 18: "9", 19: "0", 20: "minus", 21: "equal",
+            67: "F1", 68: "F2", 69: "F3", 70: "F4", 71: "F5", 72: "F6", 73: "F7", 74: "F8", 75: "F9", 76: "F10", 95: "F11", 96: "F12"
         }
 
         CYRILLIC_KEYSYM_TO_EN = {
-            'cyrillic_shorti': 'q', 'cyrillic_tse': 'w', 'cyrillic_u': 'e', 'cyrillic_ka': 'r', 'cyrillic_ie': 't',
-            'cyrillic_en': 'y', 'cyrillic_ge': 'u', 'cyrillic_sha': 'i', 'cyrillic_shcha': 'o', 'cyrillic_ze': 'p',
-            'cyrillic_ha': 'bracketleft', 'cyrillic_hardsign': 'bracketright',
-            'cyrillic_ef': 'a', 'cyrillic_yeru': 's', 'cyrillic_ve': 'd', 'cyrillic_a': 'f', 'cyrillic_pe': 'g',
-            'cyrillic_er': 'h', 'cyrillic_o': 'j', 'cyrillic_el': 'k', 'cyrillic_de': 'l', 'cyrillic_zhe': 'semicolon',
-            'cyrillic_e': 'apostrophe',
-            'cyrillic_ya': 'z', 'cyrillic_che': 'x', 'cyrillic_es': 'c', 'cyrillic_em': 'v', 'cyrillic_i': 'b',
-            'cyrillic_te': 'n', 'cyrillic_softsign': 'm', 'cyrillic_be': 'comma', 'cyrillic_yu': 'period', 'cyrillic_io': 'grave'
+            "cyrillic_shorti": "q", "cyrillic_tse": "w", "cyrillic_u": "e", "cyrillic_ka": "r", "cyrillic_ie": "t",
+            "cyrillic_en": "y", "cyrillic_ge": "u", "cyrillic_sha": "i", "cyrillic_shcha": "o", "cyrillic_ze": "p",
+            "cyrillic_ha": "bracketleft", "cyrillic_hardsign": "bracketright",
+            "cyrillic_ef": "a", "cyrillic_yeru": "s", "cyrillic_ve": "d", "cyrillic_a": "f", "cyrillic_pe": "g",
+            "cyrillic_er": "h", "cyrillic_o": "j", "cyrillic_el": "k", "cyrillic_de": "l", "cyrillic_zhe": "semicolon",
+            "cyrillic_e": "apostrophe",
+            "cyrillic_ya": "z", "cyrillic_che": "x", "cyrillic_es": "c", "cyrillic_em": "v", "cyrillic_i": "b",
+            "cyrillic_te": "n", "cyrillic_softsign": "m", "cyrillic_be": "comma", "cyrillic_yu": "period", "cyrillic_io": "grave"
         }
 
         key_str = ""
@@ -164,44 +164,46 @@ class SettingsMode(BaseMode):
         cfg = self.main_window.config_manager
 
         # ========================================================
-        # 1. ОСНОВНЫЕ ПАРАМЕТРЫ
+        # 1. ОСНОВНЫЕ ПАРАМЕТРЫ (MAIN SETTINGS)
         # ========================================================
-        group_general = self._create_group("ОСНОВНЫЕ ПАРАМЕТРЫ")
+        group_general = self._create_group(t("settings_group_general"))
         
+        group_general.append(self._create_language_row(cfg))
+
         group_general.append(self._create_switch_row(
-            "Запуск при входе в систему",
+            t("settings_autostart"),
             None,
             cfg.get("launch_at_login", False),
             lambda active: self._on_setting_changed("launch_at_login", active)
         ))
 
         shortcut_row = self._create_shortcut_row(
-            "Сочетание клавиш запуска",
+            t("settings_hotkey"),
             cfg.get("launch_shortcut", "<Super>space")
         )
         group_general.append(shortcut_row)
 
         group_general.append(self._create_switch_row(
-            "История поиска",
+            t("settings_search_history"),
             None,
             cfg.get("search_history", True),
             lambda active: self._on_setting_changed("search_history", active)
         ))
 
         group_general.append(self._create_switch_row(
-            "Показывать недавние элементы",
+            t("settings_recent_when_empty"),
             None,
             cfg.get("recent_when_empty", True),
             lambda active: self._on_setting_changed("recent_when_empty", active)
         ))
 
         # ========================================================
-        # 2. ПАРАМЕТРЫ ВЫДАЧИ
+        # 2. ПАРАМЕТРЫ ВЫДАЧИ (SEARCH RESULTS)
         # ========================================================
-        group_params = self._create_group("ПАРАМЕТРЫ ВЫДАЧИ")
+        group_params = self._create_group(t("settings_group_results"))
 
         group_params.append(self._create_slider_row(
-            "Количество результатов",
+            t("settings_results_limit"),
             cfg.get("results_limit", 20),
             5, 50, 1,
             unit="",
@@ -209,15 +211,15 @@ class SettingsMode(BaseMode):
         ))
 
         # ========================================================
-        # 3. ОФОРМЛЕНИЕ
+        # 3. ОФОРМЛЕНИЕ (APPEARANCE)
         # ========================================================
-        group_appearance = self._create_group("ОФОРМЛЕНИЕ")
+        group_appearance = self._create_group(t("settings_group_appearance"))
         
         group_appearance.append(self._create_theme_row(cfg))
 
         trans_val = int((cfg.get("transparency", 0.30) if cfg.get("transparency") is not None else 0.30) * 100)
         group_appearance.append(self._create_slider_row(
-            "Прозрачность окна",
+            t("settings_transparency"),
             trans_val,
             0, 100, 1,
             unit="%",
@@ -225,33 +227,33 @@ class SettingsMode(BaseMode):
         ))
 
         group_appearance.append(self._create_switch_row(
-            "Размытие фона (Blur)",
+            t("settings_blur"),
             None,
             cfg.get("blur", True),
             lambda active: self._on_setting_changed("blur", active)
         ))
 
         group_appearance.append(self._create_switch_row(
-            "Анимации интерфейса",
+            t("settings_animations"),
             None,
             cfg.get("animations", True),
             lambda active: self._on_setting_changed("animations", active)
         ))
 
         # ========================================================
-        # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА
+        # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА (PREVIEW PANEL)
         # ========================================================
-        group_preview = self._create_group("ПАНЕЛЬ ПРЕДПРОСМОТРА")
+        group_preview = self._create_group(t("settings_group_preview"))
 
         group_preview.append(self._create_switch_row(
-            "Панель быстрого просмотра",
+            t("settings_preview_enabled"),
             None,
             cfg.get("preview_enabled", True),
             lambda active: self._on_setting_changed("preview_enabled", active)
         ))
 
         group_preview.append(self._create_slider_row(
-            "Ширина предпросмотра",
+            t("settings_preview_width"),
             cfg.get("preview_width", 420),
             200, 800, 10,
             unit="px",
@@ -259,60 +261,60 @@ class SettingsMode(BaseMode):
         ))
 
         # ========================================================
-        # 5. КАТЕГОРИИ ПОИСКА
+        # 5. КАТЕГОРИИ ПОИСКА (SEARCH CATEGORIES)
         # ========================================================
-        group_categories = self._create_group("КАТЕГОРИИ ПОИСКА")
+        group_categories = self._create_group(t("settings_group_categories"))
 
         group_categories.append(self._create_switch_row(
-            "Приложения",
+            t("settings_cat_apps"),
             None,
             cfg.get("applications", True),
             lambda active: self._on_setting_changed("applications", active)
         ))
 
         group_categories.append(self._create_switch_row(
-            "Файлы и документы",
+            t("settings_cat_files"),
             None,
             cfg.get("files", True),
             lambda active: self._on_setting_changed("files", active)
         ))
 
         group_categories.append(self._create_switch_row(
-            "Буфер обмена",
+            t("settings_cat_clipboard"),
             None,
             cfg.get("clipboard", True),
             lambda active: self._on_setting_changed("clipboard", active)
         ))
 
         group_categories.append(self._create_switch_row(
-            "Символы и эмодзи",
+            t("settings_cat_emoji"),
             None,
             cfg.get("emoji", True),
             lambda active: self._on_setting_changed("emoji", active)
         ))
 
         group_categories.append(self._create_switch_row(
-            "Калькулятор и конвертер",
+            t("settings_cat_calc"),
             None,
             cfg.get("calculator", True),
             lambda active: self._on_setting_changed("calculator", active)
         ))
 
         group_categories.append(self._create_switch_row(
-            "Системные команды",
+            t("settings_cat_commands"),
             None,
             cfg.get("commands", True),
             lambda active: self._on_setting_changed("commands", active)
         ))
 
         # ========================================================
-        # 6. КНОПКА СБРОСА
+        # 6. КНОПКА СБРОСА (RESET BUTTON)
         # ========================================================
         reset_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         reset_box.set_halign(Gtk.Align.CENTER)
         reset_box.set_margin_top(8)
 
-        reset_btn = Gtk.Button(label="Восстановить настройки по умолчанию")
+        reset_btn = Gtk.Button(label=t("settings_reset_btn"))
         reset_btn.add_css_class("settings-reset-btn")
         reset_btn.connect("clicked", self._on_reset_defaults)
         reset_box.append(reset_btn)
@@ -407,7 +409,7 @@ class SettingsMode(BaseMode):
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         row.add_css_class("settings-row")
 
-        title_lbl = Gtk.Label(label="Тема оформления")
+        title_lbl = Gtk.Label(label=t("settings_theme"))
         title_lbl.set_halign(Gtk.Align.START)
         title_lbl.set_hexpand(True)
         title_lbl.set_valign(Gtk.Align.CENTER)
@@ -420,9 +422,9 @@ class SettingsMode(BaseMode):
 
         current_theme = cfg.get("theme", "light")
         themes = [
-            ("silver", "Liquid Glass"),
-            ("light", "Светлая"),
-            ("dark", "Тёмная")
+            ("silver", t("settings_theme_silver")),
+            ("light", t("settings_theme_light")),
+            ("dark", t("settings_theme_dark"))
         ]
 
         for code, name in themes:
@@ -434,6 +436,45 @@ class SettingsMode(BaseMode):
             btn_box.append(btn)
 
         row.append(btn_box)
+        return row
+
+    def _create_language_row(self, cfg) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        title_lbl = Gtk.Label(label=t("settings_language"))
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.set_hexpand(True)
+        title_lbl.set_valign(Gtk.Align.CENTER)
+        title_lbl.add_css_class("settings-row-title")
+        row.append(title_lbl)
+
+        current_lang = cfg.get("language", "auto")
+        lang_options = [("auto", t("settings_lang_auto"))] + list(SUPPORTED_LANGUAGES.items())
+        
+        string_list = Gtk.StringList.new([name for code, name in lang_options])
+        dropdown = Gtk.DropDown.new(string_list, None)
+        dropdown.set_valign(Gtk.Align.CENTER)
+        dropdown.add_css_class("settings-dropdown")
+        
+        selected_idx = 0
+        for idx, (code, name) in enumerate(lang_options):
+            if code == current_lang:
+                selected_idx = idx
+                break
+        dropdown.set_selected(selected_idx)
+
+        def on_lang_changed(dd, param):
+            pos = dd.get_selected()
+            if 0 <= pos < len(lang_options):
+                selected_code = lang_options[pos][0]
+                if selected_code != cfg.get("language"):
+                    self.main_window.config_manager.set("language", selected_code)
+                    self.main_window.reload_config()
+                    self._build_settings_ui()
+
+        dropdown.connect("notify::selected", on_lang_changed)
+        row.append(dropdown)
         return row
 
     def _create_shortcut_row(self, title: str, shortcut_text: str) -> Gtk.Box:

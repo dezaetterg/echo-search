@@ -595,6 +595,14 @@ class EchoUI(Gtk.Window):
             image = Gtk.Image.new_from_icon_name(icon_name)
             image.set_pixel_size(16)
             btn.set_child(image)
+            MODE_TOOLTIP_KEYS = {
+                "Apps": "mode_apps",
+                "Files": "mode_files",
+                "Clipboard": "mode_clipboard",
+                "Emoji": "mode_emoji",
+                "Settings": "mode_settings"
+            }
+            btn.set_tooltip_text(t(MODE_TOOLTIP_KEYS.get(name, name)))
             btn.connect("clicked", self.on_mode_button_clicked, name)
             
             is_visible = (name in enabled_modes_list)
@@ -775,3 +783,16 @@ class EchoUI(Gtk.Window):
                 if not preview_enabled:
                     search_mode.preview_container.set_visible(False)
                     self.set_default_size(650, 1)
+                    
+        # Обновление подсказок и плейсхолдера при смене языка
+        MODE_TOOLTIP_KEYS = {
+            "Apps": "mode_apps",
+            "Files": "mode_files",
+            "Clipboard": "mode_clipboard",
+            "Emoji": "mode_emoji",
+            "Settings": "mode_settings"
+        }
+        for name, btn in self.mode_buttons.items():
+            btn.set_tooltip_text(t(MODE_TOOLTIP_KEYS.get(name, name)))
+        if hasattr(self, 'mode_manager') and self.mode_manager:
+            self.mode_manager.refresh_placeholder()

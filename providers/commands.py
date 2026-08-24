@@ -1,18 +1,56 @@
 import os
 from .base import BaseProvider, SearchResult
+from i18n import t
 
 class CommandProvider(BaseProvider):
     def __init__(self, history_manager):
         super().__init__(history_manager)
-        self.commands = [
-            {"id": "cmd_shutdown", "name": "Выключить", "desc": "Выключить компьютер", "icon": "system-shutdown", "cmd": "systemctl poweroff", "keywords": ["выключить", "poweroff", "shutdown", "halt"]},
-            {"id": "cmd_reboot", "name": "Перезагрузить", "desc": "Перезагрузить", "icon": "system-reboot", "cmd": "systemctl reboot", "keywords": ["перезагрузить", "рестарт", "reboot", "restart"]},
-            {"id": "cmd_suspend", "name": "Спящий режим", "desc": "Спящий режим", "icon": "system-suspend", "cmd": "systemctl suspend", "keywords": ["сон", "спящий", "sleep", "suspend"]},
-            {"id": "cmd_logout", "name": "Выйти из системы", "desc": "Выйти из системы", "icon": "system-log-out", "cmd": "gnome-session-quit --logout --no-prompt", "keywords": ["выйти", "logout", "log out"]},
-            {"id": "cmd_lock", "name": "Заблокировать экран", "desc": "Заблокировать экран", "icon": "system-lock-screen", "cmd": "loginctl lock-session", "keywords": ["блок", "заблокировать", "lock", "screen"]},
+        self.commands_def = [
+            {
+                "id": "cmd_shutdown",
+                "name_key": "cmd_shutdown_name",
+                "desc_key": "cmd_shutdown_desc",
+                "icon": "system-shutdown",
+                "cmd": "systemctl poweroff",
+                "keywords": ["shutdown", "poweroff", "turn off", "halt", "выключить", "выключение", "питание"]
+            },
+            {
+                "id": "cmd_reboot",
+                "name_key": "cmd_reboot_name",
+                "desc_key": "cmd_reboot_desc",
+                "icon": "system-reboot",
+                "cmd": "systemctl reboot",
+                "keywords": ["reboot", "restart", "reset", "перезагрузить", "перезагрузка", "рестарт"]
+            },
+            {
+                "id": "cmd_suspend",
+                "name_key": "cmd_suspend_name",
+                "desc_key": "cmd_suspend_desc",
+                "icon": "system-suspend",
+                "cmd": "systemctl suspend",
+                "keywords": ["sleep", "suspend", "hibernate", "сон", "спящий", "спящий режим", "пауза"]
+            },
+            {
+                "id": "cmd_logout",
+                "name_key": "cmd_logout_name",
+                "desc_key": "cmd_logout_desc",
+                "icon": "system-log-out",
+                "cmd": "gnome-session-quit --logout --no-prompt",
+                "keywords": ["logout", "log out", "sign out", "exit", "выйти", "выход", "выйти из системы", "завершить сеанс"]
+            },
+            {
+                "id": "cmd_lock",
+                "name_key": "cmd_lock_name",
+                "desc_key": "cmd_lock_desc",
+                "icon": "system-lock-screen",
+                "cmd": "loginctl lock-session",
+                "keywords": ["lock", "lock screen", "screen lock", "блок", "заблокировать", "заблокировать экран", "экран"]
+            },
         ]
 
     def _create_result(self, cmd_data: dict, score: float) -> SearchResult:
+        name = t(cmd_data["name_key"])
+        desc = t(cmd_data["desc_key"])
         def _exec_callback():
             os.system(f"{cmd_data['cmd']} &")
             
@@ -27,8 +65,8 @@ class CommandProvider(BaseProvider):
 
         return SearchResult(
             id=cmd_data['id'],
-            title=cmd_data['name'],
-            subtitle=cmd_data['desc'],
+            title=name,
+            subtitle=desc,
             icon=cmd_data['icon'],
             score=score,
             category="Commands",
@@ -46,16 +84,19 @@ class CommandProvider(BaseProvider):
             return []
 
         results = []
-        q = query.lower()
+        q = query.lower().strip()
         
-        for cmd in self.commands:
+        for cmd in self.commands_def:
+            name = t(cmd["name_key"]).lower()
             score = 0
-            if q == cmd["name"].lower(): score = 100
-            elif cmd["name"].lower().startswith(q): score = 90
+            if q == name: score = 100
+            elif name.startswith(q): score = 90
+            elif q in name: score = 80
             else:
                 for kw in cmd["keywords"]:
                     if q == kw: score = max(score, 95)
                     elif kw.startswith(q): score = max(score, 85)
+                    elif q in kw: score = max(score, 75)
             
             if score > 0:
                 results.append(self._create_result(cmd, score))

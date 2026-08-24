@@ -43,6 +43,21 @@ class ModeManager:
     def get_widget(self) -> Gtk.Widget:
         return self.stack
 
+    def refresh_placeholder(self):
+        mode_name = self.active_mode_name
+        if mode_name == "Apps":
+            self.main_window.entry.set_placeholder_text(t("apps_placeholder"))
+        elif mode_name == "Files":
+            self.main_window.entry.set_placeholder_text(t("files_placeholder"))
+        elif mode_name == "Clipboard":
+            self.main_window.entry.set_placeholder_text(t("clipboard_placeholder"))
+        elif mode_name == "Emoji":
+            self.main_window.entry.set_placeholder_text(t("emoji_placeholder"))
+        elif mode_name == "Settings":
+            self.main_window.entry.set_placeholder_text(t("settings_placeholder"))
+        else:
+            self.main_window.entry.set_placeholder_text(t("search_placeholder"))
+
     def get_active_mode(self):
         return self.modes[self.active_mode_name]
 

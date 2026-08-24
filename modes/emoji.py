@@ -6,6 +6,7 @@ except ValueError:
     pass
 
 from .base import BaseMode
+from i18n import t
 
 class EmojiItemWrapper(GObject.Object):
     def __init__(self, result):
@@ -39,9 +40,23 @@ class EmojiMode(BaseMode):
         self.filters_box.set_spacing(8)
         
         self.filter_buttons = {}
+        EMOJI_CAT_KEYS = {
+            "All": "cat_all",
+            "Characters": "emoji_cat_characters",
+            "Smileys & Emotion": "emoji_cat_smileys",
+            "People & Body": "emoji_cat_people",
+            "Animals & Nature": "emoji_cat_animals",
+            "Food & Drink": "emoji_cat_food",
+            "Travel & Places": "emoji_cat_travel",
+            "Activities": "emoji_cat_activities",
+            "Objects": "emoji_cat_objects",
+            "Symbols": "emoji_cat_symbols",
+            "Flags": "emoji_cat_flags"
+        }
         categories = ["All", "Characters", "Smileys & Emotion", "People & Body", "Animals & Nature", "Food & Drink", "Travel & Places", "Activities", "Objects", "Symbols", "Flags"]
         for cat in categories:
-            btn = Gtk.Button(label=cat)
+            label_text = t(EMOJI_CAT_KEYS.get(cat, cat))
+            btn = Gtk.Button(label=label_text)
             btn.add_css_class("apps-filter-pill")
             if cat == "All":
                 btn.add_css_class("active")
@@ -173,7 +188,7 @@ class EmojiMode(BaseMode):
             result.execute()
         
         # Визуальный отклик перед закрытием
-        self.main_window.entry.set_text(f"Скопировано: {result.icon}")
+        self.main_window.entry.set_text(t("clip_copied_toast", item=result.icon))
         
         from gi.repository import GLib
         def hide_after_delay():

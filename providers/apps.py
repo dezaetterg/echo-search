@@ -4,28 +4,32 @@ from pathlib import Path
 from rapidfuzz import fuzz
 
 from .base import BaseProvider, SearchResult
+from i18n import t, i18n
 
-CATEGORY_MAP = {
-    'Settings': 'Системные настройки',
-    'System': 'Системная утилита',
-    'Utility': 'Утилита',
-    'Network': 'Сеть и интернет',
-    'AudioVideo': 'Мультимедиа',
-    'Game': 'Игра',
-    'Graphics': 'Графика',
-    'Development': 'Разработка',
-    'Office': 'Офис'
+CATEGORY_KEYS = {
+    'Settings': 'provider_cat_settings',
+    'System': 'provider_cat_system',
+    'Utility': 'provider_cat_utility',
+    'Network': 'provider_cat_network',
+    'AudioVideo': 'provider_cat_multimedia',
+    'Game': 'provider_cat_game',
+    'Graphics': 'provider_cat_graphics',
+    'Development': 'provider_cat_dev',
+    'Office': 'provider_cat_office'
 }
 
 class DesktopApp:
     def __init__(self, path: str):
         self.path = path
         self.name = ""
+        self.name_en = ""
         self.generic_name = ""
         self.exec_cmd = ""
         self.icon = ""
         self.categories = ""
         self.keywords = ""
+        self.keywords_loc = ""
+        self.keywords_ru = ""
         self.description = ""
         self.developer = "System"
         self.no_display = False
@@ -50,15 +54,24 @@ class DesktopApp:
                     self.no_display = True
                     return
 
-                self.name = entry.get('Name[ru]', entry.get('Name', os.path.basename(self.path)))
-                self.name_en = entry.get('Name', '')
-                self.generic_name = entry.get('GenericName[ru]', entry.get('GenericName', ''))
+                lang = i18n.get_language()
+                if lang and lang != 'en':
+                    self.name = entry.get(f'Name[{lang}]', entry.get('Name', os.path.basename(self.path)))
+                    self.generic_name = entry.get(f'GenericName[{lang}]', entry.get('GenericName', ''))
+                    self.description = entry.get(f'Comment[{lang}]', entry.get('Comment', ''))
+                    self.keywords_loc = entry.get(f'Keywords[{lang}]', '')
+                else:
+                    self.name = entry.get('Name', os.path.basename(self.path))
+                    self.generic_name = entry.get('GenericName', '')
+                    self.description = entry.get('Comment', '')
+                    self.keywords_loc = ''
+
+                self.name_en = entry.get('Name', os.path.basename(self.path))
                 self.exec_cmd = entry.get('Exec', '')
                 self.icon = entry.get('Icon', 'application-x-executable')
                 self.categories = entry.get('Categories', '')
                 self.keywords = entry.get('Keywords', '')
                 self.keywords_ru = entry.get('Keywords[ru]', '')
-                self.description = entry.get('Comment[ru]', entry.get('Comment', ''))
                 
                 vendor = entry.get('Vendor', '')
                 if vendor:
@@ -77,15 +90,15 @@ class DesktopApp:
 
     @property
     def searchable_text(self):
-        return f"{self.name} {self.name_en} {self.categories} {self.keywords} {self.keywords_ru}".lower()
+        return f"{self.name} {self.name_en} {self.categories} {self.keywords} {self.keywords_loc} {self.keywords_ru}".lower()
 
     @property
     def display_description(self):
         if self.generic_name: return self.generic_name
-        for cat, desc in CATEGORY_MAP.items():
+        for cat, key in CATEGORY_KEYS.items():
             if cat in self.categories:
-                return desc
-        return "Приложение"
+                return t(key)
+        return t("provider_app_desc")
 
 RU_TO_EN = str.maketrans(
     "йцукенгшщзхъфывапролджэячсмитьбюё",
@@ -110,6 +123,7 @@ class AppProvider(BaseProvider):
         self._load_apps()
 
     def _load_apps(self):
+        self.apps = []
         app_dirs = [
             "/usr/share/applications",
             os.path.expanduser("~/.local/share/applications"),
@@ -126,6 +140,9 @@ class AppProvider(BaseProvider):
                     if app.exec_cmd not in seen_execs:
                         self.apps.append(app)
                         seen_execs.add(app.exec_cmd)
+
+    def reload_apps(self):
+        self._load_apps()
 
     def _create_result(self, app_data: DesktopApp, score: float) -> SearchResult:
         def _exec_callback():
@@ -206,7 +223,6 @@ class AppProvider(BaseProvider):
             
             score = 0
             for q in [query, query_en, query_ru, query_phonetic]:
-                # Добавляем хак для "Стим" -> "Steam", хотя phonetic теперь тоже поможет
                 if q == "стим" and "steam" in app_names:
                     score = max(score, 100)
                     

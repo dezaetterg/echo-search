@@ -397,10 +397,10 @@ class FilesMode(BaseMode):
             
         if not self.current_query:
             self.suggestions_box.set_visible(False)
-            self.recents_label.set_label("Recent Files")
+            self.recents_label.set_label(t("section_recent"))
         else:
             self.suggestions_box.set_visible(True)
-            self.recents_label.set_label("Recents")
+            self.recents_label.set_label(t("section_recent"))
             
         self.suggestions_flowbox.set_filter_func(None)
         self.suggestions_flowbox.set_filter_func(self._filter_func)

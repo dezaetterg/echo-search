@@ -3,6 +3,7 @@ import operator
 import math
 import os
 from .base import BaseProvider, SearchResult
+from i18n import t
 
 class SafeMathEval(ast.NodeVisitor):
     def __init__(self):
@@ -121,7 +122,7 @@ class CalculatorProvider(BaseProvider):
         return SearchResult(
             id=f"math_{query}",
             title=str(result),
-            subtitle=f"Результат вычисления: {query}",
+            subtitle=t("provider_math_subtitle", query=query),
             icon="accessories-calculator",
             score=200,
             category="Math",

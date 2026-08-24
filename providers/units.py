@@ -1,5 +1,6 @@
 import re
 from .base import BaseProvider, SearchResult
+from i18n import t
 
 class UnitConverter:
     # Базовые единицы: метры, килограммы, цельсий, км/ч, кв.метры, литры, секунды, байты
@@ -83,7 +84,7 @@ class UnitProvider(BaseProvider):
         return SearchResult(
             id=f"unit_{query}",
             title=result_str,
-            subtitle="Конвертация",
+            subtitle=t("provider_conversion_desc"),
             icon="view-refresh",
             score=150,
             category="Units",
