@@ -79,8 +79,14 @@ optdepend = wl-clipboard: Clipboard manager support for Wayland
 optdepend = xclip: Clipboard manager support for X11
 PKG_EOF
 
+# Set canonical package permissions
+find "$BUILD_DIR/usr" -type d -exec chmod 755 {} +
+find "$BUILD_DIR/usr" -type f -exec chmod 644 {} +
+chmod 755 "$BUILD_DIR/usr/bin/echo-search"
+chmod 644 "$BUILD_DIR/.PKGINFO"
+
 # Package with tar and zstd
-tar -c --owner=0 --group=0 --numeric-owner -C "$BUILD_DIR" .PKGINFO usr | zstd -c -T0 > "$DIST_DIR/$PKG_FULL"
+tar -c --owner=0 --group=0 --numeric-owner --mode='a-st' -C "$BUILD_DIR" .PKGINFO usr | zstd -c -T0 > "$DIST_DIR/$PKG_FULL"
 cp "$DIST_DIR/$PKG_FULL" "$DIST_DIR/echo-search_latest-any.pkg.tar.zst"
 
 cd "$DIST_DIR"
