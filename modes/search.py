@@ -9,6 +9,7 @@ except ValueError:
 from .base import BaseMode
 import preview_manager
 from utils import set_icon_safe
+from i18n import t
 
 class SearchMode(BaseMode):
     category_filter = "All"
@@ -41,6 +42,30 @@ class SearchMode(BaseMode):
         self.scroll.set_vexpand(True)
         
         self.left_box.append(self.results_listbox)
+
+        # Виджет "Ничего не найдено" (Empty State)
+        self.empty_state_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.empty_state_box.add_css_class("empty-state-box")
+        self.empty_state_box.set_valign(Gtk.Align.CENTER)
+        self.empty_state_box.set_halign(Gtk.Align.FILL)
+        self.empty_state_box.set_vexpand(True)
+        self.empty_state_box.set_hexpand(True)
+        self.empty_state_box.set_visible(False)
+        
+        self.empty_state_icon = Gtk.Image.new_from_icon_name("system-search-symbolic")
+        self.empty_state_icon.set_pixel_size(44)
+        self.empty_state_icon.add_css_class("empty-state-icon")
+        self.empty_state_box.append(self.empty_state_icon)
+        
+        self.empty_state_title = Gtk.Label()
+        self.empty_state_title.add_css_class("empty-state-title")
+        self.empty_state_box.append(self.empty_state_title)
+        
+        self.empty_state_desc = Gtk.Label()
+        self.empty_state_desc.add_css_class("empty-state-desc")
+        self.empty_state_box.append(self.empty_state_desc)
+        
+        self.left_box.append(self.empty_state_box)
         self.main_split.append(self.left_box)
         
         # Превью панель (Новая версия)
@@ -99,9 +124,10 @@ class SearchMode(BaseMode):
         limit = self.main_window.config_manager.get("results_limit") if getattr(self.main_window, "config_manager", None) else 20
         self.current_results = results[:limit]
         
-        if not query or not self.current_results:
+        if not query:
             self.current_results = []
             self.separator.set_visible(False)
+            self.empty_state_box.set_visible(False)
             if self.is_scrolling:
                 self.scroll.set_visible(False)
             self.results_listbox.set_visible(False)
@@ -117,7 +143,31 @@ class SearchMode(BaseMode):
             GLib.timeout_add(100, lambda: self.main_window.queue_draw() if self.main_window else False)
             GLib.timeout_add(250, lambda: self.main_window.queue_draw() if self.main_window else False)
             return
+
+        if not self.current_results:
+            # Запрос введен, но ничего не найдено
+            self.separator.set_visible(True)
+            self.empty_state_title.set_label(t("nothing_found_title"))
+            self.empty_state_desc.set_label(t("nothing_found_desc"))
+            self.empty_state_box.set_visible(True)
             
+            if self.is_scrolling:
+                self.scroll.set_visible(False)
+            self.results_listbox.set_visible(False)
+            
+            for row_data in self.pool:
+                row_data['row'].set_visible(False)
+                
+            self.preview_container.set_visible(False)
+            self.main_window.set_default_size(650, 180)
+            self.main_window.queue_resize()
+            
+            GLib.timeout_add(100, lambda: self.main_window.queue_draw() if self.main_window else False)
+            GLib.timeout_add(250, lambda: self.main_window.queue_draw() if self.main_window else False)
+            return
+            
+        # Есть результаты поиска
+        self.empty_state_box.set_visible(False)
         self.separator.set_visible(True)
         if len(self.current_results) > 5:
             if not self.is_scrolling:

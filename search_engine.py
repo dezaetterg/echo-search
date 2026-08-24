@@ -91,8 +91,8 @@ class SearchEngine:
             else:
                 # Параллельный опрос всех провайдеров
                 providers_to_run = self.providers
-                if category_filter in (None, "All"):
-                    providers_to_run = [p for p in self.providers if not isinstance(p, EmojiProvider)]
+                # Include all relevant providers
+                providers_to_run = self.providers
                     
                 with concurrent.futures.ThreadPoolExecutor(max_workers=len(providers_to_run)) as executor:
                     futures = [

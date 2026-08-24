@@ -108,6 +108,71 @@ class EchoUI(Gtk.Window):
                     background-color: transparent;
                 }
                 
+                .capsule-window-ui #search-entry placeholder,
+                .capsule-window-ui #search-entry text > placeholder,
+                .capsule-window-ui .search-wrapper entry placeholder,
+                .capsule-window-ui .search-wrapper text > placeholder,
+                .capsule-window-ui entry placeholder {
+                    color: rgba(235, 235, 245, 0.6);
+                    opacity: 1.0;
+                }
+                
+                .capsule-window-ui .empty-state-box {
+                    background-color: rgba(255, 255, 255, 0.05);
+                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    border-radius: 16px;
+                    margin: 0 8px 16px 16px;
+                    padding: 32px 20px;
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+                }
+                .capsule-window-ui .empty-state-icon {
+                    color: rgba(255, 255, 255, 0.5);
+                    opacity: 0.6;
+                    margin-bottom: 8px;
+                }
+                .capsule-window-ui label.empty-state-title {
+                    color: #ffffff;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin-bottom: 4px;
+                }
+                .capsule-window-ui label.empty-state-desc {
+                    color: rgba(255, 255, 255, 0.55);
+                    font-size: 13px;
+                }
+                
+                .capsule-window-ui #search-entry placeholder,
+                .capsule-window-ui #search-entry text > placeholder,
+                .capsule-window-ui .search-wrapper entry placeholder,
+                .capsule-window-ui .search-wrapper text > placeholder,
+                .capsule-window-ui entry placeholder {
+                    color: rgba(60, 60, 67, 0.6);
+                    opacity: 1.0;
+                }
+                
+                .capsule-window-ui .empty-state-box {
+                    background-color: #ffffff;
+                    border-radius: 16px;
+                    margin: 0 8px 16px 16px;
+                    padding: 32px 20px;
+                    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+                }
+                .capsule-window-ui .empty-state-icon {
+                    color: #8e8e93;
+                    opacity: 0.6;
+                    margin-bottom: 8px;
+                }
+                .capsule-window-ui label.empty-state-title {
+                    color: #1c1c1e;
+                    font-size: 16px;
+                    font-weight: 600;
+                    margin-bottom: 4px;
+                }
+                .capsule-window-ui label.empty-state-desc {
+                    color: #8e8e93;
+                    font-size: 13px;
+                }
+                
                 .capsule-window-ui label.result-title { color: #1c1c1e; }
                 .capsule-window-ui label.result-desc { color: #8e8e93; }
                 

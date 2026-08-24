@@ -913,3 +913,42 @@ scale.settings-slider slider {
     border-color: rgba(255, 59, 48, 0.3);
     color: #ff453a;
 }
+
+/* Стилизация placeholder для поля поиска */
+#search-entry placeholder,
+#search-entry text > placeholder,
+entry#search-entry placeholder,
+entry#search-entry text > placeholder,
+.search-wrapper entry placeholder,
+.search-wrapper text > placeholder,
+entry placeholder {
+    color: rgba(235, 235, 245, 0.6);
+    opacity: 1.0;
+}
+
+/* Стилизация блока "Ничего не найдено" (Empty State) */
+.empty-state-box {
+    padding: 32px 20px;
+    margin: 8px 16px 16px 16px;
+    border-radius: 16px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.empty-state-icon {
+    opacity: 0.5;
+    margin-bottom: 8px;
+    color: inherit;
+}
+
+.empty-state-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: inherit;
+}
+
+.empty-state-desc {
+    font-size: 13px;
+    opacity: 0.65;
+    color: inherit;
+}

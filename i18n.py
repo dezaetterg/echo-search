@@ -22,6 +22,8 @@ SUPPORTED_LANGUAGES = {
 TRANSLATIONS = {
     "ru": {
         "search_placeholder": "Поиск Echo...",
+        "nothing_found_title": "Ничего не найдено",
+        "nothing_found_desc": "Попробуйте изменить поисковый запрос",
         "apps_placeholder": "Приложения",
         "files_placeholder": "Файлы",
         "clipboard_placeholder": "Буфер обмена",
@@ -116,6 +118,8 @@ TRANSLATIONS = {
 
     "en": {
         "search_placeholder": "Search Echo...",
+        "nothing_found_title": "Nothing Found",
+        "nothing_found_desc": "Try adjusting your search query",
         "apps_placeholder": "Applications",
         "files_placeholder": "Files",
         "clipboard_placeholder": "Clipboard",
@@ -202,6 +206,8 @@ TRANSLATIONS = {
 
     "es": {
         "search_placeholder": "Buscar en Echo...",
+        "nothing_found_title": "No se encontró nada",
+        "nothing_found_desc": "Intenta cambiar los términos de búsqueda",
         "apps_placeholder": "Aplicaciones",
         "files_placeholder": "Archivos",
         "clipboard_placeholder": "Portapapeles",
@@ -288,6 +294,8 @@ TRANSLATIONS = {
 
     "de": {
         "search_placeholder": "Echo-Suche...",
+        "nothing_found_title": "Keine Ergebnisse gefunden",
+        "nothing_found_desc": "Versuchen Sie, Ihre Suchanfrage anzupassen",
         "apps_placeholder": "Anwendungen",
         "files_placeholder": "Dateien",
         "clipboard_placeholder": "Zwischenablage",
@@ -374,6 +382,8 @@ TRANSLATIONS = {
 
     "fr": {
         "search_placeholder": "Recherche Echo...",
+        "nothing_found_title": "Aucun résultat trouvé",
+        "nothing_found_desc": "Essayez de modifier votre recherche",
         "apps_placeholder": "Applications",
         "files_placeholder": "Fichiers",
         "clipboard_placeholder": "Presse-papiers",
@@ -460,6 +470,8 @@ TRANSLATIONS = {
 
     "zh": {
         "search_placeholder": "搜索 Echo...",
+        "nothing_found_title": "未找到结果",
+        "nothing_found_desc": "请尝试更改搜索词",
         "apps_placeholder": "应用程序",
         "files_placeholder": "文件",
         "clipboard_placeholder": "剪贴板",
@@ -546,6 +558,8 @@ TRANSLATIONS = {
 
     "ja": {
         "search_placeholder": "Echo で検索...",
+        "nothing_found_title": "結果が見つかりませんでした",
+        "nothing_found_desc": "検索ワードを変更してください",
         "apps_placeholder": "アプリケーション",
         "files_placeholder": "ファイル",
         "clipboard_placeholder": "クリップボード",
@@ -632,6 +646,8 @@ TRANSLATIONS = {
 
     "it": {
         "search_placeholder": "Cerca in Echo...",
+        "nothing_found_title": "Nessun risultato trovato",
+        "nothing_found_desc": "Prova a modificare i termini di ricerca",
         "apps_placeholder": "Applicazioni",
         "files_placeholder": "File",
         "clipboard_placeholder": "Appunti",
@@ -718,6 +734,8 @@ TRANSLATIONS = {
 
     "pt": {
         "search_placeholder": "Pesquisar no Echo...",
+        "nothing_found_title": "Nenhum resultado encontrado",
+        "nothing_found_desc": "Tente ajustar sua pesquisa",
         "apps_placeholder": "Aplicativos",
         "files_placeholder": "Arquivos",
         "clipboard_placeholder": "Área de transferência",
@@ -804,6 +822,8 @@ TRANSLATIONS = {
 
     "tr": {
         "search_placeholder": "Echo'da Ara...",
+        "nothing_found_title": "Sonuç bulunamadı",
+        "nothing_found_desc": "Arama terimlerinizi değiştirmeyi deneyin",
         "apps_placeholder": "Uygulamalar",
         "files_placeholder": "Dosyalar",
         "clipboard_placeholder": "Pano",
@@ -890,6 +910,8 @@ TRANSLATIONS = {
 
     "uk": {
         "search_placeholder": "Пошук Echo...",
+        "nothing_found_title": "Нічого не знайдено",
+        "nothing_found_desc": "Спробуйте змінити пошуковий запит",
         "apps_placeholder": "Програми",
         "files_placeholder": "Файли",
         "clipboard_placeholder": "Буфер обміну",
@@ -976,6 +998,8 @@ TRANSLATIONS = {
 
     "kk": {
         "search_placeholder": "Echo іздеу...",
+        "nothing_found_title": "Ештеңе табылмады",
+        "nothing_found_desc": "Іздеу сұрауын өзгертіп көріңіз",
         "apps_placeholder": "Қолданбалар",
         "files_placeholder": "Файлдар",
         "clipboard_placeholder": "Алмасу буфері",
@@ -1062,6 +1086,8 @@ TRANSLATIONS = {
 
     "ar": {
         "search_placeholder": "بحث Echo...",
+        "nothing_found_title": "لم يتم العثور على نتائج",
+        "nothing_found_desc": "يرجى تجربة تعديل عبارة البحث",
         "apps_placeholder": "التطبيقات",
         "files_placeholder": "الملفات",
         "clipboard_placeholder": "الحافظة",
