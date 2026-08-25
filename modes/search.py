@@ -292,6 +292,9 @@ class SearchMode(BaseMode):
             return False
             
         elif (keyval == Gdk.KEY_c or keyval == Gdk.KEY_C) and (state & Gdk.ModifierType.CONTROL_MASK):
+            if self.main_window and hasattr(self.main_window, 'entry') and self.main_window.entry.get_selection_bounds():
+                return False
+
             if current_results and self.selected_index >= 0:
                 result = current_results[self.selected_index]
                 result.copy_value()

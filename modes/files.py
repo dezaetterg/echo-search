@@ -190,59 +190,23 @@ class FilesMode(BaseMode):
                 try:
                     pixbuf = None
                     mime_type = result.preview_data.get("mime", "unknown")
-                    print(f"DEBUG THUMBNAIL: trying to load for {path} with mime {mime_type}")
                     
                     if thumbnail_factory and os.path.exists(path) and "unknown" not in mime_type:
                         mtime = int(os.path.getmtime(path))
                         
-                        import traceback
-                        
-                        print("\\n--- THUMBNAIL DIAGNOSTICS ---")
-                        print(f"Path: {path}")
-                        print(f"MIME Type: {mime_type}")
-                        print(f"URI: {uri}")
-                        print(f"mtime: {mtime}")
-                        print(f"File exists: {os.path.exists(path)}")
-                        
-                        import hashlib
-                        hash_str = hashlib.md5(uri.encode('utf-8')).hexdigest()
-                        thumb_normal = os.path.expanduser(f"~/.cache/thumbnails/normal/{hash_str}.png")
-                        thumb_large = os.path.expanduser(f"~/.cache/thumbnails/large/{hash_str}.png")
-                        print(f"Exists in cache (normal): {os.path.exists(thumb_normal)}")
-                        print(f"Exists in cache (large): {os.path.exists(thumb_large)}")
-                        
                         try:
-                            has_failed = thumbnail_factory.has_valid_failed_thumbnail(uri, mtime)
-                            print(f"has_valid_failed_thumbnail: {has_failed}")
-                            
-                            if has_failed:
-                                print("Skipping due to valid failed thumbnail.")
-                            else:
+                            if not thumbnail_factory.has_valid_failed_thumbnail(uri, mtime):
                                 thumb_path = thumbnail_factory.lookup(uri, mtime)
-                                print(f"lookup() result: {thumb_path}")
-                                
                                 if thumb_path:
-                                    print("Loading existing thumbnail from lookup...")
                                     pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(thumb_path, 96, 96, True)
                                 else:
-                                    can_thumb = thumbnail_factory.can_thumbnail(uri, mime_type, mtime)
-                                    print(f"can_thumbnail() result: {can_thumb}")
-                                    
-                                    if can_thumb:
-                                        print("Calling generate_thumbnail()...")
+                                    if thumbnail_factory.can_thumbnail(uri, mime_type, mtime):
                                         pixbuf = thumbnail_factory.generate_thumbnail(uri, mime_type)
-                                        print(f"generate_thumbnail() returned: {pixbuf}")
-                                        
                                         if pixbuf:
-                                            print("Calling save_thumbnail()...")
                                             thumbnail_factory.save_thumbnail(pixbuf, uri, mtime)
-                                            print(f"Saved to cache successfully? Normal: {os.path.exists(thumb_normal)}, Large: {os.path.exists(thumb_large)}")
-                                            
                                             pixbuf = pixbuf.scale_simple(96, 96, GdkPixbuf.InterpType.BILINEAR)
-                        except Exception as e:
-                            print("EXCEPTION IN THUMBNAIL LOGIC:")
-                            traceback.print_exc()
-                        print("-------------------------------\\n")
+                        except Exception:
+                            pass
 
                     # Fallback
                     if not pixbuf and result.icon and os.path.exists(result.icon) and os.path.isabs(result.icon):
@@ -319,6 +283,8 @@ class FilesMode(BaseMode):
         self.main_window.entry.set_text("")
         
     def on_selection_changed(self, flowbox):
+        if not hasattr(self, 'preview_container') or not self.preview_container:
+            return
         selected = flowbox.get_selected_children()
         if not selected:
             self.preview_container.set_visible(False)
@@ -433,11 +399,13 @@ class FilesMode(BaseMode):
         if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
             if is_ctrl and getattr(result, 'open_location', None):
                 result.open_location()
-                self.main_window.application.hide_window()
+                self.main_window.hide()
+                self.main_window.entry.set_text("")
                 return True
             elif not is_ctrl and getattr(result, 'execute', None):
                 result.execute()
-                self.main_window.application.hide_window()
+                self.main_window.hide()
+                self.main_window.entry.set_text("")
                 return True
                 
         if is_ctrl and keyval in (Gdk.KEY_c, Gdk.KEY_C):

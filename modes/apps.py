@@ -200,12 +200,54 @@ class AppsMode(BaseMode):
         self.main_window.entry.set_text("")
 
     def on_key_pressed(self, keyval, state, current_results: list) -> bool:
-        if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+        n_items = self.filter_list_model.get_n_items()
+        if n_items == 0:
+            return False
+
+        cols = 6
+
+        if keyval == Gdk.KEY_Right:
             pos = self.selection_model.get_selected()
-            if pos == Gtk.INVALID_LIST_POSITION and self.filter_list_model.get_n_items() > 0:
+            if pos == Gtk.INVALID_LIST_POSITION:
+                self.selection_model.set_selected(0)
+            elif pos < n_items - 1:
+                self.selection_model.set_selected(pos + 1)
+            return True
+
+        elif keyval == Gdk.KEY_Left:
+            pos = self.selection_model.get_selected()
+            if pos == Gtk.INVALID_LIST_POSITION:
+                self.selection_model.set_selected(0)
+            elif pos > 0:
+                self.selection_model.set_selected(pos - 1)
+            return True
+
+        elif keyval == Gdk.KEY_Down:
+            pos = self.selection_model.get_selected()
+            if pos == Gtk.INVALID_LIST_POSITION:
+                self.selection_model.set_selected(0)
+            elif pos + cols < n_items:
+                self.selection_model.set_selected(pos + cols)
+            else:
+                self.selection_model.set_selected(n_items - 1)
+            return True
+
+        elif keyval == Gdk.KEY_Up:
+            pos = self.selection_model.get_selected()
+            if pos == Gtk.INVALID_LIST_POSITION:
+                self.selection_model.set_selected(0)
+            elif pos - cols >= 0:
+                self.selection_model.set_selected(pos - cols)
+            else:
+                self.selection_model.set_selected(0)
+            return True
+
+        elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+            pos = self.selection_model.get_selected()
+            if pos == Gtk.INVALID_LIST_POSITION and n_items > 0:
                 pos = 0
                 
-            if pos != Gtk.INVALID_LIST_POSITION:
+            if pos != Gtk.INVALID_LIST_POSITION and pos < n_items:
                 wrapper = self.filter_list_model.get_item(pos)
                 if wrapper and wrapper.result:
                     self._launch_app(wrapper.result)
