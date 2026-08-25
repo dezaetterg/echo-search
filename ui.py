@@ -61,6 +61,19 @@ class EchoUI(Gtk.Window):
             
         if self.config_manager:
             theme = self.config_manager.get("theme", "light")
+            try:
+                import gi
+                gi.require_version("Adw", "1")
+                from gi.repository import Adw
+                sm = Adw.StyleManager.get_default()
+                if theme == "dark":
+                    sm.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
+                elif theme == "light":
+                    sm.set_color_scheme(Adw.ColorScheme.PREFER_LIGHT)
+                else:
+                    sm.set_color_scheme(Adw.ColorScheme.DEFAULT)
+            except Exception:
+                pass
             transparency = self.config_manager.get("transparency", 0.30)
             # 0% прозрачности = непрозрачный (alpha=1.0), 100% прозрачности = полностью прозрачный (alpha=0.0)
             alpha = max(0.0, min(1.0, round(1.0 - float(transparency), 2)))

@@ -35,6 +35,15 @@ _check_system_dependencies()
 
 import gi
 gi.require_version("Gtk", "4.0")
+
+HAS_ADW = False
+try:
+    gi.require_version("Adw", "1")
+    from gi.repository import Adw
+    HAS_ADW = True
+except Exception:
+    HAS_ADW = False
+
 HAS_LAYER_SHELL = False
 Gtk4LayerShell = None
 try:
@@ -48,16 +57,33 @@ from gi.repository import Gtk, Gio, GLib
 from config_manager import ConfigManager
 from ui import EchoUI
 
-class EchoApp(Gtk.Application):
+BaseApplication = Adw.Application if HAS_ADW else Gtk.Application
+
+class EchoApp(BaseApplication):
     def __init__(self):
         # Используем APPLICATION_HANDLES_COMMAND_LINE для обработки повторных вызовов
         super().__init__(application_id="com.echo.search",
                          flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
         self.window = None
 
+    def sync_color_scheme(self):
+        if HAS_ADW and hasattr(self, 'config_manager') and self.config_manager:
+            try:
+                theme = self.config_manager.get("theme", "light")
+                sm = Adw.StyleManager.get_default()
+                if theme == "dark":
+                    sm.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
+                elif theme == "light":
+                    sm.set_color_scheme(Adw.ColorScheme.PREFER_LIGHT)
+                else:
+                    sm.set_color_scheme(Adw.ColorScheme.DEFAULT)
+            except Exception:
+                pass
+
     def do_activate(self):
         if not self.window:
             self.config_manager = ConfigManager()
+            self.sync_color_scheme()
             self.window = EchoUI(application=self, config_manager=self.config_manager)
             
             # Настройка Gtk4LayerShell (Wayland) с fallback для X11 / других DE
@@ -92,6 +118,7 @@ class EchoApp(Gtk.Application):
                 self.window.hide()
             else:
                 self.config_manager.load()
+                self.sync_color_scheme()
                 self.window.reload_config()
                 self.window.entry.set_text("") # Очищаем ввод перед показом
                 self.window.present()

@@ -55,5 +55,5 @@ cp -p assets/icons/com.echo.search.svg %{buildroot}%{_datadir}/icons/hicolor/sca
 %{_datadir}/licenses/echo-search/LICENSE
 
 %changelog
-* Fri Aug 21 2026 Echo Contributors <contact@echo-search.org> - 1.0.6-1
+* Fri Aug 21 2026 Echo Contributors <contact@echo-search.org> - 1.0.7-1
 - Update with dynamic capsule expansion, GNOME/Cinnamon fixes, and GPLv3 license
