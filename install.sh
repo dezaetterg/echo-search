@@ -121,7 +121,8 @@ esac
 
 # 4. Остановка старых процессов и очистка кэшей
 echo -e "\n${YELLOW}[2/4] Установка Echo Search и обновление компонентов...${RESET}"
-pkill -9 -f "echo-search" 2>/dev/null || true
+pkill -9 -f "python.*echo-search" 2>/dev/null || true
+pkill -9 -f "python.*spotlight" 2>/dev/null || true
 
 # Очистка устаревших локальных копий в ~/.local, если запущен от имени пользователя
 if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
