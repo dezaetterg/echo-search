@@ -35,7 +35,7 @@ class CommandProvider(BaseProvider):
                 "name_key": "cmd_logout_name",
                 "desc_key": "cmd_logout_desc",
                 "icon": "system-log-out",
-                "cmd": "gnome-session-quit --logout --no-prompt",
+                "cmd": "loginctl terminate-session self 2>/dev/null || gnome-session-quit --logout --no-prompt 2>/dev/null || cinnamon-session-quit --logout --no-prompt 2>/dev/null || qdbus org.kde.ksmserver /KSMServer logout 0 0 0 2>/dev/null",
                 "keywords": ["logout", "log out", "sign out", "exit", "выйти", "выход", "выйти из системы", "завершить сеанс"]
             },
             {
@@ -43,7 +43,7 @@ class CommandProvider(BaseProvider):
                 "name_key": "cmd_lock_name",
                 "desc_key": "cmd_lock_desc",
                 "icon": "system-lock-screen",
-                "cmd": "loginctl lock-session",
+                "cmd": "loginctl lock-session 2>/dev/null || gnome-screensaver-command -l 2>/dev/null || cinnamon-screensaver-command -l 2>/dev/null || qdbus org.freedesktop.ScreenSaver /ScreenSaver Lock 2>/dev/null",
                 "keywords": ["lock", "lock screen", "screen lock", "блок", "заблокировать", "заблокировать экран", "экран"]
             },
         ]
