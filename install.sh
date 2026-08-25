@@ -198,8 +198,8 @@ HOTKEY_CONFIGURED=false
 if [[ "$DE_LOWER" == *"cinnamon"* ]] || [[ "$XDG_CURRENT_DESKTOP" == *"X-Cinnamon"* ]]; then
     if command -v gsettings >/dev/null 2>&1; then
         # Отключаем конфликтующие системные хоткеи Cinnamon на Super+Space
-        run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-input-source "['XF86Keyboard']"
-        run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-input-source-backward "['<Shift>XF86Keyboard']"
+        run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-input-source "['']"
+        run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-input-source-backward "['']"
         run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-to-workspace-left "['']"
         run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-to-workspace-down "['']"
 
