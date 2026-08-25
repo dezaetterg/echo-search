@@ -186,6 +186,8 @@ HOTKEY_CONFIGURED=false
 if [[ "$DE_LOWER" == *"cinnamon"* ]] || [[ "$XDG_CURRENT_DESKTOP" == *"X-Cinnamon"* ]]; then
     if command -v gsettings >/dev/null 2>&1; then
         # Отключаем конфликтующие системные хоткеи Cinnamon на Super+Space
+        run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-input-source "['XF86Keyboard']"
+        run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-input-source-backward "['<Shift>XF86Keyboard']"
         run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-to-workspace-left "['']"
         run_desktop_cmd gsettings set org.cinnamon.desktop.keybindings.wm switch-to-workspace-down "['']"
 
@@ -210,7 +212,7 @@ if [[ "$DE_LOWER" == *"cinnamon"* ]] || [[ "$XDG_CURRENT_DESKTOP" == *"X-Cinnamo
         if [ -n "$FOUND_SLOT" ]; then
             run_desktop_cmd gsettings set "${CUSTOM_SCHEMA}:${FOUND_PATH}" name 'Echo Search'
             run_desktop_cmd gsettings set "${CUSTOM_SCHEMA}:${FOUND_PATH}" command 'echo-search'
-            run_desktop_cmd gsettings set "${CUSTOM_SCHEMA}:${FOUND_PATH}" binding "['<Super>space']"
+            run_desktop_cmd gsettings set "${CUSTOM_SCHEMA}:${FOUND_PATH}" binding "['<Super>space', '<Super>Cyrillic_em']"
 
             if [[ "$CURRENT_LIST" != *"$FOUND_SLOT"* ]]; then
                 if [ "$CURRENT_LIST" = "@as []" ] || [ -z "$CURRENT_LIST" ] || [ "$CURRENT_LIST" = "[]" ]; then

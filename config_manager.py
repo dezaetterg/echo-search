@@ -354,6 +354,11 @@ X-GNOME-Autostart-enabled=true
 
         # 2. Cinnamon (Linux Mint) - Supports multiple bindings per slot natively
         try:
+            if "<super>space" in hotkey_str.lower():
+                subprocess.run(['gsettings', 'set', 'org.cinnamon.desktop.keybindings.wm', 'switch-input-source', "['XF86Keyboard']"], capture_output=True)
+                subprocess.run(['gsettings', 'set', 'org.cinnamon.desktop.keybindings.wm', 'switch-input-source-backward', "['<Shift>XF86Keyboard']"], capture_output=True)
+                subprocess.run(['gsettings', 'set', 'org.cinnamon.desktop.keybindings.wm', 'switch-to-workspace-left', "['']"], capture_output=True)
+                subprocess.run(['gsettings', 'set', 'org.cinnamon.desktop.keybindings.wm', 'switch-to-workspace-down', "['']"], capture_output=True)
             CINNAMON_MAIN = 'org.cinnamon.desktop.keybindings'
             CINNAMON_CUSTOM = 'org.cinnamon.desktop.keybindings.custom-keybinding'
             res = subprocess.run(['gsettings', 'get', CINNAMON_MAIN, 'custom-list'], capture_output=True, text=True)
