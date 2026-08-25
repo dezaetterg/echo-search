@@ -3,16 +3,62 @@ import json
 from pathlib import Path
 from i18n import i18n
 
+def _detect_system_theme() -> str:
+    """Detects whether user's system desktop environment prefers dark or light theme."""
+    # 1. Check GNOME / Libadwaita / Freedesktop color-scheme
+    try:
+        import subprocess
+        res = subprocess.run(
+            ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
+            capture_output=True, text=True, timeout=1
+        )
+        if res.returncode == 0:
+            val = res.stdout.strip().strip("'").lower()
+            if "dark" in val:
+                return "dark"
+            elif "light" in val or "default" in val:
+                return "light"
+    except Exception:
+        pass
+
+    # 2. Check GTK theme name
+    try:
+        import subprocess
+        res = subprocess.run(
+            ["gsettings", "get", "org.gnome.desktop.interface", "gtk-theme"],
+            capture_output=True, text=True, timeout=1
+        )
+        if res.returncode == 0:
+            val = res.stdout.strip().strip("'").lower()
+            if "dark" in val:
+                return "dark"
+    except Exception:
+        pass
+
+    # 3. Check KDE Plasma configuration
+    try:
+        kdeglobals = Path(os.path.expanduser("~/.config/kdeglobals"))
+        if kdeglobals.exists():
+            with open(kdeglobals, "r", encoding="utf-8") as f:
+                content = f.read().lower()
+                if "colorcheme=breezedark" in content or "dark" in content:
+                    return "dark"
+    except Exception:
+        pass
+
+    return "dark"
+
 class ConfigManager:
     def __init__(self):
         self.config_dir = Path(os.path.expanduser("~/.config/echo-search"))
         self.config_file = self.config_dir / "config.json"
         
+        system_theme = _detect_system_theme()
         self.defaults = {
-            "theme": "light",
+            "theme": system_theme,
             "language": "auto",
             "blur": True,
-            "transparency": 0.30,
+            "transparency": 0.15,
             "preview_enabled": True,
             "preview_width": 420,
             "results_limit": 20,

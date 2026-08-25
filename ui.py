@@ -29,12 +29,34 @@ class EchoUI(Gtk.Window):
         self._setup_ui()
         self._setup_css()
         self._setup_shortcuts()
+        self.connect("realize", self._on_realize)
 
         # Initialize with default search mode
         if self.mode_manager:
             self.mode_manager.set_mode("Search")
             self.update_revealer_state()
             self.mode_manager.on_search_changed("")
+
+    def _on_realize(self, widget):
+        self._apply_compositor_blur()
+
+    def _apply_compositor_blur(self):
+        """Enables native hardware compositor blur (KWin / X11 / Picom) without shaders."""
+        try:
+            surface = self.get_surface()
+            if surface:
+                import gi
+                gi.require_version('GdkX11', '4.0')
+                from gi.repository import GdkX11
+                if isinstance(surface, GdkX11.X11Surface):
+                    xid = surface.get_xid()
+                    import subprocess
+                    subprocess.Popen(
+                        ["xprop", "-id", str(xid), "-f", "_KDE_NET_WM_BLUR_BEHIND_REGION", "32c", "-set", "_KDE_NET_WM_BLUR_BEHIND_REGION", "0"],
+                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                    )
+        except Exception:
+            pass
 
     def _setup_css(self):
         provider = Gtk.CssProvider()
@@ -87,19 +109,23 @@ class EchoUI(Gtk.Window):
             
             if is_light:
                 if theme == "light_glass":
-                    bg_color = f"rgba(240, 240, 245, {alpha})"
-                    card_bg = "rgba(255, 255, 255, 0.60)"
-                    card_border = "1px solid rgba(255, 255, 255, 0.85)"
-                    search_bg = "rgba(255, 255, 255, 0.68)"
-                    search_border = "1px solid rgba(255, 255, 255, 0.90)"
-                    mode_btn_bg = "rgba(255, 255, 255, 0.65)"
-                    mode_btn_border = "1px solid rgba(255, 255, 255, 0.85)"
-                    mode_btn_active = "rgba(255, 255, 255, 0.92)"
-                    card_shadow = "0 4px 20px rgba(0, 0, 0, 0.04)"
-                    meta_card_bg = "rgba(255, 255, 255, 0.50)"
-                    emoji_badge_bg = "rgba(255, 255, 255, 0.70)"
+                    bg_color = f"rgba(246, 246, 252, {alpha})"
+                    window_border = "1px solid rgba(255, 255, 255, 0.90)"
+                    window_shadow = "inset 0 1px 0 0 rgba(255, 255, 255, 0.95), 0 28px 64px -12px rgba(0, 0, 0, 0.18), 0 12px 24px -6px rgba(0, 0, 0, 0.10)"
+                    card_bg = "rgba(255, 255, 255, 0.65)"
+                    card_border = "1px solid rgba(255, 255, 255, 0.90)"
+                    search_bg = "rgba(255, 255, 255, 0.75)"
+                    search_border = "1px solid rgba(255, 255, 255, 0.95)"
+                    mode_btn_bg = "rgba(255, 255, 255, 0.68)"
+                    mode_btn_border = "1px solid rgba(255, 255, 255, 0.90)"
+                    mode_btn_active = "rgba(255, 255, 255, 0.95)"
+                    card_shadow = "0 4px 20px rgba(0, 0, 0, 0.05)"
+                    meta_card_bg = "rgba(255, 255, 255, 0.55)"
+                    emoji_badge_bg = "rgba(255, 255, 255, 0.75)"
                 else:
                     bg_color = f"rgba(240, 240, 245, {alpha})"
+                    window_border = "1px solid rgba(0, 0, 0, 0.08)"
+                    window_shadow = "0 28px 64px -12px rgba(0, 0, 0, 0.15), 0 12px 24px -6px rgba(0, 0, 0, 0.08)"
                     card_bg = "#ffffff"
                     card_border = "1px solid rgba(0, 0, 0, 0.06)"
                     search_bg = "#ffffff"
@@ -382,19 +408,23 @@ class EchoUI(Gtk.Window):
                 """
             else:
                 if theme in ("dark_glass", "silver"):
-                    bg_color = f"rgba(25, 25, 30, {alpha})"
-                    card_bg = "rgba(255, 255, 255, 0.05)"
-                    card_border = "1px solid rgba(255, 255, 255, 0.08)"
-                    search_bg = "rgba(255, 255, 255, 0.08)"
-                    search_border = "1px solid rgba(255, 255, 255, 0.12)"
+                    bg_color = f"rgba(26, 27, 34, {alpha})"
+                    window_border = "1px solid rgba(255, 255, 255, 0.16)"
+                    window_shadow = "inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 28px 64px -12px rgba(0, 0, 0, 0.65), 0 12px 24px -6px rgba(0, 0, 0, 0.45)"
+                    card_bg = "rgba(255, 255, 255, 0.07)"
+                    card_border = "1px solid rgba(255, 255, 255, 0.12)"
+                    search_bg = "rgba(255, 255, 255, 0.10)"
+                    search_border = "1px solid rgba(255, 255, 255, 0.16)"
                     mode_btn_bg = "rgba(255, 255, 255, 0.08)"
-                    mode_btn_border = "1px solid rgba(255, 255, 255, 0.10)"
-                    mode_btn_active = "rgba(255, 255, 255, 0.22)"
-                    card_shadow = "0 4px 20px rgba(0, 0, 0, 0.25)"
-                    meta_card_bg = "rgba(255, 255, 255, 0.06)"
-                    emoji_badge_bg = "rgba(255, 255, 255, 0.08)"
+                    mode_btn_border = "1px solid rgba(255, 255, 255, 0.12)"
+                    mode_btn_active = "rgba(255, 255, 255, 0.24)"
+                    card_shadow = "0 4px 20px rgba(0, 0, 0, 0.30)"
+                    meta_card_bg = "rgba(255, 255, 255, 0.08)"
+                    emoji_badge_bg = "rgba(255, 255, 255, 0.10)"
                 else:
                     bg_color = f"rgba(28, 28, 30, {alpha})"
+                    window_border = "1px solid rgba(255, 255, 255, 0.08)"
+                    window_shadow = "0 28px 64px -12px rgba(0, 0, 0, 0.60), 0 12px 24px -6px rgba(0, 0, 0, 0.40)"
                     card_bg = "#2c2c2e"
                     card_border = "1px solid rgba(255, 255, 255, 0.08)"
                     search_bg = "#2c2c2e"
