@@ -663,7 +663,7 @@ class EchoUI(Gtk.Window):
         self.mode_buttons_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_LEFT)
         
         animations = self.config_manager.get("animations") if self.config_manager else True
-        anim_duration = 200 if animations else 0
+        anim_duration = 85 if animations else 0
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         
         self.mode_buttons_revealer.set_halign(Gtk.Align.END)
@@ -733,8 +733,8 @@ class EchoUI(Gtk.Window):
         self.results_container.append(self.mode_manager.get_widget())
         
         self.results_revealer = Gtk.Revealer()
-        self.results_revealer.set_transition_type(Gtk.RevealerTransitionType.NONE)
-        self.results_revealer.set_transition_duration(0)
+        self.results_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
+        self.results_revealer.set_transition_duration(anim_duration)
         self.results_revealer.set_child(self.results_container)
         self.results_revealer.set_reveal_child(False)
         self.results_revealer.connect("notify::child-revealed", self._on_results_revealed_changed)
@@ -880,10 +880,10 @@ class EchoUI(Gtk.Window):
         
         # Обновляем длительность анимаций
         animations = self.config_manager.get("animations") if self.config_manager else True
-        anim_duration = 200 if animations else 0
+        anim_duration = 85 if animations else 0
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         if hasattr(self, 'results_revealer'):
-            self.results_revealer.set_transition_duration(0)
+            self.results_revealer.set_transition_duration(anim_duration)
             
         # Применяем фильтр источников к движку
         if self.config_manager and hasattr(self, 'engine'):
