@@ -420,11 +420,12 @@ class SettingsMode(BaseMode):
         btn_box.set_valign(Gtk.Align.CENTER)
         btn_box.add_css_class("settings-theme-selector")
 
-        current_theme = cfg.get("theme", "light")
+        current_theme = cfg.get("theme", "dark_glass")
         themes = [
-            ("silver", t("settings_theme_silver")),
-            ("light", t("settings_theme_light")),
-            ("dark", t("settings_theme_dark"))
+            ("dark_glass", t("settings_theme_dark_glass")),
+            ("light_glass", t("settings_theme_light_glass")),
+            ("dark", t("settings_theme_dark")),
+            ("light", t("settings_theme_light"))
         ]
 
         for code, name in themes:
@@ -497,6 +498,11 @@ class SettingsMode(BaseMode):
 
     def _on_theme_selected(self, theme_code: str):
         self.main_window.config_manager.set("theme", theme_code)
+        if theme_code in ("dark_glass", "light_glass"):
+            self.main_window.config_manager.set("transparency", 0.60)
+            self.main_window.config_manager.set("blur", True)
+        elif theme_code in ("dark", "light"):
+            self.main_window.config_manager.set("transparency", 0.15)
         self.main_window.reload_config()
         self._build_settings_ui()
 

@@ -80,10 +80,28 @@ class SearchMode(BaseMode):
             row_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
             row_box.add_css_class("result-row")
             
+            icon_stack = Gtk.Stack()
+            icon_stack.set_valign(Gtk.Align.CENTER)
+            icon_stack.set_size_request(48, 48)
+            
             icon = Gtk.Image()
             icon.add_css_class("result-icon")
             icon.set_valign(Gtk.Align.CENTER)
-            row_box.append(icon)
+            icon_stack.add_named(icon, "icon")
+            
+            emoji_badge = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+            emoji_badge.add_css_class("result-emoji-badge")
+            emoji_badge.set_valign(Gtk.Align.CENTER)
+            emoji_badge.set_halign(Gtk.Align.CENTER)
+            
+            emoji_label = Gtk.Label()
+            emoji_label.add_css_class("result-emoji-label")
+            emoji_label.set_valign(Gtk.Align.CENTER)
+            emoji_label.set_halign(Gtk.Align.CENTER)
+            emoji_badge.append(emoji_label)
+            
+            icon_stack.add_named(emoji_badge, "emoji")
+            row_box.append(icon_stack)
             
             text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
             text_box.set_valign(Gtk.Align.CENTER)
@@ -112,6 +130,8 @@ class SearchMode(BaseMode):
             self.pool.append({
                 'row': row,
                 'icon': icon,
+                'icon_stack': icon_stack,
+                'emoji_label': emoji_label,
                 'title': title,
                 'desc': desc
             })
@@ -189,30 +209,49 @@ class SearchMode(BaseMode):
             if i < len(self.current_results):
                 result = self.current_results[i]
                 row_data['row'].result = result
-                row_data['title'].set_label(result.title)
                 
-                if result.subtitle:
-                    row_data['desc'].set_label(result.subtitle)
-                    row_data['desc'].set_visible(True)
-                else:
-                    row_data['desc'].set_visible(False)
+                is_emoji = (result.category == "Emoji" or result.provider == "EmojiProvider")
+                if is_emoji:
+                    emoji_char = (result.preview_data.get("char") if result.preview_data else None) or result.icon or "😀"
+                    clean_name = result.preview_data.get("name") if result.preview_data else None
+                    if not clean_name:
+                        clean_name = result.title.replace(emoji_char, "").strip() if emoji_char in result.title else result.title
                     
-                # Загружаем иконку
-                icon_widget = row_data['icon']
-                try:
-                    if result.icon and os.path.isabs(result.icon) and os.path.exists(result.icon):
-                        from gi.repository import GdkPixbuf
-                        pixbuf = GdkPixbuf.Pixbuf.new_from_file(result.icon)
-                        w, h = pixbuf.get_width(), pixbuf.get_height()
-                        size = min(w, h)
-                        pixbuf = pixbuf.new_subpixbuf((w - size) // 2, (h - size) // 2, size, size)
-                        pixbuf = pixbuf.scale_simple(48, 48, GdkPixbuf.InterpType.BILINEAR)
-                        set_icon_safe(icon_widget, None, raw_pixbuf=pixbuf, pixel_size=48)
+                    row_data['title'].set_label(clean_name or result.title)
+                    if result.subtitle:
+                        row_data['desc'].set_label(result.subtitle)
+                        row_data['desc'].set_visible(True)
                     else:
-                        set_icon_safe(icon_widget, result.icon, fallback_icon="application-x-executable", pixel_size=48)
-                except Exception as e:
-                    print(f"Error preparing icon for search result: {e}")
-                    set_icon_safe(icon_widget, None, fallback_icon="application-x-executable", pixel_size=48)
+                        row_data['desc'].set_visible(False)
+                    
+                    row_data['emoji_label'].set_label(emoji_char)
+                    row_data['icon_stack'].set_visible_child_name("emoji")
+                else:
+                    row_data['title'].set_label(result.title)
+                    if result.subtitle:
+                        row_data['desc'].set_label(result.subtitle)
+                        row_data['desc'].set_visible(True)
+                    else:
+                        row_data['desc'].set_visible(False)
+                        
+                    row_data['icon_stack'].set_visible_child_name("icon")
+                    
+                    # Загружаем иконку
+                    icon_widget = row_data['icon']
+                    try:
+                        if result.icon and os.path.isabs(result.icon) and os.path.exists(result.icon):
+                            from gi.repository import GdkPixbuf
+                            pixbuf = GdkPixbuf.Pixbuf.new_from_file(result.icon)
+                            w, h = pixbuf.get_width(), pixbuf.get_height()
+                            size = min(w, h)
+                            pixbuf = pixbuf.new_subpixbuf((w - size) // 2, (h - size) // 2, size, size)
+                            pixbuf = pixbuf.scale_simple(48, 48, GdkPixbuf.InterpType.BILINEAR)
+                            set_icon_safe(icon_widget, None, raw_pixbuf=pixbuf, pixel_size=48)
+                        else:
+                            set_icon_safe(icon_widget, result.icon, fallback_icon="application-x-executable", pixel_size=48)
+                    except Exception as e:
+                        print(f"Error preparing icon for search result: {e}")
+                        set_icon_safe(icon_widget, None, fallback_icon="application-x-executable", pixel_size=48)
                     
                 row_data['row'].set_visible(True)
             else:

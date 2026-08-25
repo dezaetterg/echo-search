@@ -952,3 +952,22 @@ entry placeholder {
     opacity: 0.65;
     color: inherit;
 }
+
+
+/* ==============================
+   Result Emoji Badge
+   ============================== */
+
+.result-emoji-badge {
+    min-width: 44px;
+    min-height: 44px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    margin-right: 12px;
+}
+
+.result-emoji-label {
+    font-size: 24px;
+    font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+}

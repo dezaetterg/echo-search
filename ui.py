@@ -60,49 +60,73 @@ class EchoUI(Gtk.Window):
                     print(f"Error loading CSS from {path}: {e}")
             
         if self.config_manager:
-            theme = self.config_manager.get("theme", "light")
+            theme = self.config_manager.get("theme", "dark_glass")
+            if theme == "silver":
+                theme = "dark_glass"
+                
+            is_light = theme in ("light", "light_glass")
+            is_glass = theme in ("dark_glass", "light_glass")
+            
             try:
                 import gi
                 gi.require_version("Adw", "1")
                 from gi.repository import Adw
                 sm = Adw.StyleManager.get_default()
-                if theme == "dark":
-                    sm.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
-                elif theme == "light":
+                if is_light:
                     sm.set_color_scheme(Adw.ColorScheme.PREFER_LIGHT)
                 else:
-                    sm.set_color_scheme(Adw.ColorScheme.DEFAULT)
+                    sm.set_color_scheme(Adw.ColorScheme.PREFER_DARK)
             except Exception:
                 pass
-            transparency = self.config_manager.get("transparency", 0.30)
-            # 0% прозрачности = непрозрачный (alpha=1.0), 100% прозрачности = полностью прозрачный (alpha=0.0)
+                
+            transparency = self.config_manager.get("transparency", 0.60 if is_glass else 0.15)
             alpha = max(0.0, min(1.0, round(1.0 - float(transparency), 2)))
             blur = self.config_manager.get("blur", True)
             
-            if theme == "light":
-                bg_color = f"rgba(240, 240, 245, {alpha})"
-            else:
-                bg_color = f"rgba(40, 40, 45, {alpha})"
-                
             backdrop = "backdrop-filter: blur(40px);" if blur else "backdrop-filter: none;"
             
-            if theme == "light":
-                # Точная копия светлой темы с референса
-                theme_css = """
-                .capsule-window-ui { color: #1c1c1e; }
-                .capsule-window-ui .search-icon { color: #8e8e93; }
+            if is_light:
+                if theme == "light_glass":
+                    bg_color = f"rgba(240, 240, 245, {alpha})"
+                    card_bg = "rgba(255, 255, 255, 0.60)"
+                    card_border = "1px solid rgba(255, 255, 255, 0.85)"
+                    search_bg = "rgba(255, 255, 255, 0.68)"
+                    search_border = "1px solid rgba(255, 255, 255, 0.90)"
+                    mode_btn_bg = "rgba(255, 255, 255, 0.65)"
+                    mode_btn_border = "1px solid rgba(255, 255, 255, 0.85)"
+                    mode_btn_active = "rgba(255, 255, 255, 0.92)"
+                    card_shadow = "0 4px 20px rgba(0, 0, 0, 0.04)"
+                    meta_card_bg = "rgba(255, 255, 255, 0.50)"
+                    emoji_badge_bg = "rgba(255, 255, 255, 0.70)"
+                else:
+                    bg_color = f"rgba(240, 240, 245, {alpha})"
+                    card_bg = "#ffffff"
+                    card_border = "1px solid rgba(0, 0, 0, 0.06)"
+                    search_bg = "#ffffff"
+                    search_border = "1px solid rgba(0, 0, 0, 0.06)"
+                    mode_btn_bg = "#ffffff"
+                    mode_btn_border = "1px solid rgba(0, 0, 0, 0.06)"
+                    mode_btn_active = "#ffffff"
+                    card_shadow = "0 4px 14px rgba(0, 0, 0, 0.05)"
+                    meta_card_bg = "#f9f9fb"
+                    emoji_badge_bg = "rgba(0, 0, 0, 0.04)"
+
+                theme_css = f"""
+                .capsule-window-ui {{ color: #1c1c1e; }}
+                .capsule-window-ui .search-icon {{ color: #8e8e93; }}
                 
-                .capsule-window-ui .search-wrapper {
-                    background-color: #ffffff;
+                .capsule-window-ui .search-wrapper {{
+                    background-color: {search_bg};
+                    border: {search_border};
                     border-radius: 16px;
                     padding: 4px 12px;
-                    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-                }
+                    box-shadow: {card_shadow};
+                }}
                 
                 .capsule-window-ui #search-entry,
                 .capsule-window-ui #search-entry text,
                 .capsule-window-ui .search-wrapper entry,
-                .capsule-window-ui .search-wrapper text { 
+                .capsule-window-ui .search-wrapper text {{ 
                     background: transparent;
                     background-color: transparent;
                     color: #1c1c1e; 
@@ -110,275 +134,294 @@ class EchoUI(Gtk.Window):
                     border: none;
                     box-shadow: none;
                     outline: none;
-                }
+                }}
                 .capsule-window-ui #search-entry:focus,
                 .capsule-window-ui #search-entry text:focus,
-                .capsule-window-ui .search-wrapper entry:focus { 
+                .capsule-window-ui .search-wrapper entry:focus {{ 
                     border: none;
                     box-shadow: none; 
                     outline: none;
                     background: transparent;
                     background-color: transparent;
-                }
+                }}
                 
                 .capsule-window-ui #search-entry placeholder,
                 .capsule-window-ui #search-entry text > placeholder,
                 .capsule-window-ui .search-wrapper entry placeholder,
                 .capsule-window-ui .search-wrapper text > placeholder,
-                .capsule-window-ui entry placeholder {
-                    color: rgba(235, 235, 245, 0.6);
-                    opacity: 1.0;
-                }
-                
-                .capsule-window-ui .empty-state-box {
-                    background-color: rgba(255, 255, 255, 0.05);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    border-radius: 16px;
-                    margin: 0 8px 16px 16px;
-                    padding: 32px 20px;
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-                }
-                .capsule-window-ui .empty-state-icon {
-                    color: rgba(255, 255, 255, 0.5);
-                    opacity: 0.6;
-                    margin-bottom: 8px;
-                }
-                .capsule-window-ui label.empty-state-title {
-                    color: #ffffff;
-                    font-size: 16px;
-                    font-weight: 600;
-                    margin-bottom: 4px;
-                }
-                .capsule-window-ui label.empty-state-desc {
-                    color: rgba(255, 255, 255, 0.55);
-                    font-size: 13px;
-                }
-                
-                .capsule-window-ui #search-entry placeholder,
-                .capsule-window-ui #search-entry text > placeholder,
-                .capsule-window-ui .search-wrapper entry placeholder,
-                .capsule-window-ui .search-wrapper text > placeholder,
-                .capsule-window-ui entry placeholder {
+                .capsule-window-ui entry placeholder {{
                     color: rgba(60, 60, 67, 0.6);
                     opacity: 1.0;
-                }
+                }}
                 
-                .capsule-window-ui .empty-state-box {
-                    background-color: #ffffff;
+                .capsule-window-ui .empty-state-box {{
+                    background-color: {card_bg};
+                    border: {card_border};
                     border-radius: 16px;
                     margin: 0 8px 16px 16px;
                     padding: 32px 20px;
-                    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-                }
-                .capsule-window-ui .empty-state-icon {
+                    box-shadow: {card_shadow};
+                }}
+                .capsule-window-ui .empty-state-icon {{
                     color: #8e8e93;
-                    opacity: 0.6;
+                    opacity: 0.7;
                     margin-bottom: 8px;
-                }
-                .capsule-window-ui label.empty-state-title {
+                }}
+                .capsule-window-ui label.empty-state-title {{
                     color: #1c1c1e;
                     font-size: 16px;
                     font-weight: 600;
                     margin-bottom: 4px;
-                }
-                .capsule-window-ui label.empty-state-desc {
+                }}
+                .capsule-window-ui label.empty-state-desc {{
                     color: #8e8e93;
                     font-size: 13px;
-                }
+                }}
                 
-                .capsule-window-ui label.result-title { color: #1c1c1e; }
-                .capsule-window-ui label.result-desc { color: #8e8e93; }
+                .capsule-window-ui label.result-title {{ color: #1c1c1e; }}
+                .capsule-window-ui label.result-desc {{ color: #8e8e93; }}
                 
-                .capsule-window-ui #results-list {
-                    background-color: #ffffff;
+                /* Explicit dark icons for light themes */
+                .capsule-window-ui image,
+                .capsule-window-ui .result-icon,
+                .capsule-window-ui image.result-icon,
+                .capsule-window-ui .preview-hero-icon,
+                .capsule-window-ui image.preview-hero-icon,
+                .capsule-window-ui .preview-icon,
+                .capsule-window-ui image.preview-icon,
+                .capsule-window-ui .empty-state-icon,
+                .capsule-window-ui image.empty-state-icon,
+                .capsule-window-ui .result-row image,
+                .capsule-window-ui row image {{
+                    color: #1c1c1e;
+                    -gtk-icon-palette: default;
+                }}
+                
+                .capsule-window-ui .result-emoji-badge {{
+                    background: {emoji_badge_bg};
+                    border: 1px solid rgba(0, 0, 0, 0.06);
+                }}
+                
+                .capsule-window-ui #results-list {{
+                    background-color: {card_bg};
+                    border: {card_border};
                     border-radius: 16px;
                     margin: 0 8px 16px 16px;
                     padding: 8px;
-                    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-                }
+                    box-shadow: {card_shadow};
+                }}
                 
-                .capsule-window-ui row, .capsule-window-ui .result-row { background-color: transparent; }
-                .capsule-window-ui row:hover, .capsule-window-ui .result-row:hover { background-color: rgba(0,0,0,0.03); border-radius: 8px; }
+                .capsule-window-ui row, .capsule-window-ui .result-row {{ background-color: transparent; }}
+                .capsule-window-ui row:hover, .capsule-window-ui .result-row:hover {{ 
+                    background-color: rgba(0, 0, 0, 0.04); 
+                    border-radius: 8px; 
+                }}
                 
-                .capsule-window-ui row:selected, .capsule-window-ui .result-row:selected {
-                    background-color: rgba(0,0,0,0.04);
+                .capsule-window-ui row:selected, .capsule-window-ui .result-row:selected {{
+                    background-color: rgba(0, 0, 0, 0.06);
                     color: #1c1c1e;
                     box-shadow: none;
                     border-radius: 8px;
-                }
+                }}
                 
                 .capsule-window-ui .chip,
-                .capsule-window-ui .apps-filter-pill {
+                .capsule-window-ui .apps-filter-pill {{
                     color: #8e8e93;
-                    border: 1px solid rgba(0,0,0,0.05);
-                    background-color: rgba(255,255,255,0.5);
-                }
+                    border: 1px solid rgba(0, 0, 0, 0.06);
+                    background-color: rgba(255, 255, 255, 0.6);
+                }}
                 .capsule-window-ui .chip:hover,
-                .capsule-window-ui .apps-filter-pill:hover { 
+                .capsule-window-ui .apps-filter-pill:hover {{ 
                     background-color: #ffffff; 
-                    color: #3c3c43;
-                }
+                    color: #1c1c1e;
+                }}
                 .capsule-window-ui .chip.active,
-                .capsule-window-ui .apps-filter-pill.active {
+                .capsule-window-ui .apps-filter-pill.active {{
                     background-color: #ffffff;
                     color: #1c1c1e;
-                    border: 1px solid rgba(0,0,0,0.1);
-                    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-                }
+                    border: 1px solid rgba(0, 0, 0, 0.12);
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+                }}
                 
-                .capsule-window-ui .main-separator { background-color: transparent; }
+                .capsule-window-ui .main-separator {{ background-color: transparent; }}
                 
-                .capsule-window-ui label.preview-main-title { color: #1c1c1e; text-shadow: none; }
-                .capsule-window-ui label.preview-main-subtitle { color: #8e8e93; text-shadow: none; }
+                .capsule-window-ui label.preview-main-title {{ color: #1c1c1e; text-shadow: none; }}
+                .capsule-window-ui label.preview-main-subtitle {{ color: #8e8e93; text-shadow: none; }}
                 
                 .capsule-window-ui label.launchpad-title,
                 .capsule-window-ui label.finder-title,
                 .capsule-window-ui label.emoji-title,
-                .capsule-window-ui label.files-section-title { 
+                .capsule-window-ui label.files-section-title {{ 
                     color: #1c1c1e; 
                     text-shadow: none; 
-                }
+                }}
                 
                 .capsule-window-ui .launchpad-card.selected label.launchpad-title,
                 .capsule-window-ui .launchpad-card:selected label.launchpad-title,
                 .capsule-window-ui .finder-card.selected label.finder-title,
                 .capsule-window-ui .finder-card:selected label.finder-title,
                 .capsule-window-ui .emoji-card.selected label.emoji-title,
-                .capsule-window-ui .emoji-card:selected label.emoji-title {
+                .capsule-window-ui .emoji-card:selected label.emoji-title {{
                     color: #1c1c1e;
-                }
+                }}
                 
-                .capsule-window-ui .preview-panel {
-                    background-color: #ffffff;
+                .capsule-window-ui .preview-panel {{
+                    background-color: {card_bg};
+                    border: {card_border};
                     border-radius: 16px;
                     margin: 0 16px 16px 8px;
                     border-left: none;
-                    box-shadow: 0 4px 14px rgba(0,0,0,0.05);
-                }
+                    box-shadow: {card_shadow};
+                }}
                 
-                .capsule-window-ui .preview-meta-card {
-                    background: #f9f9fb;
-                    border: none;
-                }
-                .capsule-window-ui label.preview-meta-key { color: rgba(0,0,0,0.5); font-weight: 600; }
-                .capsule-window-ui label.preview-meta-val { color: #1c1c1e; font-weight: 500; }
+                .capsule-window-ui .preview-meta-card {{
+                    background: {meta_card_bg};
+                    border: 1px solid rgba(0, 0, 0, 0.04);
+                }}
+                .capsule-window-ui label.preview-meta-key {{ color: rgba(0, 0, 0, 0.5); font-weight: 600; }}
+                .capsule-window-ui label.preview-meta-val {{ color: #1c1c1e; font-weight: 500; }}
                 
-                .capsule-window-ui .preview-btn {
+                .capsule-window-ui .preview-btn {{
                     background: #ffffff;
                     color: #1c1c1e;
-                    border: 1px solid rgba(0,0,0,0.06);
-                    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
-                }
-                .capsule-window-ui .preview-btn:hover {
+                    border: 1px solid rgba(0, 0, 0, 0.08);
+                    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+                }}
+                .capsule-window-ui .preview-btn:hover {{
                     background: #f9f9fb;
-                    color: #000;
-                    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-                }
+                    color: #000000;
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+                }}
                 
-                .capsule-window-ui .mode-button {
-                    background: #ffffff;
-                    color: #8e8e93;
-                    border: none;
-                    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
-                }
-                .capsule-window-ui .mode-button:hover {
-                    background: #ffffff;
-                    color: #3c3c43;
+                .capsule-window-ui .mode-button {{
+                    background: {mode_btn_bg};
+                    border: {mode_btn_border};
+                    color: #636366;
+                    box-shadow: {card_shadow};
+                }}
+                .capsule-window-ui .mode-button:hover {{
+                    background: {mode_btn_active};
+                    color: #1c1c1e;
                     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-                }
-                .capsule-window-ui .mode-button.active {
-                    background: #ffffff;
+                }}
+                .capsule-window-ui .mode-button.active {{
+                    background: {mode_btn_active};
                     color: #1c1c1e;
-                    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-                }
+                    border: 1px solid rgba(0, 0, 0, 0.12);
+                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+                }}
                 
                 /* Настройки в светлой теме */
-                .capsule-window-ui .settings-group-title {
+                .capsule-window-ui .settings-group-title {{
                     color: rgba(60, 60, 67, 0.65);
-                }
-                .capsule-window-ui .settings-card {
-                    background: #ffffff;
-                    border: 1px solid rgba(0, 0, 0, 0.06);
-                    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-                }
-                .capsule-window-ui .settings-row {
+                }}
+                .capsule-window-ui .settings-card {{
+                    background: {card_bg};
+                    border: {card_border};
+                    box-shadow: {card_shadow};
+                }}
+                .capsule-window-ui .settings-row {{
                     border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-                }
-                .capsule-window-ui .settings-row:hover {
+                }}
+                .capsule-window-ui .settings-row:hover {{
                     background: rgba(0, 0, 0, 0.02);
-                }
-                .capsule-window-ui .settings-row-title {
+                }}
+                .capsule-window-ui .settings-row-title {{
                     color: #1c1c1e;
-                }
-                .capsule-window-ui .settings-row-subtitle {
+                }}
+                .capsule-window-ui .settings-row-subtitle {{
                     color: rgba(60, 60, 67, 0.7);
-                }
-                .capsule-window-ui .settings-value-label {
+                }}
+                .capsule-window-ui .settings-value-label {{
                     color: #1c1c1e;
-                }
-                .capsule-window-ui .shortcut-button {
+                }}
+                .capsule-window-ui .shortcut-button {{
                     background: #f2f2f7;
                     color: #1c1c1e;
                     border: 1px solid rgba(0, 0, 0, 0.1);
                     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
-                }
-                .capsule-window-ui .shortcut-button:hover {
+                }}
+                .capsule-window-ui .shortcut-button:hover {{
                     background: #e5e5ea;
                     color: #000000;
-                }
-                .capsule-window-ui .shortcut-button.recording {
+                }}
+                .capsule-window-ui .shortcut-button.recording {{
                     background: rgba(0, 122, 255, 0.1);
                     border-color: #007aff;
                     color: #007aff;
-                }
-                .capsule-window-ui .settings-theme-selector {
+                }}
+                .capsule-window-ui .settings-theme-selector {{
                     background: #e5e5ea;
                     border: 1px solid rgba(0, 0, 0, 0.04);
-                }
-                .capsule-window-ui .theme-pill {
+                }}
+                .capsule-window-ui .theme-pill {{
                     color: #636366;
-                }
-                .capsule-window-ui .theme-pill:hover {
+                }}
+                .capsule-window-ui .theme-pill:hover {{
                     color: #000000;
                     background: rgba(0, 0, 0, 0.04);
-                }
-                .capsule-window-ui .theme-pill.active {
+                }}
+                .capsule-window-ui .theme-pill.active {{
                     background: #ffffff;
                     color: #000000;
                     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-                }
-                .capsule-window-ui scale.settings-slider trough {
+                }}
+                .capsule-window-ui scale.settings-slider trough {{
                     background: rgba(0, 0, 0, 0.12);
-                }
-                .capsule-window-ui .settings-reset-btn {
+                }}
+                .capsule-window-ui .settings-reset-btn {{
                     background: #ffffff;
                     border: 1px solid rgba(255, 59, 48, 0.3);
                     color: #ff3b30;
                     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-                }
-                .capsule-window-ui .settings-reset-btn:hover {
+                }}
+                .capsule-window-ui .settings-reset-btn:hover {{
                     background: rgba(255, 59, 48, 0.1);
                     color: #d70015;
-                }
+                }}
                 """
             else:
-                # Темная тема в стиле Liquid Glass
-                theme_css = """
-                .capsule-window-ui { color: #f5f5f7; }
-                .capsule-window-ui .search-icon { color: rgba(255, 255, 255, 0.7); }
+                if theme in ("dark_glass", "silver"):
+                    bg_color = f"rgba(25, 25, 30, {alpha})"
+                    card_bg = "rgba(255, 255, 255, 0.05)"
+                    card_border = "1px solid rgba(255, 255, 255, 0.08)"
+                    search_bg = "rgba(255, 255, 255, 0.08)"
+                    search_border = "1px solid rgba(255, 255, 255, 0.12)"
+                    mode_btn_bg = "rgba(255, 255, 255, 0.08)"
+                    mode_btn_border = "1px solid rgba(255, 255, 255, 0.10)"
+                    mode_btn_active = "rgba(255, 255, 255, 0.22)"
+                    card_shadow = "0 4px 20px rgba(0, 0, 0, 0.25)"
+                    meta_card_bg = "rgba(255, 255, 255, 0.06)"
+                    emoji_badge_bg = "rgba(255, 255, 255, 0.08)"
+                else:
+                    bg_color = f"rgba(28, 28, 30, {alpha})"
+                    card_bg = "#2c2c2e"
+                    card_border = "1px solid rgba(255, 255, 255, 0.08)"
+                    search_bg = "#2c2c2e"
+                    search_border = "1px solid rgba(255, 255, 255, 0.10)"
+                    mode_btn_bg = "#2c2c2e"
+                    mode_btn_border = "1px solid rgba(255, 255, 255, 0.10)"
+                    mode_btn_active = "#3a3a3c"
+                    card_shadow = "0 4px 14px rgba(0, 0, 0, 0.25)"
+                    meta_card_bg = "#3a3a3c"
+                    emoji_badge_bg = "rgba(255, 255, 255, 0.08)"
+
+                theme_css = f"""
+                .capsule-window-ui {{ color: #f5f5f7; }}
+                .capsule-window-ui .search-icon {{ color: rgba(255, 255, 255, 0.7); }}
                 
-                .capsule-window-ui .search-wrapper {
-                    background-color: rgba(255, 255, 255, 0.08);
-                    border: 1px solid rgba(255, 255, 255, 0.12);
+                .capsule-window-ui .search-wrapper {{
+                    background-color: {search_bg};
+                    border: {search_border};
                     border-radius: 16px;
                     padding: 4px 12px;
-                    box-shadow: 0 4px 14px rgba(0,0,0,0.2);
-                }
+                    box-shadow: {card_shadow};
+                }}
                 
                 .capsule-window-ui #search-entry,
                 .capsule-window-ui #search-entry text,
                 .capsule-window-ui .search-wrapper entry,
-                .capsule-window-ui .search-wrapper text { 
+                .capsule-window-ui .search-wrapper text {{ 
                     background: transparent;
                     background-color: transparent;
                     color: #ffffff; 
@@ -386,102 +429,126 @@ class EchoUI(Gtk.Window):
                     border: none;
                     box-shadow: none;
                     outline: none;
-                }
+                }}
                 .capsule-window-ui #search-entry:focus,
                 .capsule-window-ui #search-entry text:focus,
-                .capsule-window-ui .search-wrapper entry:focus { 
+                .capsule-window-ui .search-wrapper entry:focus {{ 
                     border: none;
                     box-shadow: none; 
                     outline: none;
                     background: transparent;
                     background-color: transparent;
-                }
+                }}
                 
-                .capsule-window-ui .mode-button {
-                    background: rgba(255, 255, 255, 0.08);
+                .capsule-window-ui label.result-title {{ color: #ffffff; }}
+                .capsule-window-ui label.result-desc {{ color: rgba(255, 255, 255, 0.6); }}
+                
+                /* Explicit white icons for dark themes */
+                .capsule-window-ui image,
+                .capsule-window-ui .result-icon,
+                .capsule-window-ui image.result-icon,
+                .capsule-window-ui .preview-hero-icon,
+                .capsule-window-ui image.preview-hero-icon,
+                .capsule-window-ui .preview-icon,
+                .capsule-window-ui image.preview-icon,
+                .capsule-window-ui .empty-state-icon,
+                .capsule-window-ui image.empty-state-icon,
+                .capsule-window-ui .result-row image,
+                .capsule-window-ui row image {{
+                    color: #ffffff;
+                    -gtk-icon-palette: default;
+                }}
+                
+                .capsule-window-ui .result-emoji-badge {{
+                    background: {emoji_badge_bg};
+                    border: 1px solid rgba(255, 255, 255, 0.12);
+                }}
+                
+                .capsule-window-ui .mode-button {{
+                    background: {mode_btn_bg};
                     color: rgba(255, 255, 255, 0.7);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
-                }
-                .capsule-window-ui .mode-button:hover {
-                    background: rgba(255, 255, 255, 0.14);
+                    border: {mode_btn_border};
+                    box-shadow: {card_shadow};
+                }}
+                .capsule-window-ui .mode-button:hover {{
+                    background: {mode_btn_active};
                     color: #ffffff;
                     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-                }
-                .capsule-window-ui .mode-button.active {
-                    background: rgba(255, 255, 255, 0.22);
+                }}
+                .capsule-window-ui .mode-button.active {{
+                    background: {mode_btn_active};
                     color: #ffffff;
                     border: 1px solid rgba(255, 255, 255, 0.3);
                     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-                }
+                }}
                 
                 /* Настройки в темной теме */
-                .capsule-window-ui .settings-group-title {
+                .capsule-window-ui .settings-group-title {{
                     color: rgba(255, 255, 255, 0.45);
-                }
-                .capsule-window-ui .settings-card {
-                    background: rgba(255, 255, 255, 0.05);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-                }
-                .capsule-window-ui .settings-row {
+                }}
+                .capsule-window-ui .settings-card {{
+                    background: {card_bg};
+                    border: {card_border};
+                    box-shadow: {card_shadow};
+                }}
+                .capsule-window-ui .settings-row {{
                     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-                }
-                .capsule-window-ui .settings-row:hover {
+                }}
+                .capsule-window-ui .settings-row:hover {{
                     background: rgba(255, 255, 255, 0.03);
-                }
-                .capsule-window-ui .settings-row-title {
+                }}
+                .capsule-window-ui .settings-row-title {{
                     color: rgba(255, 255, 255, 0.9);
-                }
-                .capsule-window-ui .settings-row-subtitle {
+                }}
+                .capsule-window-ui .settings-row-subtitle {{
                     color: rgba(255, 255, 255, 0.45);
-                }
-                .capsule-window-ui .settings-value-label {
+                }}
+                .capsule-window-ui .settings-value-label {{
                     color: rgba(255, 255, 255, 0.85);
-                }
-                .capsule-window-ui .shortcut-button {
+                }}
+                .capsule-window-ui .shortcut-button {{
                     background: rgba(255, 255, 255, 0.08);
                     color: rgba(255, 255, 255, 0.9);
                     border: 1px solid rgba(255, 255, 255, 0.12);
-                }
-                .capsule-window-ui .shortcut-button:hover {
+                }}
+                .capsule-window-ui .shortcut-button:hover {{
                     background: rgba(255, 255, 255, 0.14);
                     color: #ffffff;
-                }
-                .capsule-window-ui .shortcut-button.recording {
+                }}
+                .capsule-window-ui .shortcut-button.recording {{
                     background: rgba(0, 122, 255, 0.2);
                     border-color: #007aff;
                     color: #007aff;
-                }
-                .capsule-window-ui .settings-theme-selector {
+                }}
+                .capsule-window-ui .settings-theme-selector {{
                     background: rgba(0, 0, 0, 0.3);
                     border: 1px solid rgba(255, 255, 255, 0.06);
-                }
-                .capsule-window-ui .theme-pill {
+                }}
+                .capsule-window-ui .theme-pill {{
                     color: rgba(255, 255, 255, 0.6);
-                }
-                .capsule-window-ui .theme-pill:hover {
+                }}
+                .capsule-window-ui .theme-pill:hover {{
                     color: rgba(255, 255, 255, 0.9);
                     background: rgba(255, 255, 255, 0.05);
-                }
-                .capsule-window-ui .theme-pill.active {
+                }}
+                .capsule-window-ui .theme-pill.active {{
                     background: rgba(255, 255, 255, 0.18);
                     color: #ffffff;
                     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-                }
-                .capsule-window-ui scale.settings-slider trough {
+                }}
+                .capsule-window-ui scale.settings-slider trough {{
                     background: rgba(255, 255, 255, 0.15);
-                }
-                .capsule-window-ui .settings-reset-btn {
+                }}
+                .capsule-window-ui .settings-reset-btn {{
                     background: rgba(255, 255, 255, 0.06);
                     border: 1px solid rgba(255, 255, 255, 0.1);
                     color: rgba(255, 255, 255, 0.65);
-                }
-                .capsule-window-ui .settings-reset-btn:hover {
+                }}
+                .capsule-window-ui .settings-reset-btn:hover {{
                     background: rgba(255, 59, 48, 0.15);
                     border-color: rgba(255, 59, 48, 0.3);
                     color: #ff453a;
-                }
+                }}
                 """
                 
             dynamic_css = f"""

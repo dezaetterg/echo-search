@@ -54,6 +54,9 @@ class ConfigManager:
                                 self.config[key] = float(val)
                     
                     # Backwards compatibility with Tahoe Settings
+                    if self.config.get("theme") == "silver":
+                        self.config["theme"] = "dark_glass"
+                    
                     if "enabled_modes" in user_config:
                         modes = user_config["enabled_modes"]
                         self.config["applications"] = "Apps" in modes
