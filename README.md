@@ -83,17 +83,21 @@ cd echo-search
 makepkg -si
 ```
 
-### 4. Fedora / openSUSE / RHEL
-Установка через универсальный установщик или сборка локального RPM:
-
+### 4. Fedora / openSUSE / RHEL (.rpm)
 ```bash
-git clone https://github.com/dezaetterg/echo-search.git
-cd echo-search
-chmod +x install.sh
-./install.sh
+sudo dnf install https://github.com/dezaetterg/echo-search/releases/latest/download/echo-search_latest.noarch.rpm
 ```
 
-### 5. Запуск из исходного кода
+### 5. Универсальный переносимый пакет (.tar.gz для любого Linux)
+Скачайте готовый архив со страницы **[Releases](https://github.com/dezaetterg/echo-search/releases)**:
+
+```bash
+tar -xzf echo-search_*_universal.tar.gz
+cd echo-search
+./install.sh  # либо прямой запуск: ./echo-search
+```
+
+### 6. Запуск из исходного кода
 ```bash
 python3 main.py
 ```
