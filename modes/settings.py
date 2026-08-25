@@ -1,7 +1,7 @@
 try:
     import gi
     gi.require_version("Gtk", "4.0")
-    from gi.repository import Gtk, Gdk, Pango
+    from gi.repository import Gtk, Gdk, Pango, GLib
 except ValueError:
     pass
 
@@ -393,10 +393,20 @@ class SettingsMode(BaseMode):
         val_lbl.set_valign(Gtk.Align.CENTER)
         val_lbl.add_css_class("settings-value-label")
 
+        timer_id = [0]
+
         def on_slider_change(sc):
             v = sc.get_value()
             val_lbl.set_text(f"{int(v)}{unit}")
-            callback(v)
+            if timer_id[0] != 0:
+                GLib.source_remove(timer_id[0])
+
+            def apply_change():
+                callback(v)
+                timer_id[0] = 0
+                return False
+
+            timer_id[0] = GLib.timeout_add(200, apply_change)
 
         scale.connect("value-changed", on_slider_change)
 
