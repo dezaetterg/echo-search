@@ -7,15 +7,15 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag to release (e.g. v1.0.5)'
+        description: 'Version tag to release (e.g. v1.0.8)'
         required: false
-        default: 'v1.0.5'
+        default: 'v1.0.8'
 
 permissions:
   contents: write
 
 jobs:
-  build-deb-arch:
+  build-deb-arch-universal:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -24,7 +24,7 @@ jobs:
       - name: Install build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y dpkg-dev zstd
+          sudo apt-get install -y dpkg-dev zstd tar gzip
 
       - name: Build Debian Package
         run: |
@@ -36,13 +36,19 @@ jobs:
           chmod +x build_arch.sh
           ./build_arch.sh
 
+      - name: Build Universal Linux Package
+        run: |
+          chmod +x build_universal.sh
+          ./build_universal.sh
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: deb-arch-packages
+          name: deb-arch-universal-packages
           path: |
             dist/*.deb
             dist/*.pkg.tar.zst
+            dist/*.tar.gz
             dist/*.sha256
 
   build-rpm:
@@ -70,7 +76,7 @@ jobs:
             dist/*.sha256
 
   publish-release:
-    needs: [build-deb-arch, build-rpm]
+    needs: [build-deb-arch-universal, build-rpm]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -88,9 +94,10 @@ jobs:
           echo "" >> RELEASE_NOTES.md
           echo "### 📦 Готовые пакеты для установки:" >> RELEASE_NOTES.md
           echo "" >> RELEASE_NOTES.md
-          echo "* **Debian / Ubuntu / Linux Mint / PikaOS:** \`sudo apt install ./echo-search_*_all.deb\`" >> RELEASE_NOTES.md
-          echo "* **Arch Linux / Manjaro / EndeavourOS:** \`sudo pacman -U ./echo-search-*-any.pkg.tar.zst\`" >> RELEASE_NOTES.md
+          echo "* **Debian / Ubuntu / Linux Mint / Pop!_OS:** \`sudo apt install ./echo-search_*_all.deb\`" >> RELEASE_NOTES.md
+          echo "* **Arch Linux / Manjaro / EndeavourOS / CachyOS:** \`sudo pacman -U ./echo-search-*-any.pkg.tar.zst\`" >> RELEASE_NOTES.md
           echo "* **Fedora / RHEL / openSUSE:** \`sudo dnf install ./echo-search-*.noarch.rpm\`" >> RELEASE_NOTES.md
+          echo "* **Universal Portable Linux (Любой дистрибутив):** Скачайте \`echo-search_*_universal.tar.gz\`, распакуйте и запустите \`./install.sh\`" >> RELEASE_NOTES.md
           echo "" >> RELEASE_NOTES.md
           echo "### 🔑 Хоткей по умолчанию:" >> RELEASE_NOTES.md
           echo "Нажмите **Super + Space** (Win + Пробел) для вызова лаунчера." >> RELEASE_NOTES.md
@@ -103,6 +110,7 @@ jobs:
             release_files/*.deb
             release_files/*.pkg.tar.zst
             release_files/*.rpm
+            release_files/*.tar.gz
             release_files/*.sha256
           draft: false
           prerelease: false
