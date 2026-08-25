@@ -663,7 +663,7 @@ class EchoUI(Gtk.Window):
         self.mode_buttons_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_LEFT)
         
         animations = self.config_manager.get("animations") if self.config_manager else True
-        anim_duration = 120 if animations else 0
+        anim_duration = 150 if animations else 0
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         
         self.mode_buttons_revealer.set_halign(Gtk.Align.END)
@@ -733,7 +733,7 @@ class EchoUI(Gtk.Window):
         self.results_container.append(self.mode_manager.get_widget())
         
         self.results_revealer = Gtk.Revealer()
-        self.results_revealer.set_transition_type(Gtk.RevealerTransitionType.CROSSFADE)
+        self.results_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
         self.results_revealer.set_transition_duration(anim_duration)
         self.results_revealer.set_child(self.results_container)
         self.results_revealer.set_reveal_child(False)
@@ -880,7 +880,7 @@ class EchoUI(Gtk.Window):
         
         # Обновляем длительность анимаций
         animations = self.config_manager.get("animations") if self.config_manager else True
-        anim_duration = 120 if animations else 0
+        anim_duration = 150 if animations else 0
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         if hasattr(self, 'results_revealer'):
             self.results_revealer.set_transition_duration(anim_duration)
