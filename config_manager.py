@@ -4,8 +4,39 @@ from pathlib import Path
 from i18n import i18n
 
 def _detect_system_theme() -> str:
-    """Detects whether user's system desktop environment prefers dark or light theme."""
-    # 1. Check GNOME / Libadwaita / Freedesktop color-scheme
+    """Universal cross-DE / cross-distro dark/light theme detector (Cinnamon, GNOME, KDE, XFCE, etc.)."""
+    # 1. FreeDesktop Portal (Universal across all modern DEs including Wayland)
+    try:
+        import gi
+        gi.require_version('Gio', '2.0')
+        from gi.repository import Gio, GLib
+        bus = Gio.bus_get_sync(Gio.BusType.SESSION, None)
+        proxy = Gio.DBusProxy.new_sync(
+            bus,
+            Gio.DBusProxyFlags.NONE,
+            None,
+            "org.freedesktop.portal.Desktop",
+            "/org/freedesktop/portal/desktop",
+            "org.freedesktop.portal.Settings",
+            None
+        )
+        res = proxy.call_sync(
+            "Read",
+            GLib.Variant("(ss)", ("org.freedesktop.appearance", "color-scheme")),
+            Gio.DBusCallFlags.NONE,
+            500,
+            None
+        )
+        if res:
+            val = res.get_child_value(0).get_variant().get_variant().get_uint32()
+            if val == 1:
+                return "dark"
+            elif val == 2:
+                return "light"
+    except Exception:
+        pass
+
+    # 2. GNOME / Cinnamon color-scheme via gsettings
     try:
         import subprocess
         res = subprocess.run(
@@ -21,11 +52,27 @@ def _detect_system_theme() -> str:
     except Exception:
         pass
 
-    # 2. Check GTK theme name
+    # 3. Cinnamon GTK Theme (e.g. Mint-Y-Dark-Aqua)
     try:
         import subprocess
         res = subprocess.run(
-            ["gsettings", "get", "org.gnome.desktop.interface", "gtk-theme"],
+            ["gsettings", "get", "org.cinnamon.desktop.interface", "gtk-theme"],
+            capture_output=True, text=True, timeout=1
+        )
+        if res.returncode == 0:
+            val = res.stdout.strip().strip("'").lower()
+            if "dark" in val:
+                return "dark"
+            elif val:
+                return "light"
+    except Exception:
+        pass
+
+    # 4. Cinnamon Desktop Theme
+    try:
+        import subprocess
+        res = subprocess.run(
+            ["gsettings", "get", "org.cinnamon.theme", "name"],
             capture_output=True, text=True, timeout=1
         )
         if res.returncode == 0:
@@ -35,7 +82,23 @@ def _detect_system_theme() -> str:
     except Exception:
         pass
 
-    # 3. Check KDE Plasma configuration
+    # 5. XFCE Net/ThemeName
+    try:
+        import subprocess
+        res = subprocess.run(
+            ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName"],
+            capture_output=True, text=True, timeout=1
+        )
+        if res.returncode == 0:
+            val = res.stdout.strip().lower()
+            if "dark" in val:
+                return "dark"
+            elif val:
+                return "light"
+    except Exception:
+        pass
+
+    # 6. KDE Plasma kdeglobals
     try:
         kdeglobals = Path(os.path.expanduser("~/.config/kdeglobals"))
         if kdeglobals.exists():
@@ -43,6 +106,8 @@ def _detect_system_theme() -> str:
                 content = f.read().lower()
                 if "colorcheme=breezedark" in content or "dark" in content:
                     return "dark"
+                elif "colorcheme=breeze" in content or "light" in content:
+                    return "light"
     except Exception:
         pass
 
