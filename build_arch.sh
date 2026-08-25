@@ -9,7 +9,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-VERSION="1.0.7"
+VERSION="1.0.8"
 RELEASE="1"
 PKGNAME="echo-search"
 PKG_FULL="${PKGNAME}-${VERSION}-${RELEASE}-any.pkg.tar.zst"
