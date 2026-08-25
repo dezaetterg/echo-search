@@ -736,8 +736,13 @@ class EchoUI(Gtk.Window):
         self.results_revealer.set_transition_duration(anim_duration)
         self.results_revealer.set_child(self.results_container)
         self.results_revealer.set_reveal_child(False)
+        self.results_revealer.connect("notify::child-revealed", self._on_results_revealed_changed)
         
         self.main_box.append(self.results_revealer)
+
+    def _on_results_revealed_changed(self, revealer, param):
+        if not revealer.get_reveal_child() and not revealer.get_child_revealed():
+            self.set_default_size(650, 1)
 
     def _setup_shortcuts(self):
         key_ctrl = Gtk.EventControllerKey.new()
@@ -797,7 +802,7 @@ class EchoUI(Gtk.Window):
         
         if hasattr(self, 'results_revealer'):
             self.results_revealer.set_reveal_child(should_reveal_results)
-            if not should_reveal_results:
+            if not should_reveal_results and not self.results_revealer.get_child_revealed():
                 self.set_default_size(650, 1)
         
         # Обновляем подсветку кнопок
