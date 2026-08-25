@@ -119,8 +119,20 @@ case "$PKG_MGR" in
         ;;
 esac
 
-# 4. Установка приложения в систему
-echo -e "\n${YELLOW}[2/4] Установка Echo Search в системные каталоги...${RESET}"
+# 4. Остановка старых процессов и очистка кэшей
+echo -e "\n${YELLOW}[2/4] Установка Echo Search и обновление компонентов...${RESET}"
+pkill -9 -f "echo-search" 2>/dev/null || true
+
+# Очистка устаревших локальных копий в ~/.local, если запущен от имени пользователя
+if [ -n "$SUDO_USER" ] && [ "$SUDO_USER" != "root" ]; then
+    user_home=$(eval echo "~$SUDO_USER")
+    rm -rf "$user_home/.local/share/echo-search/__pycache__" "$user_home/.local/share/spotlight-glass" 2>/dev/null || true
+    # Синхронизируем и в ~/.local/share/echo-search, если пользователь запускает из local bin
+    if [ -d "$user_home/.local/share/echo-search" ]; then
+        sudo -u "$SUDO_USER" cp *.py style.css emoji.json "$user_home/.local/share/echo-search/" 2>/dev/null || true
+        sudo -u "$SUDO_USER" cp -r modes providers "$user_home/.local/share/echo-search/" 2>/dev/null || true
+    fi
+fi
 
 if [ "$PKG_MGR" = "apt" ]; then
     # Если на Debian/Ubuntu - собираем и ставим чистый .deb пакет
