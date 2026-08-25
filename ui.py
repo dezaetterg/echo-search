@@ -729,6 +729,7 @@ class EchoUI(Gtk.Window):
         # Единый контейнер для всех режимов, задающий глобальные отступы
         self.results_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.results_container.add_css_class("results-container")
+        self.results_container.add_css_class("folded")
         self.results_container.append(self.mode_manager.get_widget())
         
         self.results_revealer = Gtk.Revealer()
@@ -802,8 +803,20 @@ class EchoUI(Gtk.Window):
         
         if hasattr(self, 'results_revealer'):
             self.results_revealer.set_reveal_child(should_reveal_results)
-            if not should_reveal_results and not self.results_revealer.get_child_revealed():
-                self.set_default_size(650, 1)
+            if should_reveal_results:
+                self.results_container.remove_css_class("folded")
+                if active == "Search":
+                    preview_enabled = self.config_manager.get("preview_enabled") if getattr(self, "config_manager", None) else True
+                    preview_width = self.config_manager.get("preview_width") if getattr(self, "config_manager", None) else 420
+                    self.set_default_size(650 + (preview_width if preview_enabled else 0), 1)
+                elif active in ("Apps", "Files", "Clipboard", "Emoji"):
+                    self.set_default_size(1050, 1)
+                elif active == "Settings":
+                    self.set_default_size(750, 1)
+            else:
+                self.results_container.add_css_class("folded")
+                if not self.results_revealer.get_child_revealed():
+                    self.set_default_size(650, 1)
         
         # Обновляем подсветку кнопок
         for name, btn in self.mode_buttons.items():
