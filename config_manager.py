@@ -181,6 +181,7 @@ class ConfigManager:
             
         i18n.set_language(self.config.get("language", "auto"))
         self._sync_autostart(self.get("launch_at_login"))
+        self._sync_desktop_hotkey(self.get("launch_shortcut", "<Super>Space"))
 
     def save(self):
         try:
@@ -388,7 +389,9 @@ X-GNOME-Autostart-enabled=true
                     subprocess.run(['gsettings', 'set', f'{CINNAMON_CUSTOM}:{path}', 'name', 'Echo Search'])
                     subprocess.run(['gsettings', 'set', f'{CINNAMON_CUSTOM}:{path}', 'command', 'echo-search'])
                     subprocess.run(['gsettings', 'set', f'{CINNAMON_CUSTOM}:{path}', 'binding', str(cinnamon_bindings)])
-                    subprocess.run(['gsettings', 'set', CINNAMON_MAIN, 'custom-list', str(slots)])
+                    # Pulse custom-list so Cinnamon daemon reloads hotkeys immediately
+                    subprocess.run(['gsettings', 'set', CINNAMON_MAIN, 'custom-list', "['__dummy__']"], capture_output=True)
+                    subprocess.run(['gsettings', 'set', CINNAMON_MAIN, 'custom-list', str(slots)], capture_output=True)
         except Exception as e:
             print(f'Error syncing Cinnamon hotkey: {e}')
 
