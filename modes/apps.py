@@ -112,7 +112,12 @@ class AppsMode(BaseMode):
             return False
             
         if self.current_query:
-            if self.current_query.lower() not in item.result.title.lower():
+            q = self.current_query.lower()
+            t_match = q in item.result.title.lower()
+            s_match = bool(item.result.subtitle and q in item.result.subtitle.lower())
+            e_match = bool(item.result.preview_data and q in str(item.result.preview_data.get("exec", "")).lower())
+            c_match = bool(item.result.preview_data and q in str(item.result.preview_data.get("categories", "")).lower())
+            if not (t_match or s_match or e_match or c_match):
                 return False
                 
         return True

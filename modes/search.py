@@ -72,7 +72,7 @@ class SearchMode(BaseMode):
         self.preview_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.preview_container.add_css_class("preview-panel")
         preview_width = self.main_window.config_manager.get("preview_width") if getattr(self.main_window, "config_manager", None) else 420
-        self.preview_container.set_size_request(preview_width, -1)
+        self.preview_container.set_size_request(preview_width, 440)
         self.main_split.append(self.preview_container)
         
         self.pool = []
