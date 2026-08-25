@@ -798,7 +798,7 @@ class EchoUI(Gtk.Window):
         should_reveal_results = has_text or should_reveal_modes
         
         # Кнопки видны всегда, когда активен глобальный поиск
-        should_show_buttons = (active == "Search")
+        should_show_buttons = True
         self.mode_buttons_revealer.set_reveal_child(should_show_buttons)
         
         if hasattr(self, 'results_revealer'):

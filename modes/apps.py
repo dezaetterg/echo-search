@@ -1,7 +1,7 @@
 try:
     import gi
     gi.require_version('Gtk', '4.0')
-    from gi.repository import Gtk, Gdk, Pango, Gio, GObject
+    from gi.repository import Gtk, Gdk, Pango, Gio, GLib, GObject
 except ValueError:
     pass
 
@@ -103,8 +103,16 @@ class AppsMode(BaseMode):
         
         self.populated = False
         self.current_query = ""
-        
+        GLib.idle_add(self._preload_apps)
         return self.left_box
+
+    def _preload_apps(self):
+        if not self.populated and hasattr(self.main_window, "engine"):
+            all_apps = self.main_window.engine.get_all_apps()
+            for app in all_apps:
+                self.list_store.append(AppItemWrapper(app))
+            self.populated = True
+        return False
 
     def _filter_func(self, item):
         target_cat = self.CAT_MAPPING.get(self.active_category)
