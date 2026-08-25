@@ -120,7 +120,10 @@ class EchoApp(BaseApplication):
                 self.config_manager.load()
                 self.sync_color_scheme()
                 self.window.reload_config()
-                self.window.entry.set_text("") # Очищаем ввод перед показом
+                if self.window.mode_manager:
+                    self.window.mode_manager.set_mode("Search")
+                self.window.entry.set_text("")
+                self.window.update_revealer_state()
                 self.window.present()
                 self.window.entry.grab_focus()
 
