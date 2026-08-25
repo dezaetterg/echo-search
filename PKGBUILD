@@ -1,6 +1,6 @@
 # Maintainer: Echo Search Contributors
 pkgname=echo-search
-pkgver=1.0.8
+pkgver=1.0.9
 pkgrel=1
 pkgdesc="Fast Spotlight-style desktop search and app launcher for Linux"
 arch=('any')
