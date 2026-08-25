@@ -21,7 +21,7 @@ class ModeManager:
         self.current_results = []
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-        self.stack.set_transition_duration(90)
+        self.stack.set_transition_duration(150)
         self.stack.set_interpolate_size(False)
         
         # Initialize modes
