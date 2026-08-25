@@ -220,7 +220,8 @@ if [[ "$DE_LOWER" == *"cinnamon"* ]] || [[ "$XDG_CURRENT_DESKTOP" == *"X-Cinnamo
                 else
                     NEW_LIST=$(echo "$CURRENT_LIST" | sed "s/]$/, '$FOUND_SLOT']/")
                 fi
-                run_desktop_cmd gsettings set "$MAIN_SCHEMA" custom-list "$NEW_LIST"
+                run_desktop_cmd gsettings set "$MAIN_SCHEMA" custom-list "['__dummy__']"
+            run_desktop_cmd gsettings set "$MAIN_SCHEMA" custom-list "$NEW_LIST"
             fi
             echo -e "${GREEN}✓ Хоткей Super + Space зарегистрирован в Cinnamon (Linux Mint)!${RESET}"
             HOTKEY_CONFIGURED=true
