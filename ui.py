@@ -507,22 +507,59 @@ class EchoUI(Gtk.Window):
                     border: 1px solid rgba(255, 255, 255, 0.12);
                 }}
                 
+                .capsule-window-ui .result-row {{
+                    background: transparent;
+                    background-color: transparent;
+                    border: none;
+                    box-shadow: none;
+                }}
+                .capsule-window-ui row {{
+                    background-color: transparent;
+                    border: 1px solid transparent;
+                    border-radius: 12px;
+                    margin: 2px 0;
+                    padding: 0;
+                }}
+                .capsule-window-ui row:hover {{ 
+                    background-color: rgba(255, 255, 255, 0.09);
+                    border: 1px solid rgba(255, 255, 255, 0.40);
+                    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.55),
+                                0 0 14px rgba(255, 255, 255, 0.20),
+                                0 2px 8px rgba(0, 0, 0, 0.25);
+                }}
+                .capsule-window-ui row:selected,
+                .capsule-window-ui row:selected:hover {{
+                    background-color: rgba(255, 255, 255, 0.18);
+                    color: #ffffff;
+                    border: 1px solid rgba(255, 255, 255, 0.70);
+                    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.80),
+                                0 0 20px rgba(255, 255, 255, 0.30),
+                                0 4px 16px rgba(0, 0, 0, 0.40);
+                }}
+                
                 .capsule-window-ui .mode-button {{
                     background: {mode_btn_bg};
-                    color: rgba(255, 255, 255, 0.7);
+                    color: rgba(255, 255, 255, 0.75);
                     border: {mode_btn_border};
-                    box-shadow: {card_shadow};
+                    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35),
+                                0 4px 14px rgba(0, 0, 0, 0.30),
+                                0 1px 3px rgba(0, 0, 0, 0.20);
                 }}
                 .capsule-window-ui .mode-button:hover {{
                     background: {mode_btn_active};
                     color: #ffffff;
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+                    border: 1px solid rgba(255, 255, 255, 0.48);
+                    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.60),
+                                0 6px 18px rgba(0, 0, 0, 0.35),
+                                0 0 14px rgba(255, 255, 255, 0.20);
                 }}
                 .capsule-window-ui .mode-button.active {{
                     background: {mode_btn_active};
                     color: #ffffff;
-                    border: 1px solid rgba(255, 255, 255, 0.3);
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+                    border: 1px solid rgba(255, 255, 255, 0.70);
+                    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75),
+                                0 6px 20px rgba(0, 0, 0, 0.40),
+                                0 0 18px rgba(255, 255, 255, 0.30);
                 }}
                 
                 /* Настройки в темной теме */
