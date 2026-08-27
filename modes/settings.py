@@ -678,6 +678,7 @@ class SettingsMode(BaseMode):
         current_anim = cfg.get("unfold_animation", "slide_down")
         anim_options = [
             ("slide_down", "Slide Down"),
+            ("aura_glow", "Aura Glow"),
             ("swing_down", "3D Swing"),
             ("none", "Instant")
         ]

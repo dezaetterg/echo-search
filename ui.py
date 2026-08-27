@@ -16,6 +16,7 @@ from i18n import t, i18n
 
 UNFOLD_TRANSITION_MAP = {
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
+    "aura_glow": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
     "none": Gtk.RevealerTransitionType.NONE
 }
@@ -864,6 +865,13 @@ class EchoUI(Gtk.Window):
         
         if hasattr(self, 'results_revealer'):
             self.results_revealer.set_reveal_child(should_reveal_results)
+            unfold_mode = self.config_manager.get("unfold_animation", "slide_down") if self.config_manager else "slide_down"
+            if unfold_mode == "aura_glow" and should_reveal_results:
+                if hasattr(self, "outer_box") and not self.outer_box.has_css_class("aura-glow-anim"):
+                    self.outer_box.add_css_class("aura-glow-anim")
+            else:
+                if hasattr(self, "outer_box") and self.outer_box.has_css_class("aura-glow-anim"):
+                    self.outer_box.remove_css_class("aura-glow-anim")
             if should_reveal_results:
                 self.results_container.remove_css_class("folded")
                 if active == "Search":
