@@ -103,12 +103,33 @@ class EmojiMode(BaseMode):
         
         self.left_box.append(self.glass_container)
         self.populated = False
+        self.current_query = ""
+        from gi.repository import GLib
+        GLib.idle_add(self._preload_emojis)
         return self.left_box
 
+    def _preload_emojis(self):
+        if not self.populated and hasattr(self.main_window, "engine"):
+            all_emojis = self.main_window.engine.get_all_emojis()
+            for em in all_emojis:
+                self.list_store.append(EmojiItemWrapper(em))
+            self.populated = True
+        return False
+
     def _filter_func(self, item):
-        if self.active_category == "All":
-            return True
-        return item.result.preview_data.get("emoji_category") == self.active_category
+        if not item or not item.result:
+            return False
+        if self.active_category != "All":
+            cat = item.result.preview_data.get("emoji_category", "") if item.result.preview_data else ""
+            if cat != self.active_category:
+                return False
+        if self.current_query:
+            q = self.current_query.lower()
+            if q not in item.result.title.lower():
+                kw = item.result.preview_data.get("keywords", []) if item.result.preview_data else []
+                if not any(q in str(k).lower() for k in kw):
+                    return False
+        return True
 
     def on_category_clicked(self, button, cat_name):
         if self.active_category == cat_name:
@@ -170,15 +191,13 @@ class EmojiMode(BaseMode):
 
     def render(self, results: list):
         self.current_results = results
-        self.list_store.remove_all()
+        self.current_query = self.main_window.entry.get_text().strip()
+        if not self.populated:
+            self._preload_emojis()
+        self.custom_filter.set_filter_func(self._filter_func)
         
-        for result in results:
-            self.list_store.append(EmojiItemWrapper(result))
-            
-        if len(results) > 0:
-            self.grid_view.set_visible(True)
-        else:
-            self.grid_view.set_visible(False)
+        n = self.filter_list_model.get_n_items()
+        self.grid_view.set_visible(n > 0)
             
         self.main_window.set_default_size(1050, 1)
         self.main_window.queue_resize()

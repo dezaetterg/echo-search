@@ -40,6 +40,13 @@ class ModeManager:
             
         self.active_mode_name = "Search"
         self.stack.set_visible_child_name(self.active_mode_name)
+        
+        # Preload data in background idle without blocking UI
+        from gi.repository import GLib
+        if hasattr(self.modes["Apps"], "_preload_apps"):
+            GLib.idle_add(self.modes["Apps"]._preload_apps)
+        if hasattr(self.modes["Emoji"], "_preload_emojis"):
+            GLib.idle_add(self.modes["Emoji"]._preload_emojis)
 
     def get_widget(self) -> Gtk.Widget:
         return self.stack

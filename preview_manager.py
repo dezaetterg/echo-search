@@ -68,24 +68,12 @@ class PreviewManager:
 
     @staticmethod
     def _create_icon(icon_name: str, size: int = 128):
-        try:
-            if icon_name and os.path.isabs(icon_name) and os.path.exists(icon_name):
-                img = Gtk.Picture.new_for_filename(icon_name)
-                img.set_can_shrink(True)
-                img.set_size_request(size, size)
-                img.add_css_class("preview-hero-icon")
-                return img
-        except: pass
-        
-        try:
-            img = Gtk.Image.new_from_icon_name(icon_name or "application-x-executable")
-            img.set_pixel_size(size)
-            img.add_css_class("preview-hero-icon")
-            return img
-        except:
-            img = Gtk.Image.new_from_icon_name("application-x-executable")
-            img.set_pixel_size(size)
-            return img
+        from utils import set_icon_safe
+        img = Gtk.Image()
+        img.set_pixel_size(size)
+        img.add_css_class("preview-hero-icon")
+        set_icon_safe(img, icon_name, fallback_icon="application-x-executable", pixel_size=size)
+        return img
 
     @staticmethod
     def _create_title_block(title_text: str, subtitle_text: str):
