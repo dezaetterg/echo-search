@@ -140,7 +140,8 @@ class SettingsMode(BaseMode):
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.scroll.set_min_content_height(420)
-        self.scroll.set_max_content_height(520)
+        self.scroll.set_max_content_height(420)
+        self.scroll.set_propagate_natural_height(False)
         self.scroll.set_hexpand(True)
         self.scroll.set_vexpand(True)
         self.scroll.add_css_class("settings-scrolled")
@@ -239,6 +240,8 @@ class SettingsMode(BaseMode):
             cfg.get("animations", True),
             lambda active: self._on_setting_changed("animations", active)
         ))
+
+        group_appearance.append(self._create_unfold_animation_row(cfg))
 
         # ========================================================
         # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА (PREVIEW PANEL)
@@ -485,6 +488,50 @@ class SettingsMode(BaseMode):
                     self._build_settings_ui()
 
         dropdown.connect("notify::selected", on_lang_changed)
+        row.append(dropdown)
+        return row
+
+    def _create_unfold_animation_row(self, cfg) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        title_lbl = Gtk.Label(label=t("settings_unfold_animation"))
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.set_hexpand(True)
+        title_lbl.set_valign(Gtk.Align.CENTER)
+        title_lbl.add_css_class("settings-row-title")
+        row.append(title_lbl)
+
+        current_anim = cfg.get("unfold_animation", "fade_slide_down")
+        anim_options = [
+            ("fade_slide_down", t("anim_fade_slide_down")),
+            ("crossfade", t("anim_crossfade")),
+            ("slide_down", t("anim_slide_down")),
+            ("swing_down", t("anim_swing_down")),
+            ("none", t("anim_none"))
+        ]
+        
+        string_list = Gtk.StringList.new([name for code, name in anim_options])
+        dropdown = Gtk.DropDown.new(string_list, None)
+        dropdown.set_valign(Gtk.Align.CENTER)
+        dropdown.add_css_class("settings-dropdown")
+        
+        selected_idx = 0
+        for idx, (code, name) in enumerate(anim_options):
+            if code == current_anim:
+                selected_idx = idx
+                break
+        dropdown.set_selected(selected_idx)
+
+        def on_anim_changed(dd, param):
+            pos = dd.get_selected()
+            if 0 <= pos < len(anim_options):
+                selected_code = anim_options[pos][0]
+                if selected_code != cfg.get("unfold_animation"):
+                    self.main_window.config_manager.set("unfold_animation", selected_code)
+                    self.main_window.reload_config()
+
+        dropdown.connect("notify::selected", on_anim_changed)
         row.append(dropdown)
         return row
 
