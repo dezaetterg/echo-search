@@ -129,46 +129,33 @@ entry#search-entry text,
 
 row, .result-row {
     padding: 8px 12px;
-    border-radius: 0;
-    margin-bottom: 0;
+    border-radius: 12px;
+    margin: 2px 0;
     background-color: transparent;
-    transition: background-color 100ms cubic-bezier(0.16, 1, 0.3, 1), border-color 100ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 100ms cubic-bezier(0.16, 1, 0.3, 1);
+    border: 1px solid transparent;
+    transition: background-color 100ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 100ms cubic-bezier(0.16, 1, 0.3, 1),
+                box-shadow 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* Скругления для элементов списка */
-row:first-child { border-top-left-radius: 12px; border-top-right-radius: 12px; }
-row:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12px; }
-row:only-child { border-radius: 12px; }
+row:hover, .result-row:hover {
+    background-color: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.40);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.55),
+                0 0 14px rgba(255, 255, 255, 0.20),
+                0 2px 8px rgba(0, 0, 0, 0.25);
+}
 
 row:selected, .result-row:selected, row:selected:hover {
     background-color: rgba(255, 255, 255, 0.18);
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    color: white;
-    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35),
-                0 4px 14px rgba(0, 0, 0, 0.2),
-                0 0 16px rgba(255, 255, 255, 0.08);
-        outline: none;
+    border: 1px solid rgba(255, 255, 255, 0.70);
+    color: #ffffff;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.80),
+                0 0 20px rgba(255, 255, 255, 0.30),
+                0 4px 16px rgba(0, 0, 0, 0.40);
+    outline: none;
 }
 
-row:hover, .result-row:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-
-.result-icon {
-    margin-right: 12px;
-    transition: transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-row:selected .result-icon,
-.result-row:selected .result-icon {
-    }
-
-row:hover, .result-row:hover {
-    background-color: rgba(255, 255, 255, 0.08);
-}
-
-/* Иконки и текст */
 .result-icon {
     margin-right: 12px;
 }

@@ -74,11 +74,11 @@ class EchoUI(Gtk.Window):
     def _setup_css(self):
         provider = Gtk.CssProvider()
         css_paths = [
+            os.path.expanduser("~/.local/share/echo-search/style.css"),
             os.path.join(os.path.dirname(os.path.abspath(__file__)), 'style.css'),
-            "/usr/lib/echo-search/style.css",
             "/usr/share/echo-search/style.css",
-            "/usr/local/share/echo-search/style.css",
-            os.path.expanduser("~/.local/share/echo-search/style.css")
+            "/usr/lib/echo-search/style.css",
+            "/usr/local/share/echo-search/style.css"
         ]
         
         for path in css_paths:
