@@ -30,12 +30,25 @@ class EchoUI(Gtk.Window):
         self._setup_css()
         self._setup_shortcuts()
         self.connect("realize", self._on_realize)
+        self.connect("unmap", self._on_unmap)
 
         # Initialize with default search mode
         if self.mode_manager:
             self.mode_manager.set_mode("Search")
             self.update_revealer_state()
             self.mode_manager.on_search_changed("")
+
+    def _on_unmap(self, widget):
+        """Reclaims preview resources and triggers garbage collection when window is hidden."""
+        try:
+            import gc
+            if self.mode_manager and hasattr(self.mode_manager, "modes"):
+                search_mode = self.mode_manager.modes.get("Search")
+                if search_mode and hasattr(search_mode, "clear_preview_and_resources"):
+                    search_mode.clear_preview_and_resources()
+            gc.collect()
+        except Exception:
+            pass
 
     def _on_realize(self, widget):
         self._apply_compositor_blur()

@@ -350,3 +350,14 @@ class SearchMode(BaseMode):
             return True
             
         return False
+
+    def clear_preview_and_resources(self):
+        try:
+            while widget := self.preview_container.get_first_child():
+                self.preview_container.remove(widget)
+            self.current_results = []
+            for row_data in self.pool:
+                row_data["row"].result = None
+                row_data["row"].set_visible(False)
+        except Exception:
+            pass

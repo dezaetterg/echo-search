@@ -66,6 +66,11 @@ class ClipboardProvider(BaseProvider):
             text = clipboard.read_text_finish(result)
             if text and text.strip():
                 text = text.strip()
+                # Memory guard: limit massive raw clipboard texts (e.g. 50MB dumps) to 32KB
+                max_len = 32768
+                if len(text) > max_len:
+                    text = text[:max_len] + "\n... [Обрезано для оптимизации памяти]"
+
                 # Remove if exists to move to top
                 self.history = [item for item in self.history if item["text"] != text]
 
@@ -75,8 +80,8 @@ class ClipboardProvider(BaseProvider):
                 }
                 self.history.insert(0, item)
 
-                if len(self.history) > 100:
-                    self.history = self.history[:100]
+                if len(self.history) > 50:
+                    self.history = self.history[:50]
 
                 if self.on_new_item:
                     import gi
