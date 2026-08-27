@@ -30,12 +30,16 @@ class SearchEngine:
         ]
         self._current_search_id = None
         self._lock = threading.Lock()
+        self._executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=8,
+            thread_name_prefix="echo_search_worker"
+        )
 
     def _run_provider(self, provider, query, limit, category_filter, search_id):
         # Если поиск отменен до начала, выходим
         if self._current_search_id != search_id:
             return []
-            
+
         try:
             results = provider.search(query, limit, category_filter)
             # Если отменен во время работы
@@ -48,7 +52,7 @@ class SearchEngine:
 
     def reload_providers(self):
         for provider in self.providers:
-            if hasattr(provider, 'reload_apps'):
+            if hasattr(provider, "reload_apps"):
                 provider.reload_apps()
 
     def get_all_apps(self) -> list[SearchResult]:
@@ -66,7 +70,7 @@ class SearchEngine:
     def get_recent_files(self) -> list[SearchResult]:
         for provider in self.providers:
             if isinstance(provider, FileProvider):
-                if hasattr(provider, 'get_recent_files'):
+                if hasattr(provider, "get_recent_files"):
                     return provider.get_recent_files(limit=30)
                 return provider.search("", limit=20, category_filter="Files")
         return []
@@ -78,14 +82,13 @@ class SearchEngine:
         return []
 
     def search_async(self, query: str, limit: int, category_filter: str, callback):
-        # Генерируем уникальный ID для этого поиска для реализации Cancellation
         with self._lock:
             search_id = str(uuid.uuid4())
             self._current_search_id = search_id
 
         def _search():
             results = []
-            
+
             # Если пустой запрос и фильтр не стоит, собираем недавние/частые через AppProvider
             if not query and category_filter in (None, "All"):
                 recent_when_empty = self.config_manager.get("recent_when_empty") if self.config_manager else True
@@ -94,35 +97,35 @@ class SearchEngine:
                     if app_prov:
                         results.extend(app_prov.search(query, limit, category_filter))
             else:
-                # Параллельный опрос всех провайдеров
+                # Параллельный опрос всех провайдеров через постоянный переиспользуемый пул потоков
                 providers_to_run = self.providers
-                # Include all relevant providers
-                providers_to_run = self.providers
-                    
-                with concurrent.futures.ThreadPoolExecutor(max_workers=len(providers_to_run)) as executor:
-                    futures = [
-                        executor.submit(self._run_provider, p, query, limit, category_filter, search_id) 
-                        for p in providers_to_run
-                    ]
-                    for future in concurrent.futures.as_completed(futures):
-                        # Проверяем отмену после завершения каждого future
-                        if self._current_search_id != search_id:
-                            return
+                futures = [
+                    self._executor.submit(self._run_provider, p, query, limit, category_filter, search_id) 
+                    for p in providers_to_run
+                ]
+                for future in concurrent.futures.as_completed(futures):
+                    if self._current_search_id != search_id:
+                        return
+                    try:
                         results.extend(future.result())
-            
+                    except Exception as e:
+                        print(f"Provider future error: {e}")
+
             if self._current_search_id != search_id:
                 return
-                
+
             # Финальная глобальная сортировка всех результатов по score
             results.sort(key=lambda x: x.score, reverse=True)
-            
-            # Возвращаем в callback через UI поток, только если этот поиск еще актуален
-            import gi
-            from gi.repository import GLib
-            if self._current_search_id == search_id:
-                GLib.idle_add(callback, results[:limit], search_id)
 
-        # Запускаем оркестратор в отдельном потоке чтобы не блочить UI
+            # Возвращаем в callback через UI поток, только если этот поиск еще актуален
+            try:
+                import gi
+                from gi.repository import GLib
+                if self._current_search_id == search_id:
+                    GLib.idle_add(callback, results[:limit], search_id)
+            except Exception:
+                pass
+
         threading.Thread(target=_search, daemon=True).start()
 
     def record_launch(self, app_id: str, query: str = ""):

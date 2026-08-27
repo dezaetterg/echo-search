@@ -1,6 +1,14 @@
 import os
+import subprocess
 from .base import BaseProvider, SearchResult
 from i18n import t
+
+try:
+    import gi
+    gi.require_version("Gtk", "4.0")
+    from gi.repository import Gdk
+except (ValueError, ImportError):
+    pass
 
 class CommandProvider(BaseProvider):
     def __init__(self, history_manager):
@@ -51,27 +59,36 @@ class CommandProvider(BaseProvider):
     def _create_result(self, cmd_data: dict, score: float) -> SearchResult:
         name = t(cmd_data["name_key"])
         desc = t(cmd_data["desc_key"])
+
         def _exec_callback():
-            os.system(f"{cmd_data['cmd']} &")
-            
+            try:
+                subprocess.Popen(
+                    cmd_data["cmd"],
+                    shell=True,
+                    start_new_session=True,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+            except Exception as e:
+                print(f"Error executing command {cmd_data['id']}: {e}")
+
         def _copy_callback():
             try:
-                import gi
-                gi.require_version('Gtk', '4.0')
-                from gi.repository import Gdk
-                clipboard = Gdk.Display.get_default().get_clipboard()
-                clipboard.set(cmd_data['cmd'])
-            except: pass
+                display = Gdk.Display.get_default()
+                if display:
+                    display.get_clipboard().set(cmd_data["cmd"])
+            except Exception:
+                pass
 
         return SearchResult(
-            id=cmd_data['id'],
+            id=cmd_data["id"],
             title=name,
             subtitle=desc,
-            icon=cmd_data['icon'],
+            icon=cmd_data["icon"],
             score=score,
             category="Commands",
             provider="CommandProvider",
-            preview_data={"cmd": cmd_data['cmd']},
+            preview_data={"cmd": cmd_data["cmd"]},
             action_execute=_exec_callback,
             action_copy=_copy_callback
         )
@@ -79,27 +96,33 @@ class CommandProvider(BaseProvider):
     def search(self, query: str, limit: int = 10, category_filter: str = None) -> list[SearchResult]:
         if category_filter not in (None, "All", "Commands"):
             return []
-            
+
         if not query:
             return []
 
         results = []
         q = query.lower().strip()
-        
+
         for cmd in self.commands_def:
             name = t(cmd["name_key"]).lower()
             score = 0
-            if q == name: score = 100
-            elif name.startswith(q): score = 90
-            elif q in name: score = 80
+            if q == name:
+                score = 100
+            elif name.startswith(q):
+                score = 90
+            elif q in name:
+                score = 80
             else:
                 for kw in cmd["keywords"]:
-                    if q == kw: score = max(score, 95)
-                    elif kw.startswith(q): score = max(score, 85)
-                    elif q in kw: score = max(score, 75)
-            
+                    if q == kw:
+                        score = max(score, 95)
+                    elif kw.startswith(q):
+                        score = max(score, 85)
+                    elif q in kw:
+                        score = max(score, 75)
+
             if score > 0:
                 results.append(self._create_result(cmd, score))
-                
+
         results.sort(key=lambda x: x.score, reverse=True)
         return results
