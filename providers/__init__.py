@@ -7,7 +7,6 @@ from .commands import CommandProvider
 from .files import FileProvider
 from .clipboard import ClipboardProvider
 from .emoji import EmojiProvider
-from .web import WebProvider
 
 __all__ = [
     'AppProvider',
@@ -18,6 +17,5 @@ __all__ = [
     'HistoryManager',
     'SearchResult',
     'ClipboardProvider',
-    'EmojiProvider',
-    'WebProvider'
+    'EmojiProvider'
 ]

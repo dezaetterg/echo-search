@@ -137,7 +137,6 @@ class ConfigManager:
             "emoji": True,
             "calculator": True,
             "commands": True,
-    "web_search": True,
             "settings": True,
             
             "recent_when_empty": True,
@@ -230,8 +229,6 @@ class ConfigManager:
             elif name == "CommandProvider" and self.get("commands"):
                 active.append(p)
             elif name == "UnitProvider" and self.get("calculator"):
-                active.append(p)
-            elif name == "WebProvider" and self.get("web_search", True):
                 active.append(p)
                 
         engine.providers = active

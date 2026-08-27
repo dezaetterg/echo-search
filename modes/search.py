@@ -124,17 +124,6 @@ class SearchMode(BaseMode):
             row = Gtk.ListBoxRow()
             row.set_child(row_box)
             row.set_visible(False)
-
-            # Motion controller to sync selection with mouse hover seamlessly
-            idx = i
-            motion_ctrl = Gtk.EventControllerMotion()
-            def _on_enter(controller, x, y, r_idx=idx, r_obj=row):
-                if r_obj.get_visible() and hasattr(r_obj, "result") and r_obj.result:
-                    if self.selected_index != r_idx:
-                        self.selected_index = r_idx
-                        self.update_selection()
-            motion_ctrl.connect("enter", _on_enter)
-            row.add_controller(motion_ctrl)
             
             self.results_listbox.append(row)
             

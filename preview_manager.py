@@ -367,27 +367,3 @@ class PreviewManager:
             
         root_box.append(PreviewManager._create_action_footer(actions))
         return root_box
-
-    @staticmethod
-    def _render_web(result: SearchResult) -> Gtk.Widget:
-        root_box, content_box = PreviewManager._create_base_structure()
-        
-        hero_box = PreviewManager._create_hero_container()
-        hero_box.append(PreviewManager._create_icon(result.icon, 80))
-        content_box.append(hero_box)
-        
-        url = result.preview_data.get("url", result.subtitle)
-        content_box.append(PreviewManager._create_title_block(result.title, result.category))
-        
-        grid = PreviewManager._create_meta_grid()
-        grid.attach(PreviewManager._create_meta_card(t("action_open"), url), 0, 0, 1, 1)
-        content_box.append(grid)
-        
-        actions = []
-        if result._action_execute:
-            actions.append((t("action_open"), result.execute, True))
-        if result._action_copy:
-            actions.append((t("action_copy"), result.copy_value, False))
-            
-        root_box.append(PreviewManager._create_action_footer(actions))
-        return root_box

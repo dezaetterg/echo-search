@@ -103,46 +103,6 @@ class CommandProvider(BaseProvider):
         results = []
         q = query.lower().strip()
 
-        # 1. Shell / Terminal Command Execution (e.g. > htop or $ fastfetch)
-        if query.startswith(("> ", "$ ", ">", "$")):
-            raw_cmd = query.lstrip("> $").strip()
-            if raw_cmd:
-                def _exec_terminal():
-                    terms = ["ptyxis --", "gnome-terminal --", "alacritty -e", "kitty -e", "foot", "konsole -e", "x-terminal-emulator -e", "xterm -e"]
-                    spawned = False
-                    for term in terms:
-                        try:
-                            cmd_str = f"{term} bash -c \"{raw_cmd}; echo; echo [Press Enter to close]; read\""
-                            subprocess.Popen(cmd_str, shell=True, start_new_session=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-                            spawned = True
-                            break
-                        except Exception:
-                            continue
-                    if not spawned:
-                        subprocess.Popen(raw_cmd, shell=True, start_new_session=True)
-
-                def _copy_terminal():
-                    try:
-                        display = Gdk.Display.get_default()
-                        if display:
-                            display.get_clipboard().set(raw_cmd)
-                    except Exception:
-                        pass
-
-                results.append(SearchResult(
-                    id=f"term_{raw_cmd}",
-                    title=f"Run: {raw_cmd}",
-                    subtitle="Execute command in terminal emulator",
-                    icon="utilities-terminal",
-                    score=120,
-                    category="Commands",
-                    provider="CommandProvider",
-                    preview_data={"cmd": raw_cmd},
-                    action_execute=_exec_terminal,
-                    action_copy=_copy_terminal
-                ))
-                return results
-
         for cmd in self.commands_def:
             name = t(cmd["name_key"]).lower()
             score = 0
