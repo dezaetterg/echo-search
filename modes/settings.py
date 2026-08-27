@@ -675,10 +675,8 @@ class SettingsMode(BaseMode):
         btn_box.set_valign(Gtk.Align.CENTER)
         btn_box.add_css_class("settings-theme-selector")
 
-        current_anim = cfg.get("unfold_animation", "fade_slide_down")
+        current_anim = cfg.get("unfold_animation", "slide_down")
         anim_options = [
-            ("fade_slide_down", "Fade + Slide"),
-            ("crossfade", "Crossfade"),
             ("slide_down", "Slide Down"),
             ("swing_down", "3D Swing"),
             ("none", "Instant")

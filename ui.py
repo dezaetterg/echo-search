@@ -15,8 +15,6 @@ from modes import ModeManager
 from i18n import t, i18n
 
 UNFOLD_TRANSITION_MAP = {
-    "fade_slide_down": Gtk.RevealerTransitionType.FADE_SLIDE_DOWN,
-    "crossfade": Gtk.RevealerTransitionType.CROSSFADE,
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
     "none": Gtk.RevealerTransitionType.NONE
@@ -792,7 +790,7 @@ class EchoUI(Gtk.Window):
         self.results_container.append(self.mode_manager.get_widget())
         
         unfold_mode = self.config_manager.get("unfold_animation", "fade_slide_down") if self.config_manager else "fade_slide_down"
-        transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.FADE_SLIDE_DOWN)
+        transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.SLIDE_DOWN)
         revealer_duration = anim_duration if unfold_mode != "none" else 0
         
         self.results_revealer = Gtk.Revealer()
@@ -948,7 +946,7 @@ class EchoUI(Gtk.Window):
         revealer_duration = anim_duration if unfold_mode != "none" else 0
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         if hasattr(self, 'results_revealer'):
-            transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.FADE_SLIDE_DOWN)
+            transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.SLIDE_DOWN)
             self.results_revealer.set_transition_type(transition_type)
             self.results_revealer.set_transition_duration(revealer_duration)
             
