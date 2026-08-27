@@ -10,6 +10,7 @@ from providers import (
     FileProvider,
     ClipboardProvider,
     EmojiProvider,
+    WebProvider,
     SearchResult
 )
 
@@ -25,6 +26,7 @@ class SearchEngine:
         self.files = FileProvider(self.history)
         self.clipboard = ClipboardProvider(self.history)
         self.emoji = EmojiProvider(self.history)
+        self.web = WebProvider(self.history)
         
         self.providers = [
             self.calculator,
@@ -33,7 +35,8 @@ class SearchEngine:
             self.apps,
             self.files,
             self.clipboard,
-            self.emoji
+            self.emoji,
+            self.web
         ]
         
         self._provider_map = {
@@ -44,7 +47,9 @@ class SearchEngine:
             "Emoji": [self.emoji],
             "Math": [self.calculator, self.units],
             "Units": [self.units],
-            "Commands": [self.commands]
+            "Commands": [self.commands],
+            "Web": [self.web],
+            "Bookmarks": [self.web]
         }
         
         self._current_search_id = 0
