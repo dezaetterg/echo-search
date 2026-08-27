@@ -41,6 +41,7 @@ class PreviewManager:
         """
         root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         root_box.set_vexpand(True)
+        root_box.add_css_class("preview-root-box")
         
         scroll = Gtk.ScrolledWindow()
         scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)

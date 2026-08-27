@@ -108,7 +108,7 @@ entry#search-entry text,
     color: rgba(255, 255, 255, 0.8);
     font-size: 13px;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    transition: all 0.2s;
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .chip:hover {
@@ -132,7 +132,7 @@ row, .result-row {
     border-radius: 0;
     margin-bottom: 0;
     background-color: transparent;
-    transition: background-color 0.15s, box-shadow 0.15s;
+    transition: background-color 100ms cubic-bezier(0.16, 1, 0.3, 1), border-color 100ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* Скругления для элементов списка */
@@ -141,11 +141,30 @@ row:last-child { border-bottom-left-radius: 12px; border-bottom-right-radius: 12
 row:only-child { border-radius: 12px; }
 
 row:selected, .result-row:selected, row:selected:hover {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.22);
     color: white;
-    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.3),
-                inset 0 -1px 1px rgba(0, 0, 0, 0.1);
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35),
+                0 4px 14px rgba(0, 0, 0, 0.2),
+                0 0 16px rgba(255, 255, 255, 0.08);
+    transform: scale(1.012);
     outline: none;
+}
+
+row:hover, .result-row:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    transform: scale(1.006);
+}
+
+.result-icon {
+    margin-right: 12px;
+    transition: transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+row:selected .result-icon,
+.result-row:selected .result-icon {
+    transform: scale(1.08);
 }
 
 row:hover, .result-row:hover {
@@ -187,10 +206,10 @@ row:hover, .result-row:hover {
     border: 1px solid rgba(255, 255, 255, 0.08);
     outline: none;
     color: rgba(255, 255, 255, 0.7);
-    transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
-                border-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
-                color 150ms cubic-bezier(0.16, 1, 0.3, 1),
-                transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background-color 100ms cubic-bezier(0.16, 1, 0.3, 1),
+                border-color 100ms cubic-bezier(0.16, 1, 0.3, 1),
+                color 100ms cubic-bezier(0.16, 1, 0.3, 1),
+                transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
@@ -212,7 +231,7 @@ row:hover, .result-row:hover {
 .app-card-container {
     padding: 4px;
     border-radius: 16px;
-    transition: all 150ms ease-out;
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .app-card-container:hover {
@@ -273,7 +292,7 @@ scrollbar slider:hover {
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: rgba(255, 255, 255, 0.7);
     box-shadow: none;
-    transition: all 150ms ease;
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .apps-more-button:hover {
     background: rgba(255, 255, 255, 0.1);
@@ -288,7 +307,7 @@ scrollbar slider:hover {
     font-weight: 500;
     color: rgba(255, 255, 255, 0.6);
     border: 1px solid rgba(255, 255, 255, 0.05);
-    transition: all 150ms ease;
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     outline: none;
     box-shadow: none;
 }
@@ -335,7 +354,7 @@ scrollbar slider:hover {
 }
 
 .file-card {
-    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     border-radius: 12px;
     padding: 8px;
 }
@@ -349,7 +368,7 @@ scrollbar slider:hover {
 .file-icon-img {
     border-radius: 8px;
     opacity: 0.5;
-    transition: opacity 0.3s ease-in-out;
+    transition: opacity 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .file-icon-img.loaded {
@@ -375,7 +394,7 @@ scrollbar slider:hover {
 .preview-panel {
     background: rgba(30, 30, 35, 0.4);
     border-left: 1px solid rgba(255, 255, 255, 0.1);
-    transition: opacity 0.3s ease;
+    transition: opacity 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .preview-panel.loading {
@@ -443,7 +462,7 @@ scrollbar slider:hover {
     padding: 8px;
     border-radius: 20px;
     background: transparent;
-    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     min-height: 80px;
 }
 
@@ -570,7 +589,7 @@ scrollbar slider:hover {
     padding: 10px 24px;
     font-weight: 600;
     font-size: 15px;
-    transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background-color 100ms cubic-bezier(0.16, 1, 0.3, 1), border-color 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .preview-btn:hover {
@@ -623,7 +642,7 @@ gridview > child:selected:hover {
 .launchpad-card {
     padding: 16px;
     border-radius: 20px;
-    transition: background-color 150ms cubic-bezier(0.16, 1, 0.3, 1), border-color 150ms cubic-bezier(0.16, 1, 0.3, 1), transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background-color 100ms cubic-bezier(0.16, 1, 0.3, 1), border-color 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     background: transparent;
     border: 1px solid transparent;
 }
@@ -642,7 +661,7 @@ gridview > child:selected:hover {
 }
 
 .launchpad-icon {
-    transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1);
+    transition: transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     margin-bottom: 16px;
     filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
 }
@@ -676,7 +695,7 @@ gridview > child:selected:hover {
 .finder-card {
     padding: 12px;
     border-radius: 16px;
-    transition: all 0.2s ease;
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     background: transparent;
 }
 
@@ -716,7 +735,7 @@ switch {
     min-width: 44px;
     min-height: 24px;
     padding: 2px;
-    transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: background 110ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 switch:checked {
@@ -733,7 +752,7 @@ switch slider {
     outline: none;
     border: none;
     margin: 0;
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 110ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 switch:checked slider {
@@ -784,7 +803,7 @@ switch:focus {
 .settings-row {
     padding: 10px 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-    transition: background 0.15s ease;
+    transition: background-color 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .settings-row:last-child {
@@ -825,7 +844,7 @@ switch:focus {
     font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
     font-size: 12px;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -884,7 +903,7 @@ scale.settings-slider slider {
     padding: 4px 12px;
     font-size: 11px;
     font-weight: 500;
-    transition: all 0.15s ease;
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: none;
 }
 
@@ -908,7 +927,7 @@ scale.settings-slider slider {
     padding: 8px 18px;
     font-size: 12px;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .settings-reset-btn:hover {
@@ -986,4 +1005,38 @@ entry placeholder {
 
 .results-container.folded {
     opacity: 0.0;
+}
+
+/* ==============================
+   Fluid Micro-Interactions & Preview
+   ============================== */
+
+.preview-root-box {
+    opacity: 1.0;
+    transition: opacity 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.preview-hero-container {
+    transition: transform 110ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.preview-hero-container:hover {
+    transform: scale(1.02);
+}
+
+.preview-hero-icon {
+    transition: transform 110ms cubic-bezier(0.16, 1, 0.3, 1), filter 110ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.preview-hero-icon:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.3));
+}
+
+.preview-action-btn {
+    transition: all 100ms cubic-bezier(0.16, 1, 0.3, 1), transform 100ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.preview-action-btn:hover {
+    transform: scale(1.03);
 }
