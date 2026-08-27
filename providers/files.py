@@ -180,14 +180,6 @@ class FileProvider(BaseProvider):
             except Exception as e:
                 print(f"Clipboard file copy error: {e}")
 
-        try:
-            stat = os.stat(path)
-            size = self._format_size(stat.st_size)
-            mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
-        except Exception:
-            size = "Unknown"
-            mtime = "Unknown"
-
         return SearchResult(
             id=f"file_{path}",
             title=name,
@@ -199,9 +191,7 @@ class FileProvider(BaseProvider):
             preview_data={
                 "type": "file",
                 "path": path,
-                "mime": mime_type,
-                "size": size,
-                "mtime": mtime
+                "mime": mime_type
             },
             action_execute=_exec_callback,
             action_open_location=_loc_callback,

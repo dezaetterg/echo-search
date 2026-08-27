@@ -159,9 +159,8 @@ class SearchMode(BaseMode):
             self.main_window.set_default_size(650, 1)
             self.main_window.queue_resize()
             
-            # Принудительная перерисовка при изменении высоты и ширины
-            GLib.timeout_add(100, lambda: self.main_window.queue_draw() if self.main_window else False)
-            GLib.timeout_add(250, lambda: self.main_window.queue_draw() if self.main_window else False)
+            if self.main_window:
+                self.main_window.queue_draw()
             return
 
         if not self.current_results:
@@ -264,9 +263,8 @@ class SearchMode(BaseMode):
         else:
             self.selected_index = -1
             
-        # Принудительная перерисовка при изменении высоты
-        GLib.timeout_add(100, lambda: self.main_window.queue_draw() if self.main_window else False)
-        GLib.timeout_add(250, lambda: self.main_window.queue_draw() if self.main_window else False)
+        if self.main_window:
+            self.main_window.queue_draw()
 
     def update_selection(self):
         row = self.results_listbox.get_row_at_index(self.selected_index)

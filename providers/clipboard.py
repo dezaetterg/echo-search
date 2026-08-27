@@ -148,7 +148,11 @@ class ClipboardProvider(BaseProvider):
 
         results = []
         for i, item in enumerate(self.history):
-            if q in item["text"].lower():
+            t_lower = item.get("text_lower")
+            if t_lower is None:
+                t_lower = item["text"].lower()
+                item["text_lower"] = t_lower
+            if q in t_lower:
                 results.append(self._create_result(item, i))
 
         return results[:limit]

@@ -311,7 +311,7 @@ class AppProvider(BaseProvider):
                 return recent_apps
 
         app_results = []
-        queries = [query, query_en, query_ru, query_phonetic]
+        queries = list(dict.fromkeys([q for q in [query, query_en, query_ru, query_phonetic] if q]))
 
         for app in candidates:
             app_names = app.app_names

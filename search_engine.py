@@ -1,7 +1,5 @@
 import concurrent.futures
 import threading
-import uuid
-from rapidfuzz import fuzz
 
 from providers import (
     HistoryManager, 
@@ -19,30 +17,49 @@ class SearchEngine:
     def __init__(self, config_manager=None):
         self.config_manager = config_manager
         self.history = HistoryManager(config_manager)
+        
+        self.calculator = CalculatorProvider(self.history)
+        self.units = UnitProvider(self.history)
+        self.commands = CommandProvider(self.history)
+        self.apps = AppProvider(self.history)
+        self.files = FileProvider(self.history)
+        self.clipboard = ClipboardProvider(self.history)
+        self.emoji = EmojiProvider(self.history)
+        
         self.providers = [
-            CalculatorProvider(self.history),
-            UnitProvider(self.history),
-            CommandProvider(self.history),
-            AppProvider(self.history),
-            FileProvider(self.history),
-            ClipboardProvider(self.history),
-            EmojiProvider(self.history)
+            self.calculator,
+            self.units,
+            self.commands,
+            self.apps,
+            self.files,
+            self.clipboard,
+            self.emoji
         ]
-        self._current_search_id = None
+        
+        self._provider_map = {
+            "Apps": [self.apps],
+            "Settings": [self.apps],
+            "Files": [self.files],
+            "Clipboard": [self.clipboard],
+            "Emoji": [self.emoji],
+            "Math": [self.calculator, self.units],
+            "Units": [self.units],
+            "Commands": [self.commands]
+        }
+        
+        self._current_search_id = 0
         self._lock = threading.Lock()
         self._executor = concurrent.futures.ThreadPoolExecutor(
             max_workers=8,
-            thread_name_prefix="echo_search_worker"
+            thread_name_prefix="echo_worker"
         )
 
     def _run_provider(self, provider, query, limit, category_filter, search_id):
-        # Если поиск отменен до начала, выходим
         if self._current_search_id != search_id:
             return []
 
         try:
             results = provider.search(query, limit, category_filter)
-            # Если отменен во время работы
             if self._current_search_id != search_id:
                 return []
             return results
@@ -56,52 +73,49 @@ class SearchEngine:
                 provider.reload_apps()
 
     def get_all_apps(self) -> list[SearchResult]:
-        for provider in self.providers:
-            if isinstance(provider, AppProvider):
-                return provider.search("", limit=100, category_filter="Apps")
-        return []
+        return self.apps.search("", limit=100, category_filter="Apps")
 
     def get_clipboard_history(self) -> list[SearchResult]:
-        for provider in self.providers:
-            if isinstance(provider, ClipboardProvider):
-                return provider.search("", limit=100, category_filter="Clipboard")
-        return []
+        return self.clipboard.search("", limit=100, category_filter="Clipboard")
 
     def get_recent_files(self) -> list[SearchResult]:
-        for provider in self.providers:
-            if isinstance(provider, FileProvider):
-                if hasattr(provider, "get_recent_files"):
-                    return provider.get_recent_files(limit=30)
-                return provider.search("", limit=20, category_filter="Files")
-        return []
+        if hasattr(self.files, "get_recent_files"):
+            return self.files.get_recent_files(limit=30)
+        return self.files.search("", limit=20, category_filter="Files")
 
     def get_all_emojis(self) -> list[SearchResult]:
-        for provider in self.providers:
-            if isinstance(provider, EmojiProvider):
-                return provider.search("", limit=4000, category_filter="Emoji")
-        return []
+        return self.emoji.search("", limit=4000, category_filter="Emoji")
 
     def search_async(self, query: str, limit: int, category_filter: str, callback):
         with self._lock:
-            search_id = str(uuid.uuid4())
-            self._current_search_id = search_id
+            self._current_search_id += 1
+            search_id = self._current_search_id
 
         def _search():
+            if self._current_search_id != search_id:
+                return
+                
             results = []
 
-            # Если пустой запрос и фильтр не стоит, собираем недавние/частые через AppProvider
+            # 1. Если пустой запрос и фильтр не стоит, отдаем недавние приложения
             if not query and category_filter in (None, "All"):
                 recent_when_empty = self.config_manager.get("recent_when_empty") if self.config_manager else True
                 if recent_when_empty:
-                    app_prov = next((p for p in self.providers if isinstance(p, AppProvider)), None)
-                    if app_prov:
-                        results.extend(app_prov.search(query, limit, category_filter))
+                    results.extend(self.apps.search(query, limit, category_filter))
+            
+            # 2. Если выбран конкретный режим/категория - опрашиваем только целевого провайдера
+            elif category_filter and category_filter in self._provider_map:
+                target_providers = self._provider_map[category_filter]
+                for p in target_providers:
+                    if self._current_search_id != search_id:
+                        return
+                    results.extend(p.search(query, limit, category_filter))
+            
+            # 3. Глобальный поиск - параллельный опрос
             else:
-                # Параллельный опрос всех провайдеров через постоянный переиспользуемый пул потоков
-                providers_to_run = self.providers
                 futures = [
                     self._executor.submit(self._run_provider, p, query, limit, category_filter, search_id) 
-                    for p in providers_to_run
+                    for p in self.providers
                 ]
                 for future in concurrent.futures.as_completed(futures):
                     if self._current_search_id != search_id:
@@ -109,15 +123,14 @@ class SearchEngine:
                     try:
                         results.extend(future.result())
                     except Exception as e:
-                        print(f"Provider future error: {e}")
+                        print(f"Provider error: {e}")
 
             if self._current_search_id != search_id:
                 return
 
-            # Финальная глобальная сортировка всех результатов по score
+            # Сортировка результатов по релевантности
             results.sort(key=lambda x: x.score, reverse=True)
 
-            # Возвращаем в callback через UI поток, только если этот поиск еще актуален
             try:
                 import gi
                 from gi.repository import GLib
@@ -126,7 +139,7 @@ class SearchEngine:
             except Exception:
                 pass
 
-        threading.Thread(target=_search, daemon=True).start()
+        self._executor.submit(_search)
 
     def record_launch(self, app_id: str, query: str = ""):
         self.history.record_launch(app_id, query)

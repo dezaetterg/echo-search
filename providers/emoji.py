@@ -255,12 +255,17 @@ class EmojiProvider(BaseProvider):
                             for ru_syn in RU_EMOJI_SYNONYMS[char]:
                                 keywords.add(ru_syn)
                                 
+                        kw_list = list(keywords)
+                        direct_ru_list = RU_EMOJI_SYNONYMS.get(char, [])
                         self.emojis.append({
                             "char": char,
                             "name": name,
+                            "name_lower": name.lower(),
                             "category": category,
-                            "kw": list(keywords),
-                            "direct_ru": RU_EMOJI_SYNONYMS.get(char, [])
+                            "kw": kw_list,
+                            "kw_lower": [k.lower() for k in kw_list],
+                            "direct_ru": direct_ru_list,
+                            "direct_ru_lower": [r.lower() for r in direct_ru_list]
                         })
         except Exception as e:
             print("Failed to load emoji DB:", e)
@@ -303,12 +308,16 @@ class EmojiProvider(BaseProvider):
             ("↵", "Downwards Arrow with Corner Leftwards", ["arrow", "return", "enter", "энтер", "перенос"])
         ]
         for char, name, tags in chars:
+            direct_ru = [t for t in tags if any(ord(c) > 127 for c in t)]
             self.emojis.append({
                 "char": char,
                 "name": name,
+                "name_lower": name.lower(),
                 "category": "Characters",
                 "kw": tags,
-                "direct_ru": [t for t in tags if any(ord(c) > 127 for c in t)]
+                "kw_lower": [t.lower() for t in tags],
+                "direct_ru": direct_ru,
+                "direct_ru_lower": [r.lower() for r in direct_ru]
             })
             
     def _create_result(self, emoji_char: str, name: str, keywords: list, category: str, score: float) -> SearchResult:

@@ -218,13 +218,34 @@ class PreviewManager:
         
         content_box.append(PreviewManager._create_title_block(result.title, result.preview_data.get("mime", "")))
         
+        # Lazy on-demand stat calculation for selected file
+        path = result.preview_data.get("path")
+        size = result.preview_data.get("size")
+        mtime = result.preview_data.get("mtime")
+        
+        if (not size or not mtime) and path and os.path.exists(path):
+            try:
+                from datetime import datetime
+                stat = os.stat(path)
+                bytes_size = stat.st_size
+                for unit in ["B", "KB", "MB", "GB", "TB"]:
+                    if bytes_size < 1024.0:
+                        size = f"{bytes_size:.1f} {unit}"
+                        break
+                    bytes_size /= 1024.0
+                mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M")
+                result.preview_data["size"] = size
+                result.preview_data["mtime"] = mtime
+            except Exception:
+                pass
+
         grid = PreviewManager._create_meta_grid()
         col = 0
-        if result.preview_data.get("size") and result.preview_data["size"] != "Unknown":
-            grid.attach(PreviewManager._create_meta_card(t("label_size"), result.preview_data["size"]), col, 0, 1, 1)
+        if size and size != "Unknown":
+            grid.attach(PreviewManager._create_meta_card(t("label_size"), size), col, 0, 1, 1)
             col += 1
-        if result.preview_data.get("mtime") and result.preview_data["mtime"] != "Unknown":
-            grid.attach(PreviewManager._create_meta_card(t("label_modified"), result.preview_data["mtime"]), col, 0, 1, 1)
+        if mtime and mtime != "Unknown":
+            grid.attach(PreviewManager._create_meta_card(t("label_modified"), mtime), col, 0, 1, 1)
             
         content_box.append(grid)
         
