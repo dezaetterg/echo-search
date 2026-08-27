@@ -153,9 +153,7 @@ class ClipboardMode(BaseMode):
         else:
             self.stack.set_visible_child_name("empty")
             
-        self.main_window.set_default_size(1050, 1)
-        self.main_window.queue_resize()
-
+        
     def on_new_clipboard_item(self, result):
         query = self.main_window.entry.get_text().strip()
         if not query:

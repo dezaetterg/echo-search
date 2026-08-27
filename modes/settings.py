@@ -531,9 +531,7 @@ class SettingsMode(BaseMode):
 
     def on_activated(self):
         self._build_settings_ui()
-        self.main_window.set_default_size(750, 1)
-        self.main_window.queue_resize()
-
+        
     def render(self, results: list):
         pass
 

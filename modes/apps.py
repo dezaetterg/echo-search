@@ -90,8 +90,8 @@ class AppsMode(BaseMode):
         
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.scroll.set_min_content_height(400)
-        self.scroll.set_max_content_height(400)
+        self.scroll.set_min_content_height(420)
+        self.scroll.set_max_content_height(420)
         self.scroll.set_child(self.grid_view)
         
         # Контейнер для эффекта стеклянной поверхности
@@ -141,8 +141,6 @@ class AppsMode(BaseMode):
         self.filter_buttons[cat_name].add_css_class("active")
         self.custom_filter.set_filter_func(self._filter_func)
         
-        self.main_window.set_default_size(1050, 1)
-        self.main_window.queue_resize()
 
     def _on_factory_setup(self, factory, list_item):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -203,8 +201,6 @@ class AppsMode(BaseMode):
         else:
             self.grid_view.set_visible(False)
             
-        self.main_window.set_default_size(1050, 1)
-        self.main_window.queue_resize()
 
     def _launch_app(self, result):
         if getattr(result, 'execute', None):

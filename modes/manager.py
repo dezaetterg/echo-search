@@ -21,7 +21,7 @@ class ModeManager:
         self.current_results = []
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
-        self.stack.set_transition_duration(100)
+        self.stack.set_transition_duration(110)
         self.stack.set_interpolate_size(False)
         
         # Initialize modes
@@ -47,6 +47,8 @@ class ModeManager:
             GLib.idle_add(self.modes["Apps"]._preload_apps)
         if hasattr(self.modes["Emoji"], "_preload_emojis"):
             GLib.idle_add(self.modes["Emoji"]._preload_emojis)
+        if hasattr(self.modes["Files"], "_preload_files"):
+            GLib.idle_add(self.modes["Files"]._preload_files)
 
     def get_widget(self) -> Gtk.Widget:
         return self.stack

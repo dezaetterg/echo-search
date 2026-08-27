@@ -88,8 +88,8 @@ class FilesMode(BaseMode):
         # --- SCROLLABLE CONTENT ---
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.scroll.set_min_content_height(400)
-        self.scroll.set_max_content_height(400)
+        self.scroll.set_min_content_height(420)
+        self.scroll.set_max_content_height(420)
         
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.content_box.set_spacing(12)
@@ -154,6 +154,15 @@ class FilesMode(BaseMode):
         
         self.populated = False
         return self.left_box
+
+    def _preload_files(self):
+        if not self.populated and hasattr(self.main_window, "engine"):
+            file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
+            if file_provider and hasattr(file_provider, "get_recent_files"):
+                results = file_provider.get_recent_files()
+                self._populate(results)
+                self.populated = True
+        return False
 
     def _create_card(self, result):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -320,8 +329,6 @@ class FilesMode(BaseMode):
         self.suggestions_flowbox.set_filter_func(self._filter_func)
         self.recents_flowbox.set_filter_func(None)
         self.recents_flowbox.set_filter_func(self._filter_func)
-        self.main_window.set_default_size(1050, 1)
-        self.main_window.queue_resize()
 
     def _filter_func(self, child):
         if not hasattr(child, "result"):
@@ -373,8 +380,6 @@ class FilesMode(BaseMode):
         self.recents_flowbox.set_filter_func(None)
         self.recents_flowbox.set_filter_func(self._filter_func)
             
-        self.main_window.set_default_size(1050, 1)
-        self.main_window.queue_resize()
 
     def on_activated(self):
         pass
