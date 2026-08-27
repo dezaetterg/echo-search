@@ -103,6 +103,11 @@ class ModeManager:
         category = active_mode.get_category_filter()
         query = query.strip()
         
+        if category == "Settings":
+            if hasattr(active_mode, "filter_settings"):
+                active_mode.filter_settings(query)
+            return
+
         if not query:
             if category == "Apps":
                 self.current_results = self.engine.get_all_apps()

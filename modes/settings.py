@@ -139,9 +139,9 @@ class SettingsMode(BaseMode):
 
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.scroll.set_min_content_height(480)
-        self.scroll.set_max_content_height(480)
-        self.scroll.set_propagate_natural_height(False)
+        self.scroll.set_min_content_height(160)
+        self.scroll.set_max_content_height(520)
+        self.scroll.set_propagate_natural_height(True)
         self.scroll.set_hexpand(True)
         self.scroll.set_vexpand(True)
         self.scroll.add_css_class("settings-scrolled")
@@ -158,171 +158,340 @@ class SettingsMode(BaseMode):
         self.box.append(self.scroll)
         return self.box
 
+    def _get_setting_definitions(self):
+        cfg = self.main_window.config_manager
+        return [
+            {
+                "id": "language",
+                "group": t("settings_group_general"),
+                "title": t("settings_language"),
+                "keywords": "язык language russian english русский интерфейс",
+                "builder": lambda: self._create_language_row(cfg)
+            },
+            {
+                "id": "autostart",
+                "group": t("settings_group_general"),
+                "title": t("settings_autostart"),
+                "keywords": "автозапуск старт login autostart startup запуск при входе",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_autostart"), None, cfg.get("launch_at_login", False),
+                    lambda active: self._on_setting_changed("launch_at_login", active)
+                )
+            },
+            {
+                "id": "shortcut",
+                "group": t("settings_group_general"),
+                "title": t("settings_hotkey"),
+                "keywords": "горячие клавиши шорткат shortcut hotkey keybinding super space запуск сочетание",
+                "builder": lambda: self._create_shortcut_row(
+                    t("settings_hotkey"), cfg.get("launch_shortcut", "<Super>space")
+                )
+            },
+            {
+                "id": "search_history",
+                "group": t("settings_group_general"),
+                "title": t("settings_search_history"),
+                "keywords": "история history поиск search запросы",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_search_history"), None, cfg.get("search_history", True),
+                    lambda active: self._on_setting_changed("search_history", active)
+                )
+            },
+            {
+                "id": "recent_when_empty",
+                "group": t("settings_group_general"),
+                "title": t("settings_recent_when_empty"),
+                "keywords": "недавние recent элементы файлы история пустой",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_recent_when_empty"), None, cfg.get("recent_when_empty", True),
+                    lambda active: self._on_setting_changed("recent_when_empty", active)
+                )
+            },
+            {
+                "id": "theme",
+                "group": t("settings_group_appearance"),
+                "title": t("settings_theme"),
+                "keywords": "тема theme dark light стекло glass темная светлая оформление вид",
+                "builder": lambda: self._create_theme_row(cfg)
+            },
+            {
+                "id": "transparency",
+                "group": t("settings_group_appearance"),
+                "title": t("settings_transparency"),
+                "keywords": "прозрачность transparency opacity альфа стекло",
+                "builder": lambda: self._create_slider_row(
+                    t("settings_transparency"),
+                    int((cfg.get("transparency", 0.30) if cfg.get("transparency") is not None else 0.30) * 100),
+                    0, 100, 1, unit="%",
+                    callback=lambda val: self._on_setting_changed("transparency", round(val / 100.0, 2))
+                )
+            },
+            {
+                "id": "blur",
+                "group": t("settings_group_appearance"),
+                "title": t("settings_blur"),
+                "keywords": "размытие блюр blur background фон размывать",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_blur"), None, cfg.get("blur", True),
+                    lambda active: self._on_setting_changed("blur", active)
+                )
+            },
+            {
+                "id": "animations",
+                "group": t("settings_group_appearance"),
+                "title": t("settings_animations"),
+                "keywords": "анимация анимации animation speed плавность эффекты",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_animations"), None, cfg.get("animations", True),
+                    lambda active: self._on_setting_changed("animations", active)
+                )
+            },
+            {
+                "id": "unfold_animation",
+                "group": t("settings_group_appearance"),
+                "title": t("settings_unfold_animation"),
+                "keywords": "анимация развертывания выезд скольжение unfold slide crossfade fade swing раскрытие динамический",
+                "builder": lambda: self._create_unfold_animation_row(cfg)
+            },
+            {
+                "id": "results_limit",
+                "group": t("settings_group_results"),
+                "title": t("settings_results_limit"),
+                "keywords": "лимит количество results limit число выдача элементов",
+                "builder": lambda: self._create_slider_row(
+                    t("settings_results_limit"), cfg.get("results_limit", 20),
+                    5, 50, 1, unit="",
+                    callback=lambda val: self._on_setting_changed("results_limit", int(val))
+                )
+            },
+            {
+                "id": "preview_enabled",
+                "group": t("settings_group_preview"),
+                "title": t("settings_preview_enabled"),
+                "keywords": "превью просмотр preview panel панель предпросмотра включить",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_preview_enabled"), None, cfg.get("preview_enabled", True),
+                    lambda active: self._on_setting_changed("preview_enabled", active)
+                )
+            },
+            {
+                "id": "preview_width",
+                "group": t("settings_group_preview"),
+                "title": t("settings_preview_width"),
+                "keywords": "ширина размер preview width панель предпросмотра",
+                "builder": lambda: self._create_slider_row(
+                    t("settings_preview_width"), cfg.get("preview_width", 420),
+                    200, 800, 10, unit="px",
+                    callback=lambda val: self._on_setting_changed("preview_width", int(val))
+                )
+            },
+            {
+                "id": "cat_apps",
+                "group": t("settings_group_categories"),
+                "title": t("settings_cat_apps"),
+                "keywords": "приложения apps программы категории поиск",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_cat_apps"), None, cfg.get("applications", True),
+                    lambda active: self._on_setting_changed("applications", active)
+                )
+            },
+            {
+                "id": "cat_files",
+                "group": t("settings_group_categories"),
+                "title": t("settings_cat_files"),
+                "keywords": "файлы documents files папки категории поиск",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_cat_files"), None, cfg.get("files", True),
+                    lambda active: self._on_setting_changed("files", active)
+                )
+            },
+            {
+                "id": "cat_clipboard",
+                "group": t("settings_group_categories"),
+                "title": t("settings_cat_clipboard"),
+                "keywords": "буфер история clipboard скопировано категории поиск",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_cat_clipboard"), None, cfg.get("clipboard", True),
+                    lambda active: self._on_setting_changed("clipboard", active)
+                )
+            },
+            {
+                "id": "cat_emoji",
+                "group": t("settings_group_categories"),
+                "title": t("settings_cat_emoji"),
+                "keywords": "эмодзи emoji смайлы символы категории поиск",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_cat_emoji"), None, cfg.get("emoji", True),
+                    lambda active: self._on_setting_changed("emoji", active)
+                )
+            },
+            {
+                "id": "cat_calculator",
+                "group": t("settings_group_categories"),
+                "title": t("settings_cat_calc"),
+                "keywords": "калькулятор calculator math конвертер валюты единицы категории поиск",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_cat_calc"), None, cfg.get("calculator", True),
+                    lambda active: self._on_setting_changed("calculator", active)
+                )
+            },
+            {
+                "id": "cat_commands",
+                "group": t("settings_group_categories"),
+                "title": t("settings_cat_commands"),
+                "keywords": "команды commands bash терминал система категории поиск",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_cat_commands"), None, cfg.get("commands", True),
+                    lambda active: self._on_setting_changed("commands", active)
+                )
+            }
+        ]
+
     def _build_settings_ui(self):
         while child := self.content_box.get_first_child():
             self.content_box.remove(child)
 
         cfg = self.main_window.config_manager
 
-        # ========================================================
-        # 1. ОСНОВНЫЕ ПАРАМЕТРЫ (MAIN SETTINGS)
-        # ========================================================
-        group_general = self._create_group(t("settings_group_general"))
-        
-        group_general.append(self._create_language_row(cfg))
+        # 1. ОФОРМЛЕНИЕ И АНИМАЦИИ (APPEARANCE & ANIMATIONS FIRST)
+        group_appearance = self._create_group(t("settings_group_appearance"))
+        group_appearance.append(self._create_theme_row(cfg))
+        trans_val = int((cfg.get("transparency", 0.30) if cfg.get("transparency") is not None else 0.30) * 100)
+        group_appearance.append(self._create_slider_row(
+            t("settings_transparency"), trans_val, 0, 100, 1, unit="%",
+            callback=lambda val: self._on_setting_changed("transparency", round(val / 100.0, 2))
+        ))
+        group_appearance.append(self._create_switch_row(
+            t("settings_blur"), None, cfg.get("blur", True),
+            lambda active: self._on_setting_changed("blur", active)
+        ))
+        group_appearance.append(self._create_switch_row(
+            t("settings_animations"), None, cfg.get("animations", True),
+            lambda active: self._on_setting_changed("animations", active)
+        ))
+        group_appearance.append(self._create_unfold_animation_row(cfg))
 
+        # 2. ОСНОВНЫЕ ПАРАМЕТРЫ (GENERAL SETTINGS)
+        group_general = self._create_group(t("settings_group_general"))
+        group_general.append(self._create_language_row(cfg))
         group_general.append(self._create_switch_row(
-            t("settings_autostart"),
-            None,
-            cfg.get("launch_at_login", False),
+            t("settings_autostart"), None, cfg.get("launch_at_login", False),
             lambda active: self._on_setting_changed("launch_at_login", active)
         ))
-
-        shortcut_row = self._create_shortcut_row(
-            t("settings_hotkey"),
-            cfg.get("launch_shortcut", "<Super>space")
-        )
-        group_general.append(shortcut_row)
-
+        group_general.append(self._create_shortcut_row(
+            t("settings_hotkey"), cfg.get("launch_shortcut", "<Super>space")
+        ))
         group_general.append(self._create_switch_row(
-            t("settings_search_history"),
-            None,
-            cfg.get("search_history", True),
+            t("settings_search_history"), None, cfg.get("search_history", True),
             lambda active: self._on_setting_changed("search_history", active)
         ))
-
         group_general.append(self._create_switch_row(
-            t("settings_recent_when_empty"),
-            None,
-            cfg.get("recent_when_empty", True),
+            t("settings_recent_when_empty"), None, cfg.get("recent_when_empty", True),
             lambda active: self._on_setting_changed("recent_when_empty", active)
         ))
 
-        # ========================================================
-        # 3. ОФОРМЛЕНИЕ (APPEARANCE)
-        # ========================================================
-        group_appearance = self._create_group(t("settings_group_appearance"))
-        
-        group_appearance.append(self._create_theme_row(cfg))
-
-        trans_val = int((cfg.get("transparency", 0.30) if cfg.get("transparency") is not None else 0.30) * 100)
-        group_appearance.append(self._create_slider_row(
-            t("settings_transparency"),
-            trans_val,
-            0, 100, 1,
-            unit="%",
-            callback=lambda val: self._on_setting_changed("transparency", round(val / 100.0, 2))
-        ))
-
-        group_appearance.append(self._create_switch_row(
-            t("settings_blur"),
-            None,
-            cfg.get("blur", True),
-            lambda active: self._on_setting_changed("blur", active)
-        ))
-
-        group_appearance.append(self._create_switch_row(
-            t("settings_animations"),
-            None,
-            cfg.get("animations", True),
-            lambda active: self._on_setting_changed("animations", active)
-        ))
-
-        group_appearance.append(self._create_unfold_animation_row(cfg))
-
-        # ========================================================
-        # 2. ПАРАМЕТРЫ ВЫДАЧИ (SEARCH RESULTS)
-        # ========================================================
+        # 3. ПАРАМЕТРЫ ВЫДАЧИ
         group_params = self._create_group(t("settings_group_results"))
-
         group_params.append(self._create_slider_row(
-            t("settings_results_limit"),
-            cfg.get("results_limit", 20),
-            5, 50, 1,
-            unit="",
+            t("settings_results_limit"), cfg.get("results_limit", 20),
+            5, 50, 1, unit="",
             callback=lambda val: self._on_setting_changed("results_limit", int(val))
         ))
 
-        # ========================================================
-        # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА (PREVIEW PANEL)
-        # ========================================================
+        # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА
         group_preview = self._create_group(t("settings_group_preview"))
-
         group_preview.append(self._create_switch_row(
-            t("settings_preview_enabled"),
-            None,
-            cfg.get("preview_enabled", True),
+            t("settings_preview_enabled"), None, cfg.get("preview_enabled", True),
             lambda active: self._on_setting_changed("preview_enabled", active)
         ))
-
         group_preview.append(self._create_slider_row(
-            t("settings_preview_width"),
-            cfg.get("preview_width", 420),
-            200, 800, 10,
-            unit="px",
+            t("settings_preview_width"), cfg.get("preview_width", 420),
+            200, 800, 10, unit="px",
             callback=lambda val: self._on_setting_changed("preview_width", int(val))
         ))
 
-        # ========================================================
-        # 5. КАТЕГОРИИ ПОИСКА (SEARCH CATEGORIES)
-        # ========================================================
+        # 5. КАТЕГОРИИ ПОИСКА
         group_categories = self._create_group(t("settings_group_categories"))
-
         group_categories.append(self._create_switch_row(
-            t("settings_cat_apps"),
-            None,
-            cfg.get("applications", True),
+            t("settings_cat_apps"), None, cfg.get("applications", True),
             lambda active: self._on_setting_changed("applications", active)
         ))
-
         group_categories.append(self._create_switch_row(
-            t("settings_cat_files"),
-            None,
-            cfg.get("files", True),
+            t("settings_cat_files"), None, cfg.get("files", True),
             lambda active: self._on_setting_changed("files", active)
         ))
-
         group_categories.append(self._create_switch_row(
-            t("settings_cat_clipboard"),
-            None,
-            cfg.get("clipboard", True),
+            t("settings_cat_clipboard"), None, cfg.get("clipboard", True),
             lambda active: self._on_setting_changed("clipboard", active)
         ))
-
         group_categories.append(self._create_switch_row(
-            t("settings_cat_emoji"),
-            None,
-            cfg.get("emoji", True),
+            t("settings_cat_emoji"), None, cfg.get("emoji", True),
             lambda active: self._on_setting_changed("emoji", active)
         ))
-
         group_categories.append(self._create_switch_row(
-            t("settings_cat_calc"),
-            None,
-            cfg.get("calculator", True),
+            t("settings_cat_calc"), None, cfg.get("calculator", True),
             lambda active: self._on_setting_changed("calculator", active)
         ))
-
         group_categories.append(self._create_switch_row(
-            t("settings_cat_commands"),
-            None,
-            cfg.get("commands", True),
+            t("settings_cat_commands"), None, cfg.get("commands", True),
             lambda active: self._on_setting_changed("commands", active)
         ))
 
-        # ========================================================
-        # 6. КНОПКА СБРОСА (RESET BUTTON)
-        # ========================================================
+        # 6. КНОПКА СБРОСА
         reset_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         reset_box.set_halign(Gtk.Align.CENTER)
         reset_box.set_margin_top(8)
-
         reset_btn = Gtk.Button(label=t("settings_reset_btn"))
         reset_btn.add_css_class("settings-reset-btn")
         reset_btn.connect("clicked", self._on_reset_defaults)
         reset_box.append(reset_btn)
-
         self.content_box.append(reset_box)
+
+    def filter_settings(self, query: str):
+        q = (query or "").strip().lower()
+        if not q:
+            self._build_settings_ui()
+            return
+
+        while child := self.content_box.get_first_child():
+            self.content_box.remove(child)
+
+        items = self._get_setting_definitions()
+        matched_items = []
+        tokens = q.split()
+
+        for item in items:
+            searchable = f"{item['title']} {item['group']} {item['keywords']}".lower()
+            if all(tok in searchable for tok in tokens):
+                matched_items.append(item)
+
+        if not matched_items:
+            empty_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+            empty_box.add_css_class("empty-state-box")
+            empty_box.set_halign(Gtk.Align.CENTER)
+            empty_box.set_valign(Gtk.Align.CENTER)
+            empty_box.set_margin_top(32)
+
+            icon = Gtk.Image.new_from_icon_name("edit-find-symbolic")
+            icon.set_pixel_size(48)
+            icon.add_css_class("empty-state-icon")
+            empty_box.append(icon)
+
+            title = Gtk.Label(label=t("nothing_found_title"))
+            title.add_css_class("empty-state-title")
+            empty_box.append(title)
+
+            desc = Gtk.Label(label=t("nothing_found_desc"))
+            desc.add_css_class("empty-state-desc")
+            empty_box.append(desc)
+
+            self.content_box.append(empty_box)
+            return
+
+        group_results = self._create_group(f"{t('mode_settings')} — {len(matched_items)}")
+        for item in matched_items:
+            row = item["builder"]()
+            group_results.append(row)
 
     def _create_group(self, title: str) -> Gtk.Box:
         group_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -580,10 +749,15 @@ class SettingsMode(BaseMode):
         self._build_settings_ui()
 
     def on_activated(self):
-        self._build_settings_ui()
+        query = self.main_window.entry.get_text() if hasattr(self.main_window, "entry") else ""
+        if query and query.strip():
+            self.filter_settings(query)
+        else:
+            self._build_settings_ui()
         
     def render(self, results: list):
-        pass
+        query = self.main_window.entry.get_text() if hasattr(self.main_window, "entry") else ""
+        self.filter_settings(query)
 
     def on_key_pressed(self, keyval, state, current_results: list) -> bool:
         return False
