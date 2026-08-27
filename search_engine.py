@@ -86,7 +86,7 @@ class SearchEngine:
     def get_all_emojis(self) -> list[SearchResult]:
         return self.emoji.search("", limit=4000, category_filter="Emoji")
 
-    def search_async(self, query: str, limit: int, category_filter: str, callback):
+    def search_async(self, query: str, limit: int = 20, category_filter: str = None, callback = None):
         with self._lock:
             self._current_search_id += 1
             search_id = self._current_search_id

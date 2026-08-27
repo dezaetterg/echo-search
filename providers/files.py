@@ -79,6 +79,7 @@ class FileProvider(BaseProvider):
                                 continue
                             temp_cache.append({
                                 "name": name,
+                                "name_lower": name.lower(),
                                 "path": os.path.join(root, name)
                             })
 

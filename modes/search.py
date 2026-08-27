@@ -39,9 +39,12 @@ class SearchMode(BaseMode):
         
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.scroll.set_propagate_natural_height(True)
+        self.scroll.set_max_content_height(480)
         self.scroll.set_vexpand(True)
+        self.scroll.set_child(self.results_listbox)
         
-        self.left_box.append(self.results_listbox)
+        self.left_box.append(self.scroll)
 
         # Виджет "Ничего не найдено" (Empty State)
         self.empty_state_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -148,8 +151,7 @@ class SearchMode(BaseMode):
             self.current_results = []
             self.separator.set_visible(False)
             self.empty_state_box.set_visible(False)
-            if self.is_scrolling:
-                self.scroll.set_visible(False)
+            self.scroll.set_visible(False)
             self.results_listbox.set_visible(False)
             
             for row_data in self.pool:
@@ -158,9 +160,6 @@ class SearchMode(BaseMode):
             self.preview_container.set_visible(False)
             self.main_window.set_default_size(650, 1)
             self.main_window.queue_resize()
-            
-            if self.main_window:
-                self.main_window.queue_draw()
             return
 
         if not self.current_results:
@@ -169,9 +168,7 @@ class SearchMode(BaseMode):
             self.empty_state_title.set_label(t("nothing_found_title"))
             self.empty_state_desc.set_label(t("nothing_found_desc"))
             self.empty_state_box.set_visible(True)
-            
-            if self.is_scrolling:
-                self.scroll.set_visible(False)
+            self.scroll.set_visible(False)
             self.results_listbox.set_visible(False)
             
             for row_data in self.pool:
@@ -180,29 +177,13 @@ class SearchMode(BaseMode):
             self.preview_container.set_visible(False)
             self.main_window.set_default_size(650, 180)
             self.main_window.queue_resize()
-            
-            GLib.timeout_add(100, lambda: self.main_window.queue_draw() if self.main_window else False)
-            GLib.timeout_add(250, lambda: self.main_window.queue_draw() if self.main_window else False)
             return
             
         # Есть результаты поиска
         self.empty_state_box.set_visible(False)
         self.separator.set_visible(True)
-        if len(self.current_results) > 5:
-            if not self.is_scrolling:
-                self.left_box.remove(self.results_listbox)
-                self.scroll.set_child(self.results_listbox)
-                self.left_box.append(self.scroll)
-                self.is_scrolling = True
-            self.scroll.set_visible(True)
-            self.results_listbox.set_visible(True)
-        else:
-            if self.is_scrolling:
-                self.left_box.remove(self.scroll)
-                self.scroll.set_child(None)
-                self.left_box.append(self.results_listbox)
-                self.is_scrolling = False
-            self.results_listbox.set_visible(True)
+        self.scroll.set_visible(True)
+        self.results_listbox.set_visible(True)
             
         for i, row_data in enumerate(self.pool):
             if i < len(self.current_results):
