@@ -139,8 +139,8 @@ class SettingsMode(BaseMode):
 
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        self.scroll.set_min_content_height(420)
-        self.scroll.set_max_content_height(420)
+        self.scroll.set_min_content_height(480)
+        self.scroll.set_max_content_height(480)
         self.scroll.set_propagate_natural_height(False)
         self.scroll.set_hexpand(True)
         self.scroll.set_vexpand(True)
@@ -199,19 +199,6 @@ class SettingsMode(BaseMode):
         ))
 
         # ========================================================
-        # 2. ПАРАМЕТРЫ ВЫДАЧИ (SEARCH RESULTS)
-        # ========================================================
-        group_params = self._create_group(t("settings_group_results"))
-
-        group_params.append(self._create_slider_row(
-            t("settings_results_limit"),
-            cfg.get("results_limit", 20),
-            5, 50, 1,
-            unit="",
-            callback=lambda val: self._on_setting_changed("results_limit", int(val))
-        ))
-
-        # ========================================================
         # 3. ОФОРМЛЕНИЕ (APPEARANCE)
         # ========================================================
         group_appearance = self._create_group(t("settings_group_appearance"))
@@ -242,6 +229,19 @@ class SettingsMode(BaseMode):
         ))
 
         group_appearance.append(self._create_unfold_animation_row(cfg))
+
+        # ========================================================
+        # 2. ПАРАМЕТРЫ ВЫДАЧИ (SEARCH RESULTS)
+        # ========================================================
+        group_params = self._create_group(t("settings_group_results"))
+
+        group_params.append(self._create_slider_row(
+            t("settings_results_limit"),
+            cfg.get("results_limit", 20),
+            5, 50, 1,
+            unit="",
+            callback=lambda val: self._on_setting_changed("results_limit", int(val))
+        ))
 
         # ========================================================
         # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА (PREVIEW PANEL)
@@ -502,38 +502,41 @@ class SettingsMode(BaseMode):
         title_lbl.add_css_class("settings-row-title")
         row.append(title_lbl)
 
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+        btn_box.set_valign(Gtk.Align.CENTER)
+        btn_box.add_css_class("settings-theme-selector")
+
         current_anim = cfg.get("unfold_animation", "fade_slide_down")
         anim_options = [
-            ("fade_slide_down", t("anim_fade_slide_down")),
-            ("crossfade", t("anim_crossfade")),
-            ("slide_down", t("anim_slide_down")),
-            ("swing_down", t("anim_swing_down")),
-            ("none", t("anim_none"))
+            ("fade_slide_down", "Fade + Slide"),
+            ("crossfade", "Crossfade"),
+            ("slide_down", "Slide Down"),
+            ("swing_down", "3D Swing"),
+            ("none", "Instant")
         ]
-        
-        string_list = Gtk.StringList.new([name for code, name in anim_options])
-        dropdown = Gtk.DropDown.new(string_list, None)
-        dropdown.set_valign(Gtk.Align.CENTER)
-        dropdown.add_css_class("settings-dropdown")
-        
-        selected_idx = 0
-        for idx, (code, name) in enumerate(anim_options):
-            if code == current_anim:
-                selected_idx = idx
-                break
-        dropdown.set_selected(selected_idx)
 
-        def on_anim_changed(dd, param):
-            pos = dd.get_selected()
-            if 0 <= pos < len(anim_options):
-                selected_code = anim_options[pos][0]
-                if selected_code != cfg.get("unfold_animation"):
-                    self.main_window.config_manager.set("unfold_animation", selected_code)
-                    self.main_window.reload_config()
+        self.anim_buttons = {}
+        for code, label in anim_options:
+            btn = Gtk.Button(label=label)
+            btn.add_css_class("theme-pill")
+            if current_anim == code:
+                btn.add_css_class("active")
+            btn.connect("clicked", lambda b, c=code: self._on_anim_selected(c))
+            btn_box.append(btn)
+            self.anim_buttons[code] = btn
 
-        dropdown.connect("notify::selected", on_anim_changed)
-        row.append(dropdown)
+        row.append(btn_box)
         return row
+
+    def _on_anim_selected(self, anim_code: str):
+        self.main_window.config_manager.set("unfold_animation", anim_code)
+        self.main_window.reload_config()
+        if hasattr(self, 'anim_buttons'):
+            for code, btn in self.anim_buttons.items():
+                if code == anim_code:
+                    btn.add_css_class("active")
+                else:
+                    btn.remove_css_class("active")
 
     def _create_shortcut_row(self, title: str, shortcut_text: str) -> Gtk.Box:
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)

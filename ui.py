@@ -875,7 +875,7 @@ class EchoUI(Gtk.Window):
                 elif active in ("Apps", "Files", "Clipboard", "Emoji"):
                     self.set_default_size(1050, 1)
                 elif active == "Settings":
-                    self.set_default_size(750, 1)
+                    self.set_default_size(820, 1)
             else:
                 self.results_container.add_css_class("folded")
                 if not self.results_revealer.get_child_revealed():
