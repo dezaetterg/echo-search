@@ -54,8 +54,6 @@ class FilesMode(BaseMode):
     def __init__(self, main_window):
         self.current_query = ""
         self.active_category = "All"
-        self.selected_folder_scope = None
-        self._quick_folders_rendered = False
         self._THUMBNAIL_CACHE = collections.OrderedDict()
         self._CACHE_LIMIT = 100
         super().__init__(main_window)
@@ -125,28 +123,7 @@ class FilesMode(BaseMode):
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.content_box.set_spacing(12)
         
-        # --- Quick Places Section ---
-        self.quick_folders_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.quick_folders_section.add_css_class("quick-folders-section")
-        
-        self.quick_folders_label = Gtk.Label(label=t("section_quick_places"))
-        self.quick_folders_label.add_css_class("quick-folders-label")
-        self.quick_folders_label.set_halign(Gtk.Align.START)
-        self.quick_folders_section.append(self.quick_folders_label)
-        
-        self.quick_folders_scroll = Gtk.ScrolledWindow()
-        self.quick_folders_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
-        self.quick_folders_scroll.set_min_content_height(44)
-        self.quick_folders_scroll.set_max_content_height(48)
-        hscroll = self.quick_folders_scroll.get_hscrollbar()
-        if hscroll:
-            hscroll.set_visible(False)
-            
-        self.quick_folders_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-        self.quick_folders_box.set_spacing(8)
-        self.quick_folders_scroll.set_child(self.quick_folders_box)
-        self.quick_folders_section.append(self.quick_folders_scroll)
-        self.content_box.append(self.quick_folders_section)
+
         
         # Suggestions Section
         self.suggestions_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -210,67 +187,10 @@ class FilesMode(BaseMode):
         return self.left_box
 
 
-    def _render_quick_folders(self):
-        while child := self.quick_folders_box.get_first_child():
-            self.quick_folders_box.remove(child)
-            
-        if not hasattr(self.main_window, "engine"):
-            return
-            
-        file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
-        if not file_provider or not hasattr(file_provider, "get_quick_folders"):
-            return
-            
-        folders = file_provider.get_quick_folders()
-        for f in folders:
-            btn = Gtk.Button()
-            btn.add_css_class("quick-folder-pill")
-            if self.selected_folder_scope and self.selected_folder_scope.get("path") == f["path"]:
-                btn.add_css_class("active")
-                
-            box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
-            box.set_spacing(6)
-            
-            icon = Gtk.Image(icon_name=f["icon"])
-            icon.set_pixel_size(16)
-            box.append(icon)
-            
-            lbl = Gtk.Label(label=f["name"])
-            lbl.add_css_class("quick-folder-name")
-            box.append(lbl)
-            
-            if f.get("count", 0) > 0:
-                cnt_badge = Gtk.Label(label=str(f["count"]))
-                cnt_badge.add_css_class("quick-folder-count")
-                box.append(cnt_badge)
-                
-            btn.set_child(box)
-            btn.connect("clicked", lambda b, folder=f: self.on_quick_folder_clicked(folder))
-            self.quick_folders_box.append(btn)
-            
-        self._quick_folders_rendered = True
 
-    def on_quick_folder_clicked(self, folder):
-        file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
-        if not file_provider:
-            return
-            
-        if self.selected_folder_scope and self.selected_folder_scope.get("path") == folder["path"]:
-            self.selected_folder_scope = None
-            self._render_quick_folders()
-            results = file_provider.get_files_by_category(self.active_category, limit=40)
-            self._populate(results)
-            return
-            
-        self.selected_folder_scope = folder
-        self._render_quick_folders()
-        results = file_provider.get_files_in_folder(folder["path"], limit=50)
-        self.current_results = results
-        self._populate(results)
 
     def _preload_files(self):
         if hasattr(self.main_window, "engine"):
-            self._render_quick_folders()
             file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
             if file_provider and hasattr(file_provider, "get_files_by_category"):
                 results = file_provider.get_files_by_category(self.active_category, limit=40)
@@ -388,11 +308,8 @@ class FilesMode(BaseMode):
             suggestions = []
             recents = results[:40]
             self.suggestions_box.set_visible(False)
-            if self.selected_folder_scope:
-                self.recents_label.set_label(f"📂 {self.selected_folder_scope['name']}")
-            else:
-                cat_label = t(f"cat_{self.active_category.lower()}") if self.active_category != "All" else t("section_recent")
-                self.recents_label.set_label(cat_label)
+            cat_label = t(f"cat_{self.active_category.lower()}") if self.active_category != "All" else t("section_recent")
+            self.recents_label.set_label(cat_label)
         else:
             suggestions = results[:5]
             recents = results[5:35]
