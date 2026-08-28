@@ -16,7 +16,7 @@ from i18n import t, i18n
 
 UNFOLD_TRANSITION_MAP = {
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
-    "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
+    "swing_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "none": Gtk.RevealerTransitionType.NONE
 }
 
@@ -918,6 +918,23 @@ class EchoUI(Gtk.Window):
         
         if hasattr(self, 'results_revealer'):
             self.results_revealer.set_reveal_child(should_reveal_results)
+            unfold_mode = self.config_manager.get("unfold_animation", "slide_down") if self.config_manager else "slide_down"
+            if unfold_mode == "swing_down" and should_reveal_results:
+                if hasattr(self, "results_container"):
+                    self.results_container.remove_css_class("swing-3d-active")
+                    self.results_container.add_css_class("swing-3d-active")
+                    if hasattr(self, "_swing_3d_timer") and self._swing_3d_timer:
+                        GLib.source_remove(self._swing_3d_timer)
+                    def _cleanup_swing_3d():
+                        if hasattr(self, "results_container"):
+                            self.results_container.remove_css_class("swing-3d-active")
+                        self._swing_3d_timer = None
+                        return False
+                    self._swing_3d_timer = GLib.timeout_add(260, _cleanup_swing_3d)
+            elif not should_reveal_results:
+                if hasattr(self, "results_container") and self.results_container.has_css_class("swing-3d-active"):
+                    self.results_container.remove_css_class("swing-3d-active")
+
             if should_reveal_results:
                 self.results_container.remove_css_class("folded")
                 if active == "Search":
