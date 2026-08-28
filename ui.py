@@ -16,10 +16,10 @@ from i18n import t, i18n
 from quick_look import QuickLookWindow
 
 UNFOLD_TRANSITION_MAP = {
-    "instant_dynamic": Gtk.RevealerTransitionType.CROSSFADE,
+    "instant_dynamic": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
-    "none": Gtk.RevealerTransitionType.NONE
+    "none": Gtk.RevealerTransitionType.SLIDE_DOWN
 }
 
 
@@ -867,6 +867,7 @@ class EchoUI(Gtk.Window):
         self.results_revealer.set_child(self.results_container)
         self.results_revealer.set_reveal_child(False)
         self.results_revealer.connect("notify::child-revealed", self._on_results_revealed_changed)
+        self.set_default_size(650, 1)
         
         self.main_box.append(self.results_revealer)
 
