@@ -157,6 +157,15 @@ class EchoUI(Gtk.Window):
                     meta_card_bg = "#f9f9fb"
                     emoji_badge_bg = "rgba(0, 0, 0, 0.04)"
 
+                outer_box_style = """
+                .capsule-window-ui-root .outer-border-box,
+                .root-box .outer-border-box,
+                .outer-border-box {
+                    background-image: none;
+                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+                }
+                """
+
                 theme_css = f"""
                 .capsule-window-ui {{ color: #1c1c1e; }}
                 .capsule-window-ui .search-icon {{ color: #8e8e93; }}
