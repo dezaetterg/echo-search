@@ -16,7 +16,6 @@ from i18n import t, i18n
 
 UNFOLD_TRANSITION_MAP = {
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
-    "aura_glow": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
     "none": Gtk.RevealerTransitionType.NONE
 }
@@ -108,7 +107,7 @@ class EchoUI(Gtk.Window):
                 theme = "dark_glass"
                 
             is_light = theme in ("light", "light_glass")
-            is_glass = theme in ("dark_glass", "light_glass")
+            is_glass = theme in ("dark_glass", "light_glass", "aura_glow")
             
             try:
                 import gi
@@ -428,7 +427,35 @@ class EchoUI(Gtk.Window):
                 }}
                 """
             else:
-                if theme in ("dark_glass", "silver"):
+                if theme == "aura_glow":
+                    bg_color = f"rgba(20, 18, 28, {alpha})"
+                    window_border = "1px solid rgba(255, 255, 255, 0.20)"
+                    window_shadow = "inset 0 1px 0 0 rgba(255, 255, 255, 0.30), 0 28px 64px -12px rgba(0, 0, 0, 0.70)"
+                    card_bg = "rgba(255, 255, 255, 0.08)"
+                    card_border = "1px solid rgba(255, 255, 255, 0.14)"
+                    search_bg = "rgba(255, 255, 255, 0.11)"
+                    search_border = "1px solid rgba(160, 120, 255, 0.30)"
+                    mode_btn_bg = "rgba(255, 255, 255, 0.08)"
+                    mode_btn_border = "1px solid rgba(255, 255, 255, 0.12)"
+                    mode_btn_active = "rgba(150, 100, 255, 0.35)"
+                    card_shadow = "0 4px 20px rgba(0, 0, 0, 0.35)"
+                    meta_card_bg = "rgba(255, 255, 255, 0.09)"
+                    emoji_badge_bg = "rgba(160, 120, 255, 0.18)"
+                    outer_box_style = f"""
+                    .capsule-window-ui-root .outer-border-box,
+                    .root-box .outer-border-box,
+                    .outer-border-box {{
+                        background-image: linear-gradient(135deg, 
+                            rgba(150, 100, 255, 0.95) 0%, 
+                            rgba(70, 160, 255, 0.45) 30%, 
+                            rgba(255, 90, 180, 0.45) 70%, 
+                            rgba(100, 130, 255, 0.95) 100%);
+                        box-shadow: 0 0 35px rgba(130, 90, 255, 0.45),
+                                    0 0 75px rgba(60, 150, 255, 0.25),
+                                    0 20px 45px rgba(0, 0, 0, 0.55);
+                    }}
+                    """
+                elif theme in ("dark_glass", "silver"):
                     bg_color = f"rgba(26, 27, 34, {alpha})"
                     window_border = "1px solid rgba(255, 255, 255, 0.16)"
                     window_shadow = "inset 0 1px 0 0 rgba(255, 255, 255, 0.25), 0 28px 64px -12px rgba(0, 0, 0, 0.65), 0 12px 24px -6px rgba(0, 0, 0, 0.45)"
@@ -442,6 +469,14 @@ class EchoUI(Gtk.Window):
                     card_shadow = "0 4px 20px rgba(0, 0, 0, 0.30)"
                     meta_card_bg = "rgba(255, 255, 255, 0.08)"
                     emoji_badge_bg = "rgba(255, 255, 255, 0.10)"
+                    outer_box_style = """
+                    .capsule-window-ui-root .outer-border-box,
+                    .root-box .outer-border-box,
+                    .outer-border-box {
+                        background-image: none;
+                        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+                    }
+                    """
                 else:
                     bg_color = f"rgba(28, 28, 30, {alpha})"
                     window_border = "1px solid rgba(255, 255, 255, 0.08)"
@@ -456,6 +491,14 @@ class EchoUI(Gtk.Window):
                     card_shadow = "0 4px 14px rgba(0, 0, 0, 0.25)"
                     meta_card_bg = "#3a3a3c"
                     emoji_badge_bg = "rgba(255, 255, 255, 0.08)"
+                    outer_box_style = """
+                    .capsule-window-ui-root .outer-border-box,
+                    .root-box .outer-border-box,
+                    .outer-border-box {
+                        background-image: none;
+                        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+                    }
+                    """
 
                 theme_css = f"""
                 .capsule-window-ui {{ color: #f5f5f7; }}
@@ -644,6 +687,7 @@ class EchoUI(Gtk.Window):
                 background-color: {bg_color};
                 {backdrop}
             }}
+            {outer_box_style}
             {theme_css}
             """
             
@@ -865,13 +909,6 @@ class EchoUI(Gtk.Window):
         
         if hasattr(self, 'results_revealer'):
             self.results_revealer.set_reveal_child(should_reveal_results)
-            unfold_mode = self.config_manager.get("unfold_animation", "slide_down") if self.config_manager else "slide_down"
-            if unfold_mode == "aura_glow" and should_reveal_results:
-                if hasattr(self, "outer_box") and not self.outer_box.has_css_class("aura-glow-anim"):
-                    self.outer_box.add_css_class("aura-glow-anim")
-            else:
-                if hasattr(self, "outer_box") and self.outer_box.has_css_class("aura-glow-anim"):
-                    self.outer_box.remove_css_class("aura-glow-anim")
             if should_reveal_results:
                 self.results_container.remove_css_class("folded")
                 if active == "Search":

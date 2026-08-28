@@ -607,7 +607,8 @@ class SettingsMode(BaseMode):
             ("dark_glass", t("settings_theme_dark_glass")),
             ("light_glass", t("settings_theme_light_glass")),
             ("dark", t("settings_theme_dark")),
-            ("light", t("settings_theme_light"))
+            ("light", t("settings_theme_light")),
+            ("aura_glow", "Aura Glow")
         ]
 
         for code, name in themes:
@@ -678,7 +679,6 @@ class SettingsMode(BaseMode):
         current_anim = cfg.get("unfold_animation", "slide_down")
         anim_options = [
             ("slide_down", "Slide Down"),
-            ("aura_glow", "Aura Glow"),
             ("swing_down", "3D Swing"),
             ("none", "Instant")
         ]
@@ -726,7 +726,7 @@ class SettingsMode(BaseMode):
 
     def _on_theme_selected(self, theme_code: str):
         self.main_window.config_manager.set("theme", theme_code)
-        if theme_code in ("dark_glass", "light_glass"):
+        if theme_code in ("dark_glass", "light_glass", "aura_glow"):
             self.main_window.config_manager.set("transparency", 0.60)
             self.main_window.config_manager.set("blur", True)
         elif theme_code in ("dark", "light"):
