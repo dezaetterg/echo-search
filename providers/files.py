@@ -606,3 +606,55 @@ class FileProvider(BaseProvider):
 
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:limit]
+
+    def get_quick_folders(self) -> list[dict]:
+        if not self.local_cache and not self.is_building_cache:
+            self._build_cache_async()
+
+        PLACES = [
+            ("DIRECTORY_DOWNLOAD", "folder-download", "Загрузки", "Downloads"),
+            ("DIRECTORY_DOCUMENTS", "folder-documents", "Документы", "Documents"),
+            ("DIRECTORY_PICTURES", "folder-pictures", "Изображения", "Pictures"),
+            ("DIRECTORY_DESKTOP", "user-desktop", "Рабочий стол", "Desktop"),
+            ("DIRECTORY_VIDEOS", "folder-videos", "Видео", "Videos"),
+            ("DIRECTORY_MUSIC", "folder-music", "Музыка", "Music"),
+        ]
+
+        folders = []
+        home = os.path.expanduser("~")
+        for attr, icon, ru_name, en_name in PLACES:
+            dir_enum = getattr(GLib.UserDirectory, attr, None)
+            path = None
+            if dir_enum is not None:
+                path = GLib.get_user_special_dir(dir_enum)
+            if not path or not os.path.exists(path):
+                for fallback in (ru_name, en_name):
+                    p = os.path.join(home, fallback)
+                    if os.path.exists(p):
+                        path = p
+                        break
+            if path and os.path.exists(path):
+                name = os.path.basename(path)
+                cnt = sum(1 for item in self.local_cache if item["path"].startswith(path) and not item.get("is_dir", False))
+                folders.append({
+                    "name": name,
+                    "path": path,
+                    "icon": icon,
+                    "count": cnt
+                })
+        return folders
+
+    def get_files_in_folder(self, folder_path: str, limit: int = 40) -> list[SearchResult]:
+        if not self.local_cache and not self.is_building_cache:
+            self._build_cache_async()
+
+        matched = [
+            item for item in self.local_cache
+            if item["path"].startswith(folder_path) and item["path"] != folder_path and not item.get("is_dir", False)
+        ]
+        matched.sort(key=lambda x: x.get("mtime", 0), reverse=True)
+
+        results = []
+        for item in matched[:limit]:
+            results.append(self._create_result(item["path"], item["name"], item["mime"], 50))
+        return results
