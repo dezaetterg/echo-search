@@ -143,7 +143,7 @@ class CalculatorProvider(BaseProvider):
         )
 
     def search(self, query: str, limit: int = 10, category_filter: str = None) -> list[SearchResult]:
-        if category_filter not in (None, "All"):
+        if category_filter not in (None, "All", "Math"):
             return []
         try:
             math_res = safe_eval(query)

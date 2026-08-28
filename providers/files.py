@@ -533,51 +533,7 @@ class FileProvider(BaseProvider):
         results = []
         seen_paths = set()
 
-        # 1. Search via GNOME Tracker 3 SPARQL if available
-        if self.conn and not self.tracker_broken:
-            try:
-                filter_clauses = [f'CONTAINS(LCASE(?name), "{escape_sparql(q)}")' for q in queries]
-                or_filter = " || ".join(filter_clauses)
-                
-                sparql = f"""
-                SELECT nie:url(?info) nfo:fileName(?info) nie:mimeType(?info)
-                WHERE {{
-                    ?info a nfo:FileDataObject ;
-                          nfo:fileName ?name .
-                    FILTER({or_filter})
-                }}
-                LIMIT {limit * 2}
-                """
-
-                cursor = self.conn.query(sparql, None)
-                while cursor.next():
-                    url = cursor.get_string(0)[0]
-                    if not url:
-                        continue
-
-                    path = urllib.parse.unquote(url.replace("file://", ""))
-                    if path in seen_paths or not os.path.exists(path):
-                        continue
-                    seen_paths.add(path)
-
-                    name = cursor.get_string(1)[0] or os.path.basename(path)
-                    mime = cursor.get_string(2)[0] or "unknown"
-
-                    score = 60
-                    name_lower = name.lower()
-                    if any(q == name_lower for q in queries):
-                        score += 30
-                    elif any(name_lower.startswith(q) for q in queries):
-                        score += 20
-                    score += self.history_manager.get_score_bonus(path, q_orig)
-
-                    results.append(self._create_result(path, name, mime, score))
-
-            except Exception as e:
-                self.tracker_broken = True
-                self.conn = None
-
-        # 2. Local high-speed in-memory cache lookup
+        # 1. Local high-speed in-memory cache lookup (sub-5ms)
         if not self.local_cache and not self.is_building_cache:
             self._build_cache_async()
 
@@ -622,6 +578,52 @@ class FileProvider(BaseProvider):
                 results.append(self._create_result(item_path, item_name, item["mime"], score))
                 if len(results) >= limit * 3:
                     break
+
+        # 2. GNOME Tracker 3 SPARQL fallback ONLY if local cache is not yet available
+        if not self.local_cache and self.conn and not self.tracker_broken:
+            try:
+                filter_clauses = [f'CONTAINS(LCASE(?name), "{escape_sparql(q)}")' for q in queries]
+                or_filter = " || ".join(filter_clauses)
+                
+                sparql = f"""
+                SELECT nie:url(?info) nfo:fileName(?info) nie:mimeType(?info)
+                WHERE {{
+                    ?info a nfo:FileDataObject ;
+                          nfo:fileName ?name .
+                    FILTER({or_filter})
+                }}
+                LIMIT {limit}
+                """
+
+                cursor = self.conn.query(sparql, None)
+                while cursor.next():
+                    url = cursor.get_string(0)[0]
+                    if not url:
+                        continue
+
+                    path = urllib.parse.unquote(url.replace("file://", ""))
+                    if path in seen_paths or not os.path.exists(path):
+                        continue
+                    seen_paths.add(path)
+
+                    name = cursor.get_string(1)[0] or os.path.basename(path)
+                    mime = cursor.get_string(2)[0] or "unknown"
+
+                    score = 60
+                    name_lower = name.lower()
+                    if any(q == name_lower for q in queries):
+                        score += 30
+                    elif any(name_lower.startswith(q) for q in queries):
+                        score += 20
+                    score += self.history_manager.get_score_bonus(path, q_orig)
+
+                    results.append(self._create_result(path, name, mime, score))
+                    if len(results) >= limit:
+                        break
+
+            except Exception as e:
+                self.tracker_broken = True
+                self.conn = None
 
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:limit]
