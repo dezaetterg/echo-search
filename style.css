@@ -1524,3 +1524,34 @@ video.quick-look-video {
     border-radius: 12px;
 }
 
+
+
+/* Compiz Wobbly Windows Jelly Animation */
+@keyframes jelly_wobble_unfold {
+    0% {
+        transform: scale(0.92, 0.28) translateY(-28px);
+        opacity: 0.15;
+    }
+    32% {
+        transform: scale(1.06, 1.16) translateY(10px);
+        opacity: 0.95;
+    }
+    54% {
+        transform: scale(0.95, 0.88) translateY(-6px);
+    }
+    72% {
+        transform: scale(1.03, 1.05) translateY(3px);
+    }
+    86% {
+        transform: scale(0.99, 0.985) translateY(-1px);
+    }
+    100% {
+        transform: scale(1.0, 1.0) translateY(0);
+        opacity: 1.0;
+    }
+}
+
+.anim-jelly-wobble {
+    animation: jelly_wobble_unfold 380ms cubic-bezier(0.25, 1.4, 0.45, 1);
+    transform-origin: center top;
+}

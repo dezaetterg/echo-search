@@ -681,6 +681,7 @@ class SettingsMode(BaseMode):
             ("instant_dynamic", t("anim_instant_dynamic")),
             ("slide_down", t("anim_slide_down")),
             ("swing_down", t("anim_swing_down")),
+            ("jelly_wobble", t("anim_jelly_wobble")),
             ("none", t("anim_none"))
         ]
 

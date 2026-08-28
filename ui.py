@@ -19,6 +19,7 @@ UNFOLD_TRANSITION_MAP = {
     "instant_dynamic": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
+    "jelly_wobble": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "none": Gtk.RevealerTransitionType.SLIDE_DOWN
 }
 
@@ -856,6 +857,8 @@ class EchoUI(Gtk.Window):
         transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.CROSSFADE)
         if unfold_mode == "instant_dynamic":
             revealer_duration = 50 if animations else 0
+        elif unfold_mode == "jelly_wobble":
+            revealer_duration = 380 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
@@ -956,9 +959,15 @@ class EchoUI(Gtk.Window):
         self.mode_buttons_revealer.set_reveal_child(should_show_buttons)
         
         if hasattr(self, 'results_revealer'):
+            unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
             self.results_revealer.set_reveal_child(should_reveal_results)
             if should_reveal_results:
                 self.results_container.remove_css_class("folded")
+                if unfold_mode == "jelly_wobble":
+                    self.results_container.remove_css_class("anim-jelly-wobble")
+                    self.results_container.add_css_class("anim-jelly-wobble")
+                else:
+                    self.results_container.remove_css_class("anim-jelly-wobble")
                 if active == "Search":
                     preview_enabled = self.config_manager.get("preview_enabled") if getattr(self, "config_manager", None) else True
                     preview_width = self.config_manager.get("preview_width") if getattr(self, "config_manager", None) else 420
@@ -969,6 +978,7 @@ class EchoUI(Gtk.Window):
                     self.set_default_size(820, 1)
             else:
                 self.results_container.add_css_class("folded")
+                self.results_container.remove_css_class("anim-jelly-wobble")
                 unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
                 if unfold_mode in ("instant_dynamic", "none") or not self.results_revealer.get_child_revealed():
                     self.set_default_size(650, 1)
@@ -1040,6 +1050,8 @@ class EchoUI(Gtk.Window):
         anim_duration = 240 if animations else 0
         if unfold_mode == "instant_dynamic":
             revealer_duration = 50 if animations else 0
+        elif unfold_mode == "jelly_wobble":
+            revealer_duration = 380 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
