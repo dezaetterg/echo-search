@@ -153,12 +153,20 @@ class AppProvider(BaseProvider):
         apps = []
         app_dirs = [
             "/usr/share/applications",
+            "/usr/local/share/applications",
             os.path.expanduser("~/.local/share/applications"),
             "/var/lib/flatpak/exports/share/applications",
             os.path.expanduser("~/.local/share/flatpak/exports/share/applications"),
             "/var/lib/snapd/desktop/applications",
-            "/snap/current/usr/share/applications"
+            "/snap/current/usr/share/applications",
+            "/run/current-system/sw/share/applications",
+            os.path.expanduser("~/.nix-profile/share/applications"),
+            os.path.expanduser("~/.guix-profile/share/applications")
         ]
+        xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", "").split(":")
+        for xdg_dir in xdg_data_dirs:
+            if xdg_dir.strip():
+                app_dirs.append(os.path.join(xdg_dir.strip(), "applications"))
         seen_execs = set()
         for d in app_dirs:
             p = Path(d)

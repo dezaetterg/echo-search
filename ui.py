@@ -865,6 +865,21 @@ class EchoUI(Gtk.Window):
         key_ctrl.connect("key-pressed", self.on_key_pressed)
         self.add_controller(key_ctrl)
 
+        # Auto-hide on focus loss when clicking outside window across all DEs
+        self.connect("notify::is-active", self._on_is_active_changed)
+
+    def _on_is_active_changed(self, window, param):
+        try:
+            if not self.is_active() and self.is_visible():
+                if not getattr(self, "_is_modal_active", False):
+                    self.hide()
+                    if hasattr(self, "entry"):
+                        self.entry.set_text("")
+                    if hasattr(self, "mode_manager") and self.mode_manager:
+                        self.mode_manager.set_mode("Search")
+        except Exception:
+            pass
+
     def on_key_pressed(self, controller, keyval, keycode, state):
         if keyval == Gdk.KEY_Escape:
             query = self.entry.get_text()
