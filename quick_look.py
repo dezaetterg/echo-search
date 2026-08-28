@@ -69,7 +69,6 @@ class QuickLookWindow(Gtk.Window):
         self.add_controller(key_ctrl)
         
         # Focus watcher
-        self.connect("notify::is-active", self._on_is_active_changed)
         
     def _build_header(self):
         self.header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -634,19 +633,7 @@ class QuickLookWindow(Gtk.Window):
             
         return False
 
-    def _on_is_active_changed(self, window, param):
-        try:
-            if not self.is_active() and self.is_visible():
-                def _check_focus():
-                    if self.is_visible() and not self.is_active():
-                        if not (self.parent_window and self.parent_window.is_active()):
-                            self.hide_preview()
-                            if self.parent_window:
-                                self.parent_window.hide()
-                    return False
-                GLib.timeout_add(150, _check_focus)
-        except Exception:
-            pass
+
 
     def _on_open_clicked(self, btn):
         if self.current_result:
