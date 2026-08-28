@@ -876,6 +876,8 @@ class EchoUI(Gtk.Window):
     def _on_is_active_changed(self, window, param):
         try:
             if not self.is_active() and self.is_visible():
+                if getattr(self, "quick_look", None) and (self.quick_look.is_visible() or getattr(self.quick_look, "is_active", lambda: False)()):
+                    return
                 if not getattr(self, "_is_modal_active", False):
                     self.hide()
                     if hasattr(self, "entry"):

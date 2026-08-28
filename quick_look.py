@@ -1,3 +1,4 @@
+import time
 import os
 import mimetypes
 import threading
@@ -62,6 +63,9 @@ class QuickLookWindow(Gtk.Window):
         key_ctrl = Gtk.EventControllerKey.new()
         key_ctrl.connect("key-pressed", self._on_key_pressed)
         self.add_controller(key_ctrl)
+
+        # Focus watcher
+        self.connect("notify::is-active", self._on_is_active_changed)
         
     def _build_header(self):
         self.header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
@@ -155,6 +159,7 @@ class QuickLookWindow(Gtk.Window):
             return False
             
         self.current_path = path
+        self._opened_timestamp = time.time()
         self._load_generation += 1
         gen = self._load_generation
         
@@ -336,7 +341,13 @@ class QuickLookWindow(Gtk.Window):
         self.body_container.append(box)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
-        if keyval in (Gdk.KEY_space, Gdk.KEY_Escape):
+        if keyval == Gdk.KEY_space:
+            if time.time() - getattr(self, "_opened_timestamp", 0) < 0.2:
+                return True
+            self.hide_preview()
+            return True
+
+        elif keyval == Gdk.KEY_Escape:
             self.hide_preview()
             return True
             
@@ -363,6 +374,20 @@ class QuickLookWindow(Gtk.Window):
             return True
             
         return False
+
+    def _on_is_active_changed(self, window, param):
+        try:
+            if not self.is_active() and self.is_visible():
+                def _check_focus():
+                    if self.is_visible() and not self.is_active():
+                        if not (self.parent_window and self.parent_window.is_active()):
+                            self.hide_preview()
+                            if self.parent_window:
+                                self.parent_window.hide()
+                    return False
+                GLib.timeout_add(150, _check_focus)
+        except Exception:
+            pass
 
     def _on_open_clicked(self, btn):
         if self.current_result:
