@@ -221,7 +221,7 @@ class FilesMode(BaseMode):
                     if not pixbuf and result.icon and os.path.exists(result.icon) and os.path.isabs(result.icon):
                         try:
                             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(result.icon, 96, 96, True)
-                        except: pass
+                        except Exception: pass
 
                     def _set():
                         if pixbuf:

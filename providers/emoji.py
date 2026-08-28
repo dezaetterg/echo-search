@@ -328,7 +328,7 @@ class EmojiProvider(BaseProvider):
                 from gi.repository import Gdk
                 clipboard = Gdk.Display.get_default().get_clipboard()
                 clipboard.set(emoji_char)
-            except: pass
+            except Exception: pass
 
         subtitle = ", ".join(keywords[:5])
         if len(subtitle) > 60:
@@ -343,7 +343,7 @@ class EmojiProvider(BaseProvider):
                 from gi.repository import Gdk
                 clipboard = Gdk.Display.get_default().get_clipboard()
                 clipboard.set(unicode_code)
-            except: pass
+            except Exception: pass
 
         return SearchResult(
             id=f"emoji_{emoji_char}",
@@ -380,20 +380,19 @@ class EmojiProvider(BaseProvider):
         results = []
         for em in self.emojis:
             score = 0
-            name_lower = em["name"].lower()
-            direct_ru = [s.lower() for s in em.get("direct_ru", [])]
+            name_lower = em["name_lower"]
+            direct_ru_lower = em.get("direct_ru_lower", [])
             
             if q == name_lower:
                 score = 110
-            elif q in direct_ru:
+            elif q in direct_ru_lower:
                 score = 105
-            elif any(s.startswith(q) for s in direct_ru):
+            elif any(s.startswith(q) for s in direct_ru_lower):
                 score = 98
             elif q in name_lower:
                 score = 80
             else:
-                for kw in em["kw"]:
-                    kw_lower = kw.lower()
+                for kw_lower in em.get("kw_lower", []):
                     if q == kw_lower:
                         score = 90
                         break

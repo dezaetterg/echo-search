@@ -21,7 +21,7 @@ class HistoryManager:
                             self.usage_data[k] = {'count': v, 'last_used': time.time(), 'queries': {}}
                         elif isinstance(v, dict) and 'queries' not in v:
                             v['queries'] = {}
-        except:
+        except Exception:
             self.usage_data = {}
 
     def save(self):
@@ -29,7 +29,7 @@ class HistoryManager:
             os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
             with open(self.history_file, 'w') as f:
                 json.dump(self.usage_data, f)
-        except:
+        except Exception:
             pass
 
     def record_launch(self, app_id: str, query: str = ""):

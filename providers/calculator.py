@@ -113,14 +113,21 @@ class CalculatorProvider(BaseProvider):
             pass
 
     def _create_result(self, query: str, result: str) -> SearchResult:
+        res_str = str(result)
+        if len(res_str) > 500:
+            res_str = res_str[:50] + "..."
+
         def _copy_callback():
             try:
+                self._save_history(query, res_str)
                 import gi
                 gi.require_version('Gtk', '4.0')
                 from gi.repository import Gdk
-                clipboard = Gdk.Display.get_default().get_clipboard()
-                clipboard.set(str(result))
-            except: pass
+                display = Gdk.Display.get_default()
+                if display:
+                    display.get_clipboard().set(str(result))
+            except Exception:
+                pass
 
         return SearchResult(
             id=f"math_{query}",
@@ -141,10 +148,6 @@ class CalculatorProvider(BaseProvider):
         try:
             math_res = safe_eval(query)
             if math_res is not None:
-                res_str = str(math_res)
-                if len(res_str) > 500:
-                    res_str = res_str[:50] + "..."
-                self._save_history(query, res_str)
                 return [self._create_result(query, math_res)]
         except Exception:
             return []

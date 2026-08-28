@@ -124,7 +124,7 @@ class UnitProvider(BaseProvider):
                 from gi.repository import Gdk
                 clipboard = Gdk.Display.get_default().get_clipboard()
                 clipboard.set(str(result_str))
-            except: pass
+            except Exception: pass
 
         return SearchResult(
             id=f"unit_{query}",

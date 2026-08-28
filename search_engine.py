@@ -50,22 +50,9 @@ class SearchEngine:
         self._current_search_id = 0
         self._lock = threading.Lock()
         self._executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=8,
-            thread_name_prefix="echo_worker"
+            max_workers=4,
+            thread_name_prefix="echo_search_worker"
         )
-
-    def _run_provider(self, provider, query, limit, category_filter, search_id):
-        if self._current_search_id != search_id:
-            return []
-
-        try:
-            results = provider.search(query, limit, category_filter)
-            if self._current_search_id != search_id:
-                return []
-            return results
-        except Exception as e:
-            print(f"Error in {provider.__class__.__name__}: {e}")
-            return []
 
     def reload_providers(self):
         for provider in self.providers:
@@ -91,7 +78,7 @@ class SearchEngine:
             self._current_search_id += 1
             search_id = self._current_search_id
 
-        def _search():
+        def _search_worker():
             if self._current_search_id != search_id:
                 return
                 
@@ -109,21 +96,22 @@ class SearchEngine:
                 for p in target_providers:
                     if self._current_search_id != search_id:
                         return
-                    results.extend(p.search(query, limit, category_filter))
+                    try:
+                        results.extend(p.search(query, limit, category_filter))
+                    except Exception as e:
+                        print(f"Error in {p.__class__.__name__}: {e}")
             
-            # 3. Глобальный поиск - параллельный опрос
+            # 3. Глобальный поиск - последовательный опрос без вложенного deadlock пула потоков
             else:
-                futures = [
-                    self._executor.submit(self._run_provider, p, query, limit, category_filter, search_id) 
-                    for p in self.providers
-                ]
-                for future in concurrent.futures.as_completed(futures):
+                for p in self.providers:
                     if self._current_search_id != search_id:
                         return
                     try:
-                        results.extend(future.result())
+                        provider_results = p.search(query, limit, category_filter)
+                        if provider_results:
+                            results.extend(provider_results)
                     except Exception as e:
-                        print(f"Provider error: {e}")
+                        print(f"Provider {p.__class__.__name__} error: {e}")
 
             if self._current_search_id != search_id:
                 return
@@ -132,14 +120,13 @@ class SearchEngine:
             results.sort(key=lambda x: x.score, reverse=True)
 
             try:
-                import gi
                 from gi.repository import GLib
-                if self._current_search_id == search_id:
+                if self._current_search_id == search_id and callback:
                     GLib.idle_add(callback, results[:limit], search_id)
             except Exception:
                 pass
 
-        self._executor.submit(_search)
+        self._executor.submit(_search_worker)
 
     def record_launch(self, app_id: str, query: str = ""):
         self.history.record_launch(app_id, query)

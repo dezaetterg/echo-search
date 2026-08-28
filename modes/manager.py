@@ -40,6 +40,7 @@ class ModeManager:
             
         self.active_mode_name = "Search"
         self.stack.set_visible_child_name(self.active_mode_name)
+        self._search_debounce_timer = None
         
         # Preload data in background idle without blocking UI
         from gi.repository import GLib
@@ -99,6 +100,11 @@ class ModeManager:
             self.on_search_changed(self.main_window.entry.get_text())
 
     def on_search_changed(self, query: str):
+        from gi.repository import GLib
+        if self._search_debounce_timer is not None:
+            GLib.source_remove(self._search_debounce_timer)
+            self._search_debounce_timer = None
+
         active_mode = self.get_active_mode()
         category = active_mode.get_category_filter()
         query = query.strip()
@@ -126,9 +132,14 @@ class ModeManager:
                 active_mode.render(self.current_results)
             return
                 
-        cfg_limit = self.main_window.config_manager.get("results_limit", 20) if self.main_window.config_manager else 20
-        limit = 100 if category in ("Apps", "Settings") else cfg_limit
-        self.engine.search_async(query, limit=limit, category_filter=category, callback=self._on_search_completed)
+        def _execute_debounced_search():
+            self._search_debounce_timer = None
+            cfg_limit = self.main_window.config_manager.get("results_limit", 20) if self.main_window.config_manager else 20
+            limit = 100 if category in ("Apps", "Settings") else cfg_limit
+            self.engine.search_async(query, limit=limit, category_filter=category, callback=self._on_search_completed)
+            return False
+
+        self._search_debounce_timer = GLib.timeout_add(15, _execute_debounced_search)
 
     def _on_search_completed(self, results, search_id):
         if self.engine._current_search_id != search_id:

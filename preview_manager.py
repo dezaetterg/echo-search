@@ -300,7 +300,7 @@ class PreviewManager:
         
         grid = PreviewManager._create_meta_grid()
         if result.preview_data.get("unicode_code"):
-            grid.attach(PreviewManager._create_meta_card(t("label_desktop_path"), result.preview_data["unicode_code"]), 0, 0, 1, 1)
+            grid.attach(PreviewManager._create_meta_card(t("label_unicode"), result.preview_data["unicode_code"]), 0, 0, 1, 1)
             
         content_box.append(grid)
         

@@ -1,3 +1,5 @@
+import functools
+from pathlib import Path
 import os
 import urllib.parse
 import mimetypes
@@ -99,6 +101,7 @@ class FileProvider(BaseProvider):
             size /= 1024.0
         return f"{size:.1f} PB"
 
+    @functools.lru_cache(maxsize=1024)
     def _get_icon_for_mime(self, mime: str, path: str) -> str:
         if not mime or mime in ("unknown", "file"):
             guessed_mime, _ = mimetypes.guess_type(path)
@@ -106,14 +109,14 @@ class FileProvider(BaseProvider):
 
         try:
             import hashlib
-            uri = f"file://{urllib.parse.quote(path)}"
+            uri = Path(path).as_uri()
             hash_str = hashlib.md5(uri.encode("utf-8")).hexdigest()
 
-            thumb_normal = os.path.expanduser(f"~/.cache/thumbnails/normal/{hash_str}.png")
             thumb_large = os.path.expanduser(f"~/.cache/thumbnails/large/{hash_str}.png")
-
             if os.path.exists(thumb_large):
                 return thumb_large
+
+            thumb_normal = os.path.expanduser(f"~/.cache/thumbnails/normal/{hash_str}.png")
             if os.path.exists(thumb_normal):
                 return thumb_normal
         except Exception:

@@ -1,4 +1,7 @@
 import os
+import functools
+from gi.repository import GdkPixbuf
+
 try:
     import gi
     gi.require_version('Gtk', '4.0')
@@ -10,6 +13,20 @@ from .base import BaseMode
 import preview_manager
 from utils import set_icon_safe
 from i18n import t
+
+
+@functools.lru_cache(maxsize=512)
+def get_scaled_pixbuf_cached(icon_path: str, size: int = 48):
+    try:
+        if os.path.exists(icon_path):
+            pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_path)
+            w, h = pixbuf.get_width(), pixbuf.get_height()
+            s = min(w, h)
+            cropped = pixbuf.new_subpixbuf((w - s) // 2, (h - s) // 2, s, s)
+            return cropped.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
+    except Exception:
+        pass
+    return None
 
 class SearchMode(BaseMode):
     category_filter = "All"
@@ -216,21 +233,18 @@ class SearchMode(BaseMode):
                         
                     row_data['icon_stack'].set_visible_child_name("icon")
                     
-                    # Загружаем иконку
+                    # Загружаем иконку с LRU кэшированием
                     icon_widget = row_data['icon']
                     try:
-                        if result.icon and os.path.isabs(result.icon) and os.path.exists(result.icon):
-                            from gi.repository import GdkPixbuf
-                            pixbuf = GdkPixbuf.Pixbuf.new_from_file(result.icon)
-                            w, h = pixbuf.get_width(), pixbuf.get_height()
-                            size = min(w, h)
-                            pixbuf = pixbuf.new_subpixbuf((w - size) // 2, (h - size) // 2, size, size)
-                            pixbuf = pixbuf.scale_simple(48, 48, GdkPixbuf.InterpType.BILINEAR)
-                            set_icon_safe(icon_widget, None, raw_pixbuf=pixbuf, pixel_size=48)
+                        if result.icon and os.path.isabs(result.icon):
+                            pixbuf = get_scaled_pixbuf_cached(result.icon, 48)
+                            if pixbuf:
+                                set_icon_safe(icon_widget, None, raw_pixbuf=pixbuf, pixel_size=48)
+                            else:
+                                set_icon_safe(icon_widget, result.icon, fallback_icon="application-x-executable", pixel_size=48)
                         else:
                             set_icon_safe(icon_widget, result.icon, fallback_icon="application-x-executable", pixel_size=48)
-                    except Exception as e:
-                        print(f"Error preparing icon for search result: {e}")
+                    except Exception:
                         set_icon_safe(icon_widget, None, fallback_icon="application-x-executable", pixel_size=48)
                     
                 row_data['row'].set_visible(True)
