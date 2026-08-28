@@ -16,6 +16,7 @@ from i18n import t, i18n
 from quick_look import QuickLookWindow
 
 UNFOLD_TRANSITION_MAP = {
+    "instant_dynamic": Gtk.RevealerTransitionType.CROSSFADE,
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
     "none": Gtk.RevealerTransitionType.NONE
@@ -189,7 +190,8 @@ class EchoUI(Gtk.Window):
                     background: transparent;
                     background-color: transparent;
                     color: #1c1c1e; 
-                    caret-color: #007aff; 
+                    caret-color: #007aff;
+                                        
                     border: none;
                     box-shadow: none;
                     outline: none;
@@ -532,7 +534,8 @@ class EchoUI(Gtk.Window):
                     background: transparent;
                     background-color: transparent;
                     color: #ffffff; 
-                    caret-color: #007aff; 
+                    caret-color: #007aff;
+                                        
                     border: none;
                     box-shadow: none;
                     outline: none;
@@ -766,6 +769,7 @@ class EchoUI(Gtk.Window):
 
         # Поле ввода
         self.entry = Gtk.Entry()
+        self.entry.set_overwrite_mode(False)
         self.entry.set_placeholder_text(t("search_placeholder"))
         self.entry.set_hexpand(True)
         self.entry.set_name("search-entry")
@@ -848,9 +852,14 @@ class EchoUI(Gtk.Window):
         self.results_container.add_css_class("folded")
         self.results_container.append(self.mode_manager.get_widget())
         
-        unfold_mode = self.config_manager.get("unfold_animation", "fade_slide_down") if self.config_manager else "fade_slide_down"
-        transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.SLIDE_DOWN)
-        revealer_duration = anim_duration if unfold_mode != "none" else 0
+        unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
+        transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.CROSSFADE)
+        if unfold_mode == "instant_dynamic":
+            revealer_duration = 50 if animations else 0
+        elif unfold_mode == "none" or not animations:
+            revealer_duration = 0
+        else:
+            revealer_duration = 240
         
         self.results_revealer = Gtk.Revealer()
         self.results_revealer.set_transition_type(transition_type)
@@ -890,6 +899,10 @@ class EchoUI(Gtk.Window):
                     if sel and getattr(sel[0], "result", None):
                         if self.quick_look.preview_result(sel[0].result):
                             return True
+
+        if keyval == Gdk.KEY_Insert:
+            self.entry.set_overwrite_mode(False)
+            return True
 
         if keyval == Gdk.KEY_Escape:
             query = self.entry.get_text()
@@ -955,8 +968,10 @@ class EchoUI(Gtk.Window):
                     self.set_default_size(820, 1)
             else:
                 self.results_container.add_css_class("folded")
-                if not self.results_revealer.get_child_revealed():
+                unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
+                if unfold_mode in ("instant_dynamic", "none") or not self.results_revealer.get_child_revealed():
                     self.set_default_size(650, 1)
+                    self.queue_resize()
         
         # Обновляем подсветку кнопок
         for name, btn in self.mode_buttons.items():
@@ -1020,12 +1035,17 @@ class EchoUI(Gtk.Window):
         
         # Обновляем анимации и стиль развертывания
         animations = self.config_manager.get("animations") if self.config_manager else True
-        unfold_mode = self.config_manager.get("unfold_animation", "fade_slide_down") if self.config_manager else "fade_slide_down"
-        anim_duration = 260 if animations else 0
-        revealer_duration = anim_duration if unfold_mode != "none" else 0
+        unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
+        anim_duration = 240 if animations else 0
+        if unfold_mode == "instant_dynamic":
+            revealer_duration = 50 if animations else 0
+        elif unfold_mode == "none" or not animations:
+            revealer_duration = 0
+        else:
+            revealer_duration = 240
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         if hasattr(self, 'results_revealer'):
-            transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.SLIDE_DOWN)
+            transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.CROSSFADE)
             self.results_revealer.set_transition_type(transition_type)
             self.results_revealer.set_transition_duration(revealer_duration)
             

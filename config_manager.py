@@ -128,7 +128,7 @@ class ConfigManager:
             "preview_width": 420,
             "results_limit": 20,
             "animations": True,
-            "unfold_animation": "slide_down",
+            "unfold_animation": "instant_dynamic",
             "launch_at_login": False,
             "launch_shortcut": "<Super>Space",
             
