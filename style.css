@@ -1421,3 +1421,105 @@ label.quick-look-hint {
     color: #64748b;
     font-weight: 500;
 }
+
+/* Folder View */
+.quick-look-folder-container {
+    background-color: #0b0d14;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 12px;
+    min-height: 340px;
+}
+
+.quick-look-folder-scroll {
+    min-height: 320px;
+}
+
+.quick-look-folder-row {
+    padding: 6px 10px;
+    border-radius: 8px;
+    margin-bottom: 2px;
+}
+
+.quick-look-folder-row:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+label.quick-look-folder-item-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #f1f5f9;
+}
+
+label.quick-look-folder-item-size {
+    font-size: 12px;
+    color: #64748b;
+    font-family: monospace;
+}
+
+label.quick-look-empty-folder {
+    font-size: 14px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+/* Audio Player */
+.quick-look-audio-hero {
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.18), rgba(11, 13, 20, 0.95));
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px 20px 18px 20px;
+    min-height: 340px;
+}
+
+.quick-look-audio-disc {
+    color: #60a5fa;
+}
+
+label.quick-look-audio-title {
+    font-size: 17px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.quick-look-audio-controls {
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 8px 14px;
+    margin-top: 10px;
+}
+
+button.quick-look-play-btn {
+    background-color: #3b82f6;
+    border-radius: 50%;
+    min-width: 36px;
+    min-height: 36px;
+    padding: 6px;
+    color: #ffffff;
+    border: none;
+}
+
+button.quick-look-play-btn:hover {
+    background-color: #2563eb;
+}
+
+label.quick-look-audio-time {
+    font-family: monospace;
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* Video Player */
+.quick-look-video-container {
+    background-color: #000000;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 340px;
+    }
+
+video.quick-look-video {
+    border-radius: 12px;
+}
