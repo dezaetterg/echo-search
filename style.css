@@ -1023,3 +1023,401 @@ entry placeholder {
 
 .preview-action-btn:hover {
     }
+
+/* Quick Look Fullscreen Overlay / Window */
+.quick-look-window {
+    background: rgba(18, 20, 29, 0.92);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.65), 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.quick-look-content-box {
+    padding: 18px 22px;
+}
+
+.quick-look-header {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quick-look-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.quick-look-subtitle {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    font-weight: 500;
+}
+
+.quick-look-badge {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.quick-look-close-btn {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 4px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.quick-look-close-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+.quick-look-image-container {
+    background: rgba(0, 0, 0, 0.35);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 12px;
+    min-height: 280px;
+}
+
+.quick-look-image {
+    border-radius: 10px;
+}
+
+.quick-look-text-scroll {
+    background: rgba(12, 14, 20, 0.85);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 340px;
+}
+
+.quick-look-code-view {
+    font-family: monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    background: transparent;
+    color: #e2e8f0;
+    padding: 14px 16px;
+}
+
+.quick-look-media-hero {
+    background: radial-gradient(circle at center, rgba(59, 130, 246, 0.15), rgba(0, 0, 0, 0.4));
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 40px 20px;
+}
+
+.quick-look-media-icon {
+    color: #60a5fa;
+}
+
+.quick-look-media-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.quick-look-generic-box {
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 40px 20px;
+}
+
+.quick-look-path-label {
+    font-family: monospace;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+.quick-look-footer {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.quick-look-action-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.quick-look-action-btn:hover {
+    background: rgba(255, 255, 255, 0.16);
+    color: #ffffff;
+}
+
+.quick-look-action-btn.primary-action {
+    background: rgba(59, 130, 246, 0.7);
+    border-color: rgba(96, 165, 250, 0.5);
+    color: #ffffff;
+}
+
+.quick-look-action-btn.primary-action:hover {
+    background: rgba(59, 130, 246, 0.9);
+}
+
+.quick-look-hint {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 500;
+}
+
+/* Quick Look Styling */
+window.quick-look-window {
+    background: transparent;
+}
+
+.quick-look-window .quick-look-card {
+    background-color: rgba(22, 25, 35, 0.95);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    padding: 16px 20px;
+}
+
+.quick-look-header {
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quick-look-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.quick-look-subtitle {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+}
+
+.quick-look-badge {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 3px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.quick-look-close-btn {
+    background-color: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 4px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.quick-look-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+
+.quick-look-image-container {
+    background-color: rgba(0, 0, 0, 0.4);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 10px;
+    min-height: 280px;
+}
+
+.quick-look-image {
+    border-radius: 8px;
+}
+
+.quick-look-text-scroll {
+    background-color: rgba(12, 14, 20, 0.92);
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    min-height: 340px;
+    padding: 4px;
+}
+
+.quick-look-code-view {
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    background-color: transparent;
+    color: #f1f5f9;
+    padding: 10px 14px;
+}
+
+.quick-look-footer {
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quick-look-action-btn {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 9px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.quick-look-action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+.quick-look-action-btn.primary-action {
+    background-color: #3b82f6;
+    border-color: #60a5fa;
+    color: #ffffff;
+}
+
+.quick-look-action-btn.primary-action:hover {
+    background-color: #2563eb;
+}
+
+.quick-look-hint {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.45);
+    font-weight: 500;
+}
+
+/* Quick Look GTK4 Specific Element Rules */
+window.quick-look-window,
+.quick-look-window {
+    background: transparent;
+}
+
+.quick-look-card {
+    background-color: #12141c;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.85);
+    padding: 16px 20px;
+}
+
+.quick-look-header {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+label.quick-look-title {
+    font-size: 16px;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+label.quick-look-subtitle {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+label.quick-look-badge {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 11px;
+    font-weight: 600;
+    color: #f8fafc;
+}
+
+button.quick-look-close-btn {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    min-width: 28px;
+    min-height: 28px;
+    padding: 4px;
+    color: #cbd5e1;
+}
+
+button.quick-look-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.quick-look-image-container {
+    background-color: #0b0d14;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px;
+    min-height: 300px;
+}
+
+.quick-look-text-scroll {
+    background-color: #08090d;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    min-height: 340px;
+}
+
+textview.quick-look-code-view,
+.quick-look-code-view text {
+    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-size: 13px;
+    line-height: 1.5;
+    background-color: transparent;
+    color: #e2e8f0;
+    padding: 12px;
+}
+
+.quick-look-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+button.quick-look-action-btn {
+    background-color: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    padding: 6px 14px;
+}
+
+button.quick-look-action-btn label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #f1f5f9;
+}
+
+button.quick-look-action-btn:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+}
+
+button.quick-look-action-btn.primary-action {
+    background-color: #2563eb;
+    border-color: #3b82f6;
+}
+
+button.quick-look-action-btn.primary-action:hover {
+    background-color: #1d4ed8;
+}
+
+button.quick-look-action-btn.primary-action label {
+    color: #ffffff;
+}
+
+label.quick-look-hint {
+    font-size: 12px;
+    color: #64748b;
+    font-weight: 500;
+}

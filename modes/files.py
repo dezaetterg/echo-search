@@ -311,6 +311,9 @@ class FilesMode(BaseMode):
         while widget := self.preview_container.get_first_child():
             self.preview_container.remove(widget)
             
+        if getattr(self.main_window, 'quick_look', None) and self.main_window.quick_look.is_visible():
+            self.main_window.quick_look.preview_result(child.result)
+
         preview_widget = preview_manager.PreviewManager.render(child.result)
         self.preview_container.append(preview_widget)
         self.preview_container.set_visible(True)
@@ -398,6 +401,14 @@ class FilesMode(BaseMode):
         result = getattr(child[0], 'result', None)
         if not result:
             return False
+
+        if keyval == Gdk.KEY_space:
+            if getattr(self.main_window, 'quick_look', None):
+                if self.main_window.quick_look.is_visible():
+                    self.main_window.quick_look.hide_preview()
+                    return True
+                else:
+                    return self.main_window.quick_look.preview_result(result)
 
         is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
 

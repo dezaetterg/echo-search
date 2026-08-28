@@ -13,6 +13,7 @@ from search_engine import SearchEngine
 from providers import SearchResult
 from modes import ModeManager
 from i18n import t, i18n
+from quick_look import QuickLookWindow
 
 UNFOLD_TRANSITION_MAP = {
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
@@ -32,6 +33,7 @@ class EchoUI(Gtk.Window):
             self.config_manager.apply_to_engine(self.engine)
             
         self.mode_manager = None
+        self.quick_look = None
         
         self._setup_ui()
         self._setup_css()
@@ -48,6 +50,8 @@ class EchoUI(Gtk.Window):
     def _on_unmap(self, widget):
         """Reclaims preview resources and triggers garbage collection when window is hidden."""
         try:
+            if getattr(self, "quick_look", None):
+                self.quick_look.hide_preview()
             import gc
             if self.mode_manager and hasattr(self.mode_manager, "modes"):
                 search_mode = self.mode_manager.modes.get("Search")
@@ -836,6 +840,7 @@ class EchoUI(Gtk.Window):
             
         # Инициализируем ModeManager и оборачиваем в Revealer для динамической высоты окна
         self.mode_manager = ModeManager(self)
+        self.quick_look = QuickLookWindow(parent_window=self)
         
         # Единый контейнер для всех режимов, задающий глобальные отступы
         self.results_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -881,6 +886,24 @@ class EchoUI(Gtk.Window):
             pass
 
     def on_key_pressed(self, controller, keyval, keycode, state):
+        if getattr(self, "quick_look", None) and self.quick_look.is_visible():
+            if keyval in (Gdk.KEY_Escape, Gdk.KEY_space):
+                self.quick_look.hide_preview()
+                return True
+
+        if (state & Gdk.ModifierType.SHIFT_MASK) and keyval == Gdk.KEY_space:
+            if getattr(self, "quick_look", None) and self.mode_manager:
+                mode = self.mode_manager.get_active_mode()
+                if mode and hasattr(mode, "current_results") and hasattr(mode, "selected_index"):
+                    if 0 <= mode.selected_index < len(mode.current_results):
+                        if self.quick_look.preview_result(mode.current_results[mode.selected_index]):
+                            return True
+                elif mode and hasattr(mode, "suggestions_flowbox"):
+                    sel = mode.suggestions_flowbox.get_selected_children() or mode.recents_flowbox.get_selected_children()
+                    if sel and getattr(sel[0], "result", None):
+                        if self.quick_look.preview_result(sel[0].result):
+                            return True
+
         if keyval == Gdk.KEY_Escape:
             query = self.entry.get_text()
             if self.mode_manager and self.mode_manager.active_mode_name != "Search":

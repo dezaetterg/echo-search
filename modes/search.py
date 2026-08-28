@@ -34,6 +34,7 @@ class SearchMode(BaseMode):
     def _create_widget(self) -> Gtk.Widget:
         self.current_results = []
         self.selected_index = -1
+        self._navigated_with_arrows = False
         self.is_scrolling = False
         
         self.main_split = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -163,6 +164,7 @@ class SearchMode(BaseMode):
         
         limit = self.main_window.config_manager.get("results_limit") if getattr(self.main_window, "config_manager", None) else 20
         self.current_results = results[:limit]
+        self._navigated_with_arrows = False
         
         if not query:
             self.current_results = []
@@ -266,6 +268,8 @@ class SearchMode(BaseMode):
         if row:
             self.results_listbox.select_row(row)
             if hasattr(row, 'result') and row.result:
+                if getattr(self.main_window, 'quick_look', None) and self.main_window.quick_look.is_visible():
+                    self.main_window.quick_look.preview_result(row.result)
                 # Очищаем старое превью
                 while widget := self.preview_container.get_first_child():
                     self.preview_container.remove(widget)
@@ -298,15 +302,29 @@ class SearchMode(BaseMode):
     def on_key_pressed(self, keyval, state, current_results: list) -> bool:
         if keyval == Gdk.KEY_Down:
             if current_results and self.selected_index < len(current_results) - 1:
+                self._navigated_with_arrows = True
                 self.selected_index += 1
                 self.update_selection()
             return True
             
         elif keyval == Gdk.KEY_Up:
             if current_results and self.selected_index > 0:
+                self._navigated_with_arrows = True
                 self.selected_index -= 1
                 self.update_selection()
             return True
+
+        elif keyval == Gdk.KEY_space:
+            if getattr(self.main_window, 'quick_look', None) and self.main_window.quick_look.is_visible():
+                self.main_window.quick_look.hide_preview()
+                return True
+            if self._navigated_with_arrows or (state & Gdk.ModifierType.SHIFT_MASK):
+                if current_results and 0 <= self.selected_index < len(current_results):
+                    result = current_results[self.selected_index]
+                    if getattr(self.main_window, 'quick_look', None):
+                        if self.main_window.quick_look.preview_result(result):
+                            return True
+            return False
             
         elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
             if current_results and self.selected_index >= 0:
