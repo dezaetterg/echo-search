@@ -328,6 +328,10 @@ class FileProvider(BaseProvider):
             uri = Path(path).as_uri()
             hash_str = hashlib.md5(uri.encode("utf-8")).hexdigest()
 
+            thumb_xlarge = os.path.expanduser(f"~/.cache/thumbnails/x-large/{hash_str}.png")
+            if os.path.exists(thumb_xlarge):
+                return thumb_xlarge
+
             thumb_large = os.path.expanduser(f"~/.cache/thumbnails/large/{hash_str}.png")
             if os.path.exists(thumb_large):
                 return thumb_large

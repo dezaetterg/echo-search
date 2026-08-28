@@ -1,3 +1,28 @@
+
+def _get_cropped_image_pixbuf(path, target_size=256):
+    try:
+        from gi.repository import GdkPixbuf
+        info = GdkPixbuf.Pixbuf.get_file_info(path)
+        if not info or not info[0]:
+            return GdkPixbuf.Pixbuf.new_from_file_at_scale(path, target_size, target_size, True)
+        _, w, h = info
+        if w <= 0 or h <= 0:
+            return GdkPixbuf.Pixbuf.new_from_file_at_scale(path, target_size, target_size, True)
+        scale = max(target_size / w, target_size / h)
+        scaled_w = max(1, int(w * scale))
+        scaled_h = max(1, int(h * scale))
+        scaled_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(path, scaled_w, scaled_h, False)
+        if not scaled_pixbuf:
+            return None
+        crop_x = max(0, (scaled_w - target_size) // 2)
+        crop_y = max(0, (scaled_h - target_size) // 2)
+        return scaled_pixbuf.new_subpixbuf(crop_x, crop_y, target_size, target_size)
+    except Exception:
+        try:
+            return GdkPixbuf.Pixbuf.new_from_file_at_scale(path, target_size, target_size, True)
+        except Exception:
+            return None
+
 import os
 import urllib.parse
 import collections
@@ -199,29 +224,35 @@ class FilesMode(BaseMode):
                 try:
                     pixbuf = None
                     mime_type = result.preview_data.get("mime", "unknown")
+                    ext = os.path.splitext(path)[1].lower()
                     
-                    if thumbnail_factory and os.path.exists(path) and "unknown" not in mime_type:
+                    # 1. For images: load directly from original file at 256x256 for maximum sharpness
+                    if os.path.exists(path) and (mime_type.startswith("image/") or ext in (".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".bmp", ".avif", ".ico")):
+                        pixbuf = _get_cropped_image_pixbuf(path, 256)
+
+                    # 2. For other files (PDF, Video, Docs): use DesktopThumbnailFactory or system cache
+                    if not pixbuf and thumbnail_factory and os.path.exists(path) and "unknown" not in mime_type:
                         mtime = int(os.path.getmtime(path))
-                        
                         try:
                             if not thumbnail_factory.has_valid_failed_thumbnail(uri, mtime):
                                 thumb_path = thumbnail_factory.lookup(uri, mtime)
                                 if thumb_path:
-                                    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(thumb_path, 96, 96, True)
+                                    pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(thumb_path, 256, 256, True)
                                 else:
                                     if thumbnail_factory.can_thumbnail(uri, mime_type, mtime):
                                         pixbuf = thumbnail_factory.generate_thumbnail(uri, mime_type)
                                         if pixbuf:
                                             thumbnail_factory.save_thumbnail(pixbuf, uri, mtime)
-                                            pixbuf = pixbuf.scale_simple(96, 96, GdkPixbuf.InterpType.BILINEAR)
+                                            pixbuf = pixbuf.scale_simple(256, 256, GdkPixbuf.InterpType.HYPER)
                         except Exception:
                             pass
 
-                    # Fallback
+                    # 3. Fallback to icon path (e.g. system thumbnail cache from provider)
                     if not pixbuf and result.icon and os.path.exists(result.icon) and os.path.isabs(result.icon):
                         try:
-                            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(result.icon, 96, 96, True)
-                        except Exception: pass
+                            pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(result.icon, 256, 256, True)
+                        except Exception:
+                            pass
 
                     def _set():
                         if pixbuf:
@@ -229,7 +260,7 @@ class FilesMode(BaseMode):
                             if len(self._THUMBNAIL_CACHE) > self._CACHE_LIMIT:
                                 self._THUMBNAIL_CACHE.popitem(last=False)
                             set_icon_safe(icon, None, raw_pixbuf=pixbuf, is_paintable=True)
-                            icon.add_css_class("loaded") # Fade-in effect
+                            icon.add_css_class("loaded")
                         else:
                             set_icon_safe(icon, result.icon, fallback_icon="application-x-executable", pixel_size=96)
                     GLib.idle_add(_set)
