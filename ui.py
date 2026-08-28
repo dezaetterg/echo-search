@@ -16,6 +16,7 @@ from i18n import t, i18n
 
 UNFOLD_TRANSITION_MAP = {
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
+    "aura_glow": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
     "none": Gtk.RevealerTransitionType.NONE
 }
@@ -918,6 +919,23 @@ class EchoUI(Gtk.Window):
         
         if hasattr(self, 'results_revealer'):
             self.results_revealer.set_reveal_child(should_reveal_results)
+            unfold_mode = self.config_manager.get("unfold_animation", "slide_down") if self.config_manager else "slide_down"
+            if unfold_mode == "aura_glow" and should_reveal_results:
+                if hasattr(self, "outer_box"):
+                    self.outer_box.remove_css_class("burn-aura-opening")
+                    self.outer_box.add_css_class("burn-aura-opening")
+                    if hasattr(self, "_burn_aura_timer") and self._burn_aura_timer:
+                        GLib.source_remove(self._burn_aura_timer)
+                    def _cleanup_burn_aura():
+                        if hasattr(self, "outer_box"):
+                            self.outer_box.remove_css_class("burn-aura-opening")
+                        self._burn_aura_timer = None
+                        return False
+                    self._burn_aura_timer = GLib.timeout_add(450, _cleanup_burn_aura)
+            elif not should_reveal_results:
+                if hasattr(self, "outer_box") and self.outer_box.has_css_class("burn-aura-opening"):
+                    self.outer_box.remove_css_class("burn-aura-opening")
+            
             if should_reveal_results:
                 self.results_container.remove_css_class("folded")
                 if active == "Search":
