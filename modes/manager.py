@@ -122,7 +122,11 @@ class ModeManager:
                 self.current_results = self.engine.get_clipboard_history()
                 active_mode.render(self.current_results)
             elif category == "Files":
-                self.current_results = self.engine.get_recent_files()
+                file_provider = next((p for p in self.engine.providers if type(p).__name__ == "FileProvider"), None)
+                if file_provider and hasattr(active_mode, "active_category") and hasattr(file_provider, "get_files_by_category"):
+                    self.current_results = file_provider.get_files_by_category(active_mode.active_category, limit=40)
+                else:
+                    self.current_results = self.engine.get_recent_files()
                 active_mode.render(self.current_results)
             elif category == "Emoji":
                 self.current_results = self.engine.get_all_emojis()

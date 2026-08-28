@@ -131,6 +131,7 @@ class FileProvider(BaseProvider):
         self.conn = None
         self.tracker_broken = False
         self.local_cache = []
+        self.on_cache_ready_callbacks = []
         self.category_buckets = {
             "All": [],
             "PDF": [],
@@ -195,6 +196,19 @@ class FileProvider(BaseProvider):
             pass
 
         return sorted(list(target_dirs))
+
+    def add_cache_ready_callback(self, cb):
+        if cb not in self.on_cache_ready_callbacks:
+            self.on_cache_ready_callbacks.append(cb)
+        if self.local_cache and not self.is_building_cache:
+            try:
+                GLib.idle_add(cb)
+            except Exception:
+                pass
+
+    def remove_cache_ready_callback(self, cb):
+        if cb in self.on_cache_ready_callbacks:
+            self.on_cache_ready_callbacks.remove(cb)
 
     def _build_cache_async(self):
         if self.is_building_cache:
@@ -306,6 +320,11 @@ class FileProvider(BaseProvider):
                 print(f"Error building local cache: {e}")
             finally:
                 self.is_building_cache = False
+                for cb in list(self.on_cache_ready_callbacks):
+                    try:
+                        GLib.idle_add(cb)
+                    except Exception as ex:
+                        print(f"Error executing cache ready callback: {ex}")
 
         thread = threading.Thread(target=_worker, daemon=True)
         thread.start()

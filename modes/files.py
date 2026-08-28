@@ -71,6 +71,7 @@ class FilesMode(BaseMode):
         
         self.suggestions_flowbox.set_filter_func(self._filter_func)
         self.recents_flowbox.set_filter_func(self._filter_func)
+        self._connected_cache_callback = False
         
     def _create_widget(self) -> Gtk.Widget:
 
@@ -200,11 +201,27 @@ class FilesMode(BaseMode):
     def _preload_files(self):
         if hasattr(self.main_window, "engine"):
             file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
+            if file_provider:
+                if not self._connected_cache_callback and hasattr(file_provider, "add_cache_ready_callback"):
+                    file_provider.add_cache_ready_callback(self._on_file_cache_ready)
+                    self._connected_cache_callback = True
+                if hasattr(file_provider, "get_files_by_category"):
+                    results = file_provider.get_files_by_category(self.active_category, limit=40)
+                    if results:
+                        self.current_results = results
+                        self._populate(results)
+                        self.populated = True
+        return False
+
+    def _on_file_cache_ready(self):
+        if not self.current_query and hasattr(self.main_window, "engine"):
+            file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
             if file_provider and hasattr(file_provider, "get_files_by_category"):
                 results = file_provider.get_files_by_category(self.active_category, limit=40)
-                self._populate(results)
-                self.populated = True
-        return False
+                if results:
+                    self.current_results = results
+                    self._populate(results)
+                    self.populated = True
 
     def _create_card(self, result):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -428,10 +445,19 @@ class FilesMode(BaseMode):
     def render(self, results: list):
         self.current_query = self.main_window.entry.get_text().strip()
         
-        if not self.current_query and not results:
+        # Ensure callback is connected
+        if not self._connected_cache_callback and hasattr(self.main_window, "engine"):
+            file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
+            if file_provider and hasattr(file_provider, "add_cache_ready_callback"):
+                file_provider.add_cache_ready_callback(self._on_file_cache_ready)
+                self._connected_cache_callback = True
+
+        if not self.current_query:
             file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
             if file_provider and hasattr(file_provider, "get_files_by_category"):
-                results = file_provider.get_files_by_category(self.active_category, limit=40)
+                cat_results = file_provider.get_files_by_category(self.active_category, limit=40)
+                if cat_results:
+                    results = cat_results
 
         self.current_results = results
         
