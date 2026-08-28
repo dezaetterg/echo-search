@@ -156,10 +156,10 @@ class FilesMode(BaseMode):
         return self.left_box
 
     def _preload_files(self):
-        if not self.populated and hasattr(self.main_window, "engine"):
+        if hasattr(self.main_window, "engine"):
             file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
-            if file_provider and hasattr(file_provider, "get_recent_files"):
-                results = file_provider.get_recent_files()
+            if file_provider and hasattr(file_provider, "get_files_by_category"):
+                results = file_provider.get_files_by_category(self.active_category, limit=40)
                 self._populate(results)
                 self.populated = True
         return False
@@ -264,8 +264,17 @@ class FilesMode(BaseMode):
             self.recents_flowbox.remove(child)
             child = self.recents_flowbox.get_first_child()
             
-        suggestions = results[:5]
-        recents = results[5:30]
+        if not self.current_query:
+            suggestions = []
+            recents = results[:40]
+            self.suggestions_box.set_visible(False)
+            cat_label = t(f"cat_{self.active_category.lower()}") if self.active_category != "All" else t("section_recent")
+            self.recents_label.set_label(cat_label)
+        else:
+            suggestions = results[:5]
+            recents = results[5:35]
+            self.suggestions_box.set_visible(bool(suggestions))
+            self.recents_label.set_label(t("section_recent"))
         
         for result in suggestions:
             card = self._create_card(result)
@@ -328,6 +337,14 @@ class FilesMode(BaseMode):
         self.active_category = cat_name
         self.filter_buttons[cat_name].add_css_class("active")
         
+        if not self.current_query and hasattr(self.main_window, "engine"):
+            file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
+            if file_provider and hasattr(file_provider, "get_files_by_category"):
+                results = file_provider.get_files_by_category(cat_name, limit=40)
+                self.current_results = results
+                self._populate(results)
+                return
+
         self.suggestions_flowbox.set_filter_func(None)
         self.suggestions_flowbox.set_filter_func(self._filter_func)
         self.recents_flowbox.set_filter_func(None)
@@ -340,14 +357,15 @@ class FilesMode(BaseMode):
         if self.active_category != "All":
             target_cats = self.CAT_MAPPING.get(self.active_category, [])
             mime = child.result.preview_data.get("mime", "").lower()
+            path = child.result.preview_data.get("path", "").lower()
             
             matched = False
             for target in target_cats:
-                if target in mime:
+                if target in mime or target in path:
                     matched = True
                     break
             
-            if self.active_category == "Folders" and mime == "unknown" and os.path.isdir(child.result.preview_data.get("path", "")):
+            if self.active_category == "Folders" and (mime == "inode/directory" or os.path.isdir(child.result.preview_data.get("path", ""))):
                 matched = True
                 
             if not matched:
@@ -363,8 +381,8 @@ class FilesMode(BaseMode):
         
         if not self.current_query and not results:
             file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
-            if file_provider and hasattr(file_provider, "get_recent_files"):
-                results = file_provider.get_recent_files()
+            if file_provider and hasattr(file_provider, "get_files_by_category"):
+                results = file_provider.get_files_by_category(self.active_category, limit=40)
 
         self.current_results = results
         
