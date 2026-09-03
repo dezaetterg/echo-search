@@ -189,12 +189,22 @@ class ClipboardMode(BaseMode):
         if keyval == Gdk.KEY_Down:
             pos = self.selection_model.get_selected()
             if pos < n_items - 1:
-                self.selection_model.set_selected(pos + 1)
+                new_pos = pos + 1
+                self.selection_model.set_selected(new_pos)
+                try:
+                    self.list_view.scroll_to(new_pos, Gtk.ListScrollFlags.NONE, None)
+                except Exception:
+                    pass
             return True
         elif keyval == Gdk.KEY_Up:
             pos = self.selection_model.get_selected()
             if pos > 0:
-                self.selection_model.set_selected(pos - 1)
+                new_pos = pos - 1
+                self.selection_model.set_selected(new_pos)
+                try:
+                    self.list_view.scroll_to(new_pos, Gtk.ListScrollFlags.NONE, None)
+                except Exception:
+                    pass
             return True
         elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
             pos = self.selection_model.get_selected()

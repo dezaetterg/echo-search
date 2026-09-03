@@ -238,12 +238,15 @@ class AppProvider(BaseProvider):
             if app_data.exec_cmd:
                 try:
                     args = shlex.split(app_data.exec_cmd)
-                    subprocess.Popen(
-                        args,
-                        start_new_session=True,
-                        stdout=subprocess.DEVNULL,
-                        stderr=subprocess.DEVNULL
-                    )
+                    # Strip desktop entry field codes (%u, %U, %f, %F, %i, %c, %k, etc.)
+                    clean_args = [a for a in args if not (a.startswith("%") and len(a) == 2)]
+                    if clean_args:
+                        subprocess.Popen(
+                            clean_args,
+                            start_new_session=True,
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL
+                        )
                 except Exception as e:
                     print(f"Error launching application {app_data.name}: {e}")
 

@@ -57,3 +57,6 @@ venv.bak/
 # Application runtime cache/data
 /calc_history.json
 /history.json
+
+# Local launch scripts
+run.sh

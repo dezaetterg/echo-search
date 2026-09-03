@@ -267,6 +267,20 @@ class SearchMode(BaseMode):
         row = self.results_listbox.get_row_at_index(self.selected_index)
         if row:
             self.results_listbox.select_row(row)
+            try:
+                adj = self.results_scroll.get_vadjustment()
+                if adj:
+                    row_h = row.get_height() or 54
+                    r_top = self.selected_index * row_h
+                    r_bottom = r_top + row_h
+                    p_top = adj.get_value()
+                    p_bottom = p_top + adj.get_page_size()
+                    if r_top < p_top:
+                        adj.set_value(r_top)
+                    elif r_bottom > p_bottom:
+                        adj.set_value(max(0, r_bottom - adj.get_page_size()))
+            except Exception:
+                pass
             if hasattr(row, 'result') and row.result:
                 if getattr(self.main_window, 'quick_look', None) and self.main_window.quick_look.is_visible():
                     self.main_window.quick_look.preview_result(row.result)
@@ -282,7 +296,10 @@ class SearchMode(BaseMode):
                     self.preview_container.append(preview_widget)
                     self.preview_container.set_visible(True)
                     preview_width = self.main_window.config_manager.get("preview_width") if getattr(self.main_window, "config_manager", None) else 420
-                    self.main_window.set_default_size(650 + preview_width, 1)
+                    target_w = 650 + preview_width
+                    if hasattr(self.main_window, "_clamp_width_to_monitor"):
+                        target_w = self.main_window._clamp_width_to_monitor(target_w)
+                    self.main_window.set_default_size(target_w, 1)
                 else:
                     self.preview_container.set_visible(False)
                     self.main_window.set_default_size(650, 1)

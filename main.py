@@ -112,6 +112,7 @@ class EchoApp(BaseApplication):
             
             self.window.set_decorated(False)
             self.window.present()
+            self.window.entry.grab_focus()
         else:
             # Тогл видимости окна при повторном запуске (например, шорткатом)
             if self.window.is_visible():

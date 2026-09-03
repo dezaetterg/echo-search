@@ -199,25 +199,62 @@ class EmojiMode(BaseMode):
             
 
     def _launch_app(self, result):
-        if getattr(result, 'execute', None):
+        if getattr(result, "execute", None):
             result.execute()
-        
-        # Визуальный отклик перед закрытием
-        self.main_window.entry.set_text(t("clip_copied_toast", item=result.icon))
-        
-        from gi.repository import GLib
-        def hide_after_delay():
-            self.main_window.hide()
-            self.main_window.entry.set_text("")
-            return False
-            
-        GLib.timeout_add(1000, hide_after_delay)
+        self.main_window.hide()
+        self.main_window.entry.set_text("")
 
     def on_key_pressed(self, keyval, state, current_results: list) -> bool:
-        # Standard navigation is handled by Gtk.GridView
-        if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
-            pos = self.selection_model.get_selected()
-            if pos != Gtk.INVALID_LIST_POSITION:
+        n_items = self.filter_list_model.get_n_items()
+        if n_items == 0:
+            return False
+
+        cols = self.grid_view.get_max_columns() or 10
+        pos = self.selection_model.get_selected()
+
+        def _select_and_scroll(new_pos):
+            self.selection_model.set_selected(new_pos)
+            try:
+                self.grid_view.scroll_to(new_pos, Gtk.ListScrollFlags.NONE, None)
+            except Exception:
+                pass
+
+        if keyval == Gdk.KEY_Right:
+            if pos == Gtk.INVALID_LIST_POSITION:
+                _select_and_scroll(0)
+            elif pos < n_items - 1:
+                _select_and_scroll(pos + 1)
+            return True
+
+        elif keyval == Gdk.KEY_Left:
+            if pos == Gtk.INVALID_LIST_POSITION:
+                _select_and_scroll(0)
+            elif pos > 0:
+                _select_and_scroll(pos - 1)
+            return True
+
+        elif keyval == Gdk.KEY_Down:
+            if pos == Gtk.INVALID_LIST_POSITION:
+                _select_and_scroll(0)
+            elif pos + cols < n_items:
+                _select_and_scroll(pos + cols)
+            else:
+                _select_and_scroll(n_items - 1)
+            return True
+
+        elif keyval == Gdk.KEY_Up:
+            if pos == Gtk.INVALID_LIST_POSITION:
+                _select_and_scroll(0)
+            elif pos - cols >= 0:
+                _select_and_scroll(pos - cols)
+            else:
+                _select_and_scroll(0)
+            return True
+
+        elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
+            if pos == Gtk.INVALID_LIST_POSITION and n_items > 0:
+                pos = 0
+            if pos != Gtk.INVALID_LIST_POSITION and pos < n_items:
                 wrapper = self.filter_list_model.get_item(pos)
                 if wrapper and wrapper.result:
                     self._launch_app(wrapper.result)

@@ -1,14 +1,15 @@
 /* Делаем окно GTK и Libadwaita полностью прозрачными */
-window, window.background, .background, window.solid-csd, window.csd, .root-box {
+window, window.background, .background, window.solid-csd, window.csd, window decoration, decoration, .root-box {
     background: transparent;
     background-color: transparent;
     border: none;
     box-shadow: none;
+    outline: none;
 }
 
 /* Обертка для корневого бокса, чтобы тень рисовалась внутри Wayland surface */
 .root-box {
-    padding: 100px;
+    padding: 28px;
     background: transparent;
     background-color: transparent;
 }
@@ -32,7 +33,7 @@ window, window.background, .background, window.solid-csd, window.csd, .root-box 
     box-shadow: inset 1px 1px 0px rgba(255, 255, 255, 0.2), 
                 inset -1px -1px 0px rgba(0, 0, 0, 0.2);
     color: white;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: "SF Pro Display", "Inter", "Cantarell", "Ubuntu", "Roboto", "Segoe UI", sans-serif;
     padding-bottom: 4px;
 }
 

@@ -359,6 +359,12 @@ class FilesMode(BaseMode):
             self.recents_flowbox.append(child)
             
         self.populated = True
+        
+        # Auto-select first item
+        first = self.suggestions_flowbox.get_child_at_index(0) if (self.suggestions_box.get_visible() and self.suggestions_flowbox.get_child_at_index(0)) else self.recents_flowbox.get_child_at_index(0)
+        if first:
+            target_fb = self.suggestions_flowbox if (self.suggestions_box.get_visible() and self.suggestions_flowbox.get_child_at_index(0)) else self.recents_flowbox
+            target_fb.select_child(first)
 
     def on_child_activated(self, flowbox, child):
         if getattr(child.result, 'execute', None):
@@ -392,7 +398,10 @@ class FilesMode(BaseMode):
         preview_widget = preview_manager.PreviewManager.render(child.result)
         self.preview_container.append(preview_widget)
         self.preview_container.set_visible(True)
-        self.main_window.set_default_size(1050, 1)
+        target_w = 1050
+        if hasattr(self.main_window, "_clamp_width_to_monitor"):
+            target_w = self.main_window._clamp_width_to_monitor(target_w)
+        self.main_window.set_default_size(target_w, 1)
 
     def on_category_clicked(self, button, cat_name):
         if self.active_category == cat_name:
@@ -484,12 +493,89 @@ class FilesMode(BaseMode):
         pass
 
     def on_key_pressed(self, keyval, state, results) -> bool:
-        child = self.suggestions_flowbox.get_selected_children()
-        if not child:
-            child = self.recents_flowbox.get_selected_children()
-            
-        if not child:
-            return False
+        cols = 5
+        active_fb = None
+        other_fb = None
+        selected = self.suggestions_flowbox.get_selected_children()
+        if selected and self.suggestions_box.get_visible():
+            active_fb = self.suggestions_flowbox
+            other_fb = self.recents_flowbox
+        else:
+            selected = self.recents_flowbox.get_selected_children()
+            if selected:
+                active_fb = self.recents_flowbox
+                other_fb = self.suggestions_flowbox
+
+        if not selected:
+            first = self.suggestions_flowbox.get_child_at_index(0) if (self.suggestions_box.get_visible() and self.suggestions_flowbox.get_child_at_index(0)) else self.recents_flowbox.get_child_at_index(0)
+            if first:
+                fb = self.suggestions_flowbox if (self.suggestions_box.get_visible() and self.suggestions_flowbox.get_child_at_index(0)) else self.recents_flowbox
+                fb.select_child(first)
+            return True if keyval in (Gdk.KEY_Up, Gdk.KEY_Down, Gdk.KEY_Left, Gdk.KEY_Right) else False
+
+        current_child = selected[0]
+        cur_idx = current_child.get_index()
+
+        def _count_children(fb):
+            cnt = 0
+            while fb.get_child_at_index(cnt):
+                cnt += 1
+            return cnt
+
+        cur_count = _count_children(active_fb)
+
+        if keyval == Gdk.KEY_Right:
+            if cur_idx + 1 < cur_count:
+                nxt = active_fb.get_child_at_index(cur_idx + 1)
+                if nxt:
+                    active_fb.select_child(nxt)
+            elif active_fb is self.suggestions_flowbox and other_fb and other_fb.get_child_at_index(0):
+                active_fb.unselect_all()
+                other_fb.select_child(other_fb.get_child_at_index(0))
+            return True
+
+        elif keyval == Gdk.KEY_Left:
+            if cur_idx > 0:
+                prv = active_fb.get_child_at_index(cur_idx - 1)
+                if prv:
+                    active_fb.select_child(prv)
+            elif active_fb is self.recents_flowbox and self.suggestions_box.get_visible():
+                s_count = _count_children(self.suggestions_flowbox)
+                if s_count > 0:
+                    active_fb.unselect_all()
+                    self.suggestions_flowbox.select_child(self.suggestions_flowbox.get_child_at_index(s_count - 1))
+            return True
+
+        elif keyval == Gdk.KEY_Down:
+            if cur_idx + cols < cur_count:
+                nxt = active_fb.get_child_at_index(cur_idx + cols)
+                if nxt:
+                    active_fb.select_child(nxt)
+            elif active_fb is self.suggestions_flowbox and other_fb and other_fb.get_child_at_index(0):
+                col_offset = cur_idx % cols
+                other_count = _count_children(other_fb)
+                target_idx = min(col_offset, other_count - 1)
+                if target_idx >= 0:
+                    active_fb.unselect_all()
+                    other_fb.select_child(other_fb.get_child_at_index(target_idx))
+            return True
+
+        elif keyval == Gdk.KEY_Up:
+            if cur_idx - cols >= 0:
+                prv = active_fb.get_child_at_index(cur_idx - cols)
+                if prv:
+                    active_fb.select_child(prv)
+            elif active_fb is self.recents_flowbox and self.suggestions_box.get_visible():
+                s_count = _count_children(self.suggestions_flowbox)
+                if s_count > 0:
+                    col_offset = cur_idx % cols
+                    last_row_start = (s_count - 1) // cols * cols
+                    target_idx = min(last_row_start + col_offset, s_count - 1)
+                    active_fb.unselect_all()
+                    self.suggestions_flowbox.select_child(self.suggestions_flowbox.get_child_at_index(target_idx))
+            return True
+
+        child = selected
             
         result = getattr(child[0], 'result', None)
         if not result:

@@ -85,6 +85,16 @@ class EchoUI(Gtk.Window):
             pass
 
     def _setup_css(self):
+        if hasattr(self, "_base_css_provider") and self._base_css_provider:
+            try:
+                Gtk.StyleContext.remove_provider_for_display(
+                    Gdk.Display.get_default(),
+                    self._base_css_provider
+                )
+            except Exception:
+                pass
+            self._base_css_provider = None
+
         provider = Gtk.CssProvider()
         css_paths = [
             os.path.expanduser("~/.local/share/echo-search/style.css"),
@@ -103,6 +113,7 @@ class EchoUI(Gtk.Window):
                         provider,
                         Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
                     )
+                    self._base_css_provider = provider
                     break
                 except Exception as e:
                     print(f"Error loading CSS from {path}: {e}")
@@ -708,11 +719,17 @@ class EchoUI(Gtk.Window):
                 """
                 
             dynamic_css = f"""
-            window, window.background, .background, window.solid-csd, window.csd, .root-box {{
+            window, window.background, .background, window.solid-csd, window.csd, window decoration, decoration, .root-box {{
                 background: transparent;
                 background-color: transparent;
                 border: none;
                 box-shadow: none;
+                outline: none;
+            }}
+            .root-box {{
+                padding: 28px;
+                background: transparent;
+                background-color: transparent;
             }}
             .mode-button, button.mode-button, button.circular {{
                 border-radius: 9999px;
@@ -967,6 +984,25 @@ class EchoUI(Gtk.Window):
             
         return False
 
+    def _clamp_width_to_monitor(self, target_width: int) -> int:
+        try:
+            display = Gdk.Display.get_default()
+            if display:
+                surface = self.get_surface()
+                mon = display.get_monitor_at_surface(surface) if surface else None
+                if not mon:
+                    monitors = display.get_monitors()
+                    if monitors and monitors.get_n_items() > 0:
+                        mon = monitors.get_item(0)
+                if mon:
+                    geom = mon.get_geometry()
+                    if geom.width > 0:
+                        max_allowed = int(geom.width * 0.94)
+                        return min(target_width, max_allowed)
+        except Exception:
+            pass
+        return target_width
+
     def update_revealer_state(self):
         active = self.mode_manager.active_mode_name
         should_reveal_modes = active != "Search"
@@ -990,13 +1026,16 @@ class EchoUI(Gtk.Window):
                 else:
                     self.results_container.remove_css_class("anim-jelly-wobble")
                 if active == "Search":
+                    search_mode = self.mode_manager.modes.get("Search") if self.mode_manager else None
+                    has_results = bool(search_mode and getattr(search_mode, "current_results", None) and getattr(search_mode, "selected_index", -1) >= 0)
                     preview_enabled = self.config_manager.get("preview_enabled") if getattr(self, "config_manager", None) else True
                     preview_width = self.config_manager.get("preview_width") if getattr(self, "config_manager", None) else 420
-                    self.set_default_size(650 + (preview_width if preview_enabled else 0), 1)
+                    target_w = 650 + (preview_width if (preview_enabled and has_results) else 0)
+                    self.set_default_size(self._clamp_width_to_monitor(target_w), 1)
                 elif active in ("Apps", "Files", "Clipboard", "Emoji"):
-                    self.set_default_size(1050, 1)
+                    self.set_default_size(self._clamp_width_to_monitor(1050), 1)
                 elif active == "Settings":
-                    self.set_default_size(820, 1)
+                    self.set_default_size(self._clamp_width_to_monitor(820), 1)
             else:
                 self.results_container.add_css_class("folded")
                 self.results_container.remove_css_class("anim-jelly-wobble")

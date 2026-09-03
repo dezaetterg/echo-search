@@ -215,40 +215,47 @@ class AppsMode(BaseMode):
 
         cols = 6
 
+        def _select_and_scroll(new_pos):
+            self.selection_model.set_selected(new_pos)
+            try:
+                self.grid_view.scroll_to(new_pos, Gtk.ListScrollFlags.NONE, None)
+            except Exception:
+                pass
+
         if keyval == Gdk.KEY_Right:
             pos = self.selection_model.get_selected()
             if pos == Gtk.INVALID_LIST_POSITION:
-                self.selection_model.set_selected(0)
+                _select_and_scroll(0)
             elif pos < n_items - 1:
-                self.selection_model.set_selected(pos + 1)
+                _select_and_scroll(pos + 1)
             return True
 
         elif keyval == Gdk.KEY_Left:
             pos = self.selection_model.get_selected()
             if pos == Gtk.INVALID_LIST_POSITION:
-                self.selection_model.set_selected(0)
+                _select_and_scroll(0)
             elif pos > 0:
-                self.selection_model.set_selected(pos - 1)
+                _select_and_scroll(pos - 1)
             return True
 
         elif keyval == Gdk.KEY_Down:
             pos = self.selection_model.get_selected()
             if pos == Gtk.INVALID_LIST_POSITION:
-                self.selection_model.set_selected(0)
+                _select_and_scroll(0)
             elif pos + cols < n_items:
-                self.selection_model.set_selected(pos + cols)
+                _select_and_scroll(pos + cols)
             else:
-                self.selection_model.set_selected(n_items - 1)
+                _select_and_scroll(n_items - 1)
             return True
 
         elif keyval == Gdk.KEY_Up:
             pos = self.selection_model.get_selected()
             if pos == Gtk.INVALID_LIST_POSITION:
-                self.selection_model.set_selected(0)
+                _select_and_scroll(0)
             elif pos - cols >= 0:
-                self.selection_model.set_selected(pos - cols)
+                _select_and_scroll(pos - cols)
             else:
-                self.selection_model.set_selected(0)
+                _select_and_scroll(0)
             return True
 
         elif keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
