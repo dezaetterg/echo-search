@@ -102,6 +102,7 @@ class QuickLookWindow(Gtk.Window):
         # Close button
         close_btn = Gtk.Button()
         close_btn.add_css_class("quick-look-close-btn")
+        close_btn.add_css_class("circular")
         close_btn.set_icon_name("window-close-symbolic")
         close_btn.connect("clicked", lambda b: self.hide_preview())
         self.header_box.append(close_btn)

@@ -360,6 +360,10 @@ class EchoUI(Gtk.Window):
                     border: {mode_btn_border};
                     color: #636366;
                     box-shadow: {card_shadow};
+                    border-radius: 9999px;
+                    min-width: 36px;
+                    min-height: 36px;
+                    padding: 0;
                 }}
                 .capsule-window-ui .mode-button:hover {{
                     background: {mode_btn_active};
@@ -612,6 +616,10 @@ class EchoUI(Gtk.Window):
                     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35),
                                 0 4px 14px rgba(0, 0, 0, 0.30),
                                 0 1px 3px rgba(0, 0, 0, 0.20);
+                    border-radius: 9999px;
+                    min-width: 36px;
+                    min-height: 36px;
+                    padding: 0;
                 }}
                 .capsule-window-ui .mode-button:hover {{
                     background: {mode_btn_active};
@@ -700,6 +708,18 @@ class EchoUI(Gtk.Window):
                 """
                 
             dynamic_css = f"""
+            window, window.background, .background, window.solid-csd, window.csd, .root-box {{
+                background: transparent;
+                background-color: transparent;
+                border: none;
+                box-shadow: none;
+            }}
+            .mode-button, button.mode-button, button.circular {{
+                border-radius: 9999px;
+                min-width: 36px;
+                min-height: 36px;
+                padding: 0;
+            }}
             .capsule-window-ui {{
                 background-color: {bg_color};
                 {backdrop}
@@ -821,6 +841,7 @@ class EchoUI(Gtk.Window):
             btn.set_valign(Gtk.Align.CENTER) # Запрещает растягивание по вертикали (чтобы были идеальные круги)
             btn.set_halign(Gtk.Align.CENTER)
             btn.add_css_class("mode-button")
+            btn.add_css_class("circular")
             # Set fixed icon size using image
             image = Gtk.Image.new_from_icon_name(icon_name)
             image.set_pixel_size(16)

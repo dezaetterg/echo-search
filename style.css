@@ -1,12 +1,16 @@
-/* Делаем само окно GTK полностью прозрачным */
-window {
+/* Делаем окно GTK и Libadwaita полностью прозрачными */
+window, window.background, .background, window.solid-csd, window.csd, .root-box {
+    background: transparent;
     background-color: transparent;
+    border: none;
+    box-shadow: none;
 }
 
 /* Обертка для корневого бокса, чтобы тень рисовалась внутри Wayland surface */
 .root-box {
     padding: 100px;
-    background-color: rgba(0, 0, 0, 0.01); /* Фейковый фон для принудительной перерисовки пикселей */
+    background: transparent;
+    background-color: transparent;
 }
 
 /* Наружный контейнер-обертка для создания 30% градиентной окантовки в углах */
@@ -192,9 +196,9 @@ row:selected, row:selected:hover {
 
 .thumbnail-icon { border-radius: 8px; }
 
-.mode-button {
+.mode-button, button.mode-button, button.circular {
     background: rgba(255, 255, 255, 0.06);
-    border-radius: 50%;
+    border-radius: 9999px;
     min-width: 36px;
     min-height: 36px;
     padding: 0;
@@ -276,7 +280,7 @@ scrollbar slider:hover {
 
 .apps-more-button {
     background: transparent;
-    border-radius: 50%;
+    border-radius: 9999px;
     min-width: 28px;
     min-height: 28px;
     padding: 0;
@@ -731,7 +735,7 @@ switch:checked {
 
 switch slider {
     background: #ffffff;
-    border-radius: 50%;
+    border-radius: 9999px;
     min-width: 20px;
     min-height: 20px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
@@ -866,7 +870,7 @@ scale.settings-slider highlight {
 
 scale.settings-slider slider {
     background-color: #ffffff;
-    border-radius: 50%;
+    border-radius: 9999px;
     min-width: 18px;
     min-height: 18px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
@@ -1068,7 +1072,7 @@ entry placeholder {
 .quick-look-close-btn {
     background: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
+    border-radius: 9999px;
     min-width: 30px;
     min-height: 30px;
     padding: 4px;
@@ -1223,7 +1227,7 @@ window.quick-look-window {
 .quick-look-close-btn {
     background-color: rgba(255, 255, 255, 0.06);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 50%;
+    border-radius: 9999px;
     min-width: 30px;
     min-height: 30px;
     padding: 4px;
@@ -1343,7 +1347,7 @@ label.quick-look-badge {
 button.quick-look-close-btn {
     background-color: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 50%;
+    border-radius: 9999px;
     min-width: 28px;
     min-height: 28px;
     padding: 4px;
@@ -1493,7 +1497,7 @@ label.quick-look-audio-title {
 
 button.quick-look-play-btn {
     background-color: #3b82f6;
-    border-radius: 50%;
+    border-radius: 9999px;
     min-width: 36px;
     min-height: 36px;
     padding: 6px;
