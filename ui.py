@@ -67,22 +67,8 @@ class EchoUI(Gtk.Window):
         self._apply_compositor_blur()
 
     def _apply_compositor_blur(self):
-        """Enables native hardware compositor blur (KWin / X11 / Picom) without shaders."""
-        try:
-            surface = self.get_surface()
-            if surface:
-                import gi
-                gi.require_version('GdkX11', '4.0')
-                from gi.repository import GdkX11
-                if isinstance(surface, GdkX11.X11Surface):
-                    xid = surface.get_xid()
-                    import subprocess
-                    subprocess.Popen(
-                        ["xprop", "-id", str(xid), "-f", "_KDE_NET_WM_BLUR_BEHIND_REGION", "32c", "-set", "_KDE_NET_WM_BLUR_BEHIND_REGION", "0"],
-                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
-                    )
-        except Exception:
-            pass
+        """Compositor blur handler (no-op to prevent rectangular compositor blur on X11/KWin/Picom)."""
+        pass
 
     def _setup_css(self):
         if hasattr(self, "_base_css_provider") and self._base_css_provider:
@@ -178,8 +164,9 @@ class EchoUI(Gtk.Window):
                 .capsule-window-ui-root .outer-border-box,
                 .root-box .outer-border-box,
                 .outer-border-box {
+                    border-radius: 25px;
                     background-image: none;
-                    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+                    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.10), 0 1px 3px rgba(0, 0, 0, 0.05);
                 }
                 """
 
@@ -481,9 +468,9 @@ class EchoUI(Gtk.Window):
                             rgba(70, 160, 255, 0.45) 30%, 
                             rgba(255, 90, 180, 0.45) 70%, 
                             rgba(100, 130, 255, 0.95) 100%);
-                        box-shadow: 0 0 35px rgba(130, 90, 255, 0.45),
-                                    0 0 75px rgba(60, 150, 255, 0.25),
-                                    0 20px 45px rgba(0, 0, 0, 0.55);
+                        border-radius: 25px;
+                        box-shadow: 0 0 12px rgba(150, 100, 255, 0.40),
+                                    0 4px 14px rgba(0, 0, 0, 0.35);
                     }}
                     """
                 elif theme in ("dark_glass", "silver"):
@@ -504,8 +491,9 @@ class EchoUI(Gtk.Window):
                     .capsule-window-ui-root .outer-border-box,
                     .root-box .outer-border-box,
                     .outer-border-box {
+                        border-radius: 25px;
                         background-image: none;
-                        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
                     }
                     """
                 else:
@@ -526,8 +514,9 @@ class EchoUI(Gtk.Window):
                     .capsule-window-ui-root .outer-border-box,
                     .root-box .outer-border-box,
                     .outer-border-box {
+                        border-radius: 25px;
                         background-image: none;
-                        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+                        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
                     }
                     """
 
@@ -719,7 +708,7 @@ class EchoUI(Gtk.Window):
                 """
                 
             dynamic_css = f"""
-            window, window.background, .background, window.solid-csd, window.csd, window decoration, decoration, .root-box {{
+            window, window.background, .background, window.solid-csd, window.csd, window decoration, decoration, windowhandle, .root-box {{
                 background: transparent;
                 background-color: transparent;
                 border: none;
