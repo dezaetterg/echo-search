@@ -124,7 +124,6 @@ class EchoApp(BaseApplication):
                 if self.window.mode_manager:
                     self.window.mode_manager.set_mode("Search")
                 self.window.entry.set_text("")
-                self.window.update_revealer_state()
                 self.window.present()
                 self.window.entry.grab_focus()
 

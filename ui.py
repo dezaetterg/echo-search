@@ -909,7 +909,7 @@ class EchoUI(Gtk.Window):
         elif unfold_mode == "swing_down":
             revealer_duration = 160 if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 160 if animations else 0
+            revealer_duration = 240 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
@@ -944,7 +944,6 @@ class EchoUI(Gtk.Window):
                     search_mode.clear_preview_and_resources()
         elif revealer.get_reveal_child() and revealer.get_child_revealed():
             # Анимация раскрытия завершена - калибруем под точный размер контента
-            self.results_container.remove_css_class("anim-jelly-wobble")
             self.results_container.set_opacity(1.0)
             active = self.mode_manager.active_mode_name if self.mode_manager else "Search"
             target_w, target_h = self._calculate_target_geometry(active, True)
@@ -1132,7 +1131,7 @@ class EchoUI(Gtk.Window):
                     self._spring_anim.set_value_to(0.0)
                     self._spring_anim.play()
                 
-                if unfold_mode in ("instant_dynamic", "none") or not self.results_revealer.get_child_revealed():
+                if unfold_mode in ("instant_dynamic", "none"):
                     super().set_default_size(650, 1)
                     self.queue_resize()
         
@@ -1207,7 +1206,7 @@ class EchoUI(Gtk.Window):
         elif unfold_mode == "swing_down":
             revealer_duration = 160 if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 160 if animations else 0
+            revealer_duration = 240 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:

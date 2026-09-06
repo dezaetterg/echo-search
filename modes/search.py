@@ -194,7 +194,6 @@ class SearchMode(BaseMode):
                 
             self.preview_container.set_visible(False)
             self.main_window.set_default_size(650, 560)
-            self.main_window.queue_resize()
             return
             
         # Есть результаты поиска
