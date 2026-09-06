@@ -27,7 +27,7 @@ UNFOLD_TRANSITION_MAP = {
     "instant_dynamic": Gtk.RevealerTransitionType.CROSSFADE,
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
-    "jelly_wobble": Gtk.RevealerTransitionType.SLIDE_DOWN,
+    "jelly_wobble": Gtk.RevealerTransitionType.CROSSFADE,
     "none": Gtk.RevealerTransitionType.NONE
 }
 
@@ -909,7 +909,7 @@ class EchoUI(Gtk.Window):
         elif unfold_mode == "swing_down":
             revealer_duration = 160 if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 220 if animations else 0
+            revealer_duration = 160 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
@@ -944,6 +944,7 @@ class EchoUI(Gtk.Window):
                     search_mode.clear_preview_and_resources()
         elif revealer.get_reveal_child() and revealer.get_child_revealed():
             # Анимация раскрытия завершена - калибруем под точный размер контента
+            self.results_container.remove_css_class("anim-jelly-wobble")
             self.results_container.set_opacity(1.0)
             active = self.mode_manager.active_mode_name if self.mode_manager else "Search"
             target_w, target_h = self._calculate_target_geometry(active, True)
@@ -1069,11 +1070,9 @@ class EchoUI(Gtk.Window):
             
         if active == "Search":
             search_mode = self.mode_manager.modes.get("Search") if self.mode_manager else None
-            results = getattr(search_mode, "current_results", []) if search_mode else []
-            has_results = bool(results and getattr(search_mode, "selected_index", -1) >= 0)
             preview_enabled = self.config_manager.get("preview_enabled", True) if getattr(self, "config_manager", None) else True
             preview_width = self.config_manager.get("preview_width", 420) if getattr(self, "config_manager", None) else 420
-            target_w = 650 + (preview_width if (preview_enabled and has_results) else 0)
+            target_w = 650 + (preview_width if preview_enabled else 0)
             target_h = 560
             return target_w, target_h
             
@@ -1208,7 +1207,7 @@ class EchoUI(Gtk.Window):
         elif unfold_mode == "swing_down":
             revealer_duration = 160 if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 220 if animations else 0
+            revealer_duration = 160 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:

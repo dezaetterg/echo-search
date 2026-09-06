@@ -36,6 +36,7 @@ class SearchMode(BaseMode):
         self.selected_index = -1
         self._navigated_with_arrows = False
         self.is_scrolling = False
+        self._current_preview_id = None
         
         self.main_split = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         
@@ -214,52 +215,59 @@ class SearchMode(BaseMode):
                     if not clean_name:
                         clean_name = result.title.replace(emoji_char, "").strip() if emoji_char in result.title else result.title
                     
-                    row_data['title'].set_label(clean_name or result.title)
+                    target_title = clean_name or result.title
+                    if row_data['title'].get_text() != target_title:
+                        row_data['title'].set_label(target_title)
                     if result.subtitle:
-                        row_data['desc'].set_label(result.subtitle)
+                        if row_data['desc'].get_text() != result.subtitle:
+                            row_data['desc'].set_label(result.subtitle)
                         row_data['desc'].set_visible(True)
                     else:
                         row_data['desc'].set_visible(False)
                     
-                    row_data['emoji_label'].set_label(emoji_char)
+                    if row_data['emoji_label'].get_text() != emoji_char:
+                        row_data['emoji_label'].set_label(emoji_char)
                     row_data['icon_stack'].set_visible_child_name("emoji")
                 else:
-                    row_data['title'].set_label(result.title)
+                    if row_data['title'].get_text() != result.title:
+                        row_data['title'].set_label(result.title)
                     if result.subtitle:
-                        row_data['desc'].set_label(result.subtitle)
+                        if row_data['desc'].get_text() != result.subtitle:
+                            row_data['desc'].set_label(result.subtitle)
                         row_data['desc'].set_visible(True)
                     else:
                         row_data['desc'].set_visible(False)
                         
                     row_data['icon_stack'].set_visible_child_name("icon")
                     
-                    # Загружаем иконку с LRU кэшированием
-                    icon_widget = row_data['icon']
-                    try:
-                        if result.icon and os.path.isabs(result.icon):
-                            pixbuf = get_scaled_pixbuf_cached(result.icon, 48)
-                            if pixbuf:
-                                set_icon_safe(icon_widget, None, raw_pixbuf=pixbuf, pixel_size=48)
+                    # Загружаем иконку только при реальном изменении ключа
+                    new_icon_key = result.icon or "default"
+                    if getattr(row_data['row'], '_rendered_icon_key', None) != new_icon_key:
+                        row_data['row']._rendered_icon_key = new_icon_key
+                        icon_widget = row_data['icon']
+                        try:
+                            if result.icon and os.path.isabs(result.icon):
+                                pixbuf = get_scaled_pixbuf_cached(result.icon, 48)
+                                if pixbuf:
+                                    set_icon_safe(icon_widget, None, raw_pixbuf=pixbuf, pixel_size=48)
+                                else:
+                                    set_icon_safe(icon_widget, result.icon, fallback_icon="application-x-executable", pixel_size=48)
                             else:
                                 set_icon_safe(icon_widget, result.icon, fallback_icon="application-x-executable", pixel_size=48)
-                        else:
-                            set_icon_safe(icon_widget, result.icon, fallback_icon="application-x-executable", pixel_size=48)
-                    except Exception:
-                        set_icon_safe(icon_widget, None, fallback_icon="application-x-executable", pixel_size=48)
+                        except Exception:
+                            set_icon_safe(icon_widget, None, fallback_icon="application-x-executable", pixel_size=48)
                     
                 row_data['row'].set_visible(True)
             else:
                 row_data['row'].set_visible(False)
                 row_data['row'].result = None
+                row_data['row']._rendered_icon_key = None
             
         if self.current_results:
             self.selected_index = 0
             self.update_selection()
         else:
             self.selected_index = -1
-            
-        if self.main_window:
-            self.main_window.queue_draw()
 
     def update_selection(self):
         row = self.results_listbox.get_row_at_index(self.selected_index)
@@ -282,16 +290,16 @@ class SearchMode(BaseMode):
             if hasattr(row, 'result') and row.result:
                 if getattr(self.main_window, 'quick_look', None) and self.main_window.quick_look.is_visible():
                     self.main_window.quick_look.preview_result(row.result)
-                # Очищаем старое превью
-                while widget := self.preview_container.get_first_child():
-                    self.preview_container.remove(widget)
                 
                 preview_enabled = self.main_window.config_manager.get("preview_enabled") if getattr(self.main_window, "config_manager", None) else True
                 
                 if preview_enabled:
-                    # Рендерим новое
-                    preview_widget = preview_manager.PreviewManager.render(row.result)
-                    self.preview_container.append(preview_widget)
+                    if getattr(self, "_current_preview_id", None) != row.result.id or not self.preview_container.get_first_child():
+                        self._current_preview_id = row.result.id
+                        while widget := self.preview_container.get_first_child():
+                            self.preview_container.remove(widget)
+                        preview_widget = preview_manager.PreviewManager.render(row.result)
+                        self.preview_container.append(preview_widget)
                     self.preview_container.set_visible(True)
                     preview_width = self.main_window.config_manager.get("preview_width") if getattr(self.main_window, "config_manager", None) else 420
                     target_w = 650 + preview_width
@@ -299,6 +307,9 @@ class SearchMode(BaseMode):
                         target_w = self.main_window._clamp_width_to_monitor(target_w)
                     self.main_window.set_default_size(target_w, 560)
                 else:
+                    self._current_preview_id = None
+                    while widget := self.preview_container.get_first_child():
+                        self.preview_container.remove(widget)
                     self.preview_container.set_visible(False)
                     self.main_window.set_default_size(650, 560)
 
@@ -379,11 +390,13 @@ class SearchMode(BaseMode):
 
     def clear_preview_and_resources(self):
         try:
+            self._current_preview_id = None
             while widget := self.preview_container.get_first_child():
                 self.preview_container.remove(widget)
             self.current_results = []
             for row_data in self.pool:
                 row_data["row"].result = None
+                row_data["row"]._rendered_icon_key = None
                 row_data["row"].set_visible(False)
         except Exception:
             pass
