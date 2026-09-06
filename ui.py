@@ -24,10 +24,10 @@ from i18n import t, i18n
 from quick_look import QuickLookWindow
 
 UNFOLD_TRANSITION_MAP = {
-    "instant_dynamic": Gtk.RevealerTransitionType.CROSSFADE,
+    "instant_dynamic": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
-    "jelly_wobble": Gtk.RevealerTransitionType.CROSSFADE,
+    "jelly_wobble": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "none": Gtk.RevealerTransitionType.NONE
 }
 
@@ -909,7 +909,7 @@ class EchoUI(Gtk.Window):
         elif unfold_mode == "swing_down":
             revealer_duration = 160 if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 240 if animations else 0
+            revealer_duration = 220 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
@@ -1206,7 +1206,7 @@ class EchoUI(Gtk.Window):
         elif unfold_mode == "swing_down":
             revealer_duration = 160 if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 240 if animations else 0
+            revealer_duration = 220 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
