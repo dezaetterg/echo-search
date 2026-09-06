@@ -4,10 +4,18 @@ import gi
 
 try:
     gi.require_version('Gtk', '4.0')
-    from gi.repository import Gtk, Gdk, GObject, Pango, Gio, GLib
-except ValueError as e:
-    print(f"[FATAL] GTK version error: {e}", file=sys.stderr)
-    sys.exit(1)
+    gi.require_version('Adw', '1')
+    from gi.repository import Gtk, Gdk, GObject, Pango, Gio, GLib, Adw
+    HAS_ADW = True
+except Exception:
+    try:
+        gi.require_version('Gtk', '4.0')
+        from gi.repository import Gtk, Gdk, GObject, Pango, Gio, GLib
+        HAS_ADW = False
+        Adw = None
+    except ValueError as e:
+        print(f"[FATAL] GTK version error: {e}", file=sys.stderr)
+        sys.exit(1)
 
 from search_engine import SearchEngine
 from providers import SearchResult
@@ -16,11 +24,11 @@ from i18n import t, i18n
 from quick_look import QuickLookWindow
 
 UNFOLD_TRANSITION_MAP = {
-    "instant_dynamic": Gtk.RevealerTransitionType.SLIDE_DOWN,
+    "instant_dynamic": Gtk.RevealerTransitionType.CROSSFADE,
     "slide_down": Gtk.RevealerTransitionType.SLIDE_DOWN,
     "swing_down": Gtk.RevealerTransitionType.SWING_DOWN,
     "jelly_wobble": Gtk.RevealerTransitionType.SLIDE_DOWN,
-    "none": Gtk.RevealerTransitionType.SLIDE_DOWN
+    "none": Gtk.RevealerTransitionType.NONE
 }
 
 
@@ -880,16 +888,32 @@ class EchoUI(Gtk.Window):
         self.results_container.add_css_class("folded")
         self.results_container.append(self.mode_manager.get_widget())
         
+        # Настройка нативной пружинной физики Adw.SpringAnimation (Apple Fluid Motion)
+        self._spring_anim = None
+        if HAS_ADW and hasattr(Adw, "SpringAnimation") and hasattr(Adw, "SpringParams"):
+            try:
+                self._spring_params = Adw.SpringParams.new(0.86, 0.5, 1500.0)
+                self._spring_target = Adw.CallbackAnimationTarget.new(self._on_spring_tick)
+                self._spring_anim = Adw.SpringAnimation.new(self.results_container, 0.0, 1.0, self._spring_params, self._spring_target)
+                self._spring_anim.set_clamp(True)
+            except Exception:
+                self._spring_anim = None
+
         unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
-        transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.CROSSFADE)
+        transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.SLIDE_DOWN)
+        animations = self.config_manager.get("animations", True) if self.config_manager else True
         if unfold_mode == "instant_dynamic":
-            revealer_duration = 50 if animations else 0
+            revealer_duration = 45 if animations else 0
+        elif unfold_mode == "slide_down":
+            revealer_duration = 140 if animations else 0
+        elif unfold_mode == "swing_down":
+            revealer_duration = 160 if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 380 if animations else 0
+            revealer_duration = 220 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
-            revealer_duration = 240
+            revealer_duration = 140
         
         self.results_revealer = Gtk.Revealer()
         self.results_revealer.set_transition_type(transition_type)
@@ -901,9 +925,44 @@ class EchoUI(Gtk.Window):
         
         self.main_box.append(self.results_revealer)
 
+    def _on_spring_tick(self, value: float):
+        try:
+            clamped = max(0.0, min(1.0, value))
+            self.results_container.set_opacity(clamped)
+        except Exception:
+            pass
+
     def _on_results_revealed_changed(self, revealer, param):
         if not revealer.get_reveal_child() and not revealer.get_child_revealed():
-            self.set_default_size(650, 1)
+            # Анимация сворачивания завершена - возвращаем окно к компактному состоянию
+            super().set_default_size(650, 1)
+            self.queue_resize()
+            self.results_container.set_opacity(0.0)
+            if self.mode_manager and hasattr(self.mode_manager, "modes"):
+                search_mode = self.mode_manager.modes.get("Search")
+                if search_mode and hasattr(search_mode, "clear_preview_and_resources"):
+                    search_mode.clear_preview_and_resources()
+        elif revealer.get_reveal_child() and revealer.get_child_revealed():
+            # Анимация раскрытия завершена - калибруем под точный размер контента
+            self.results_container.set_opacity(1.0)
+            active = self.mode_manager.active_mode_name if self.mode_manager else "Search"
+            if active == "Search":
+                search_mode = self.mode_manager.modes.get("Search") if self.mode_manager else None
+                has_results = bool(search_mode and getattr(search_mode, "current_results", None) and getattr(search_mode, "selected_index", -1) >= 0)
+                preview_enabled = self.config_manager.get("preview_enabled", True) if getattr(self, "config_manager", None) else True
+                preview_width = self.config_manager.get("preview_width", 420) if getattr(self, "config_manager", None) else 420
+                target_w = 650 + (preview_width if (preview_enabled and has_results) else 0)
+                super().set_default_size(self._clamp_width_to_monitor(target_w), 1)
+
+    def set_default_size(self, width: int, height: int):
+        # Предотвращаем преждевременное схлопывание высоты окна во время анимации сворачивания
+        if hasattr(self, "results_revealer") and height == 1:
+            unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
+            if unfold_mode not in ("instant_dynamic", "none"):
+                if not self.results_revealer.get_reveal_child() and self.results_revealer.get_child_revealed():
+                    super().set_default_size(width, -1)
+                    return
+        super().set_default_size(width, height)
 
     def _setup_shortcuts(self):
         key_ctrl = Gtk.EventControllerKey.new()
@@ -974,6 +1033,12 @@ class EchoUI(Gtk.Window):
         return False
 
     def _clamp_width_to_monitor(self, target_width: int) -> int:
+        w, _ = self._clamp_geometry_to_monitor(target_width, 1)
+        return w
+
+    def _clamp_geometry_to_monitor(self, target_width: int, target_height: int) -> tuple:
+        max_w = target_width
+        max_h = target_height
         try:
             display = Gdk.Display.get_default()
             if display:
@@ -986,11 +1051,43 @@ class EchoUI(Gtk.Window):
                 if mon:
                     geom = mon.get_geometry()
                     if geom.width > 0:
-                        max_allowed = int(geom.width * 0.94)
-                        return min(target_width, max_allowed)
+                        max_w = min(target_width, int(geom.width * 0.94))
+                    if geom.height > 0:
+                        max_h = min(target_height, int(geom.height * 0.88))
         except Exception:
             pass
-        return target_width
+        return max_w, max_h
+
+    def _calculate_target_geometry(self, active: str, should_reveal: bool) -> tuple:
+        if not should_reveal:
+            return 650, 1
+            
+        if active == "Search":
+            search_mode = self.mode_manager.modes.get("Search") if self.mode_manager else None
+            results = getattr(search_mode, "current_results", []) if search_mode else []
+            has_results = bool(results and getattr(search_mode, "selected_index", -1) >= 0)
+            preview_enabled = self.config_manager.get("preview_enabled", True) if getattr(self, "config_manager", None) else True
+            preview_width = self.config_manager.get("preview_width", 420) if getattr(self, "config_manager", None) else 420
+            target_w = 650 + (preview_width if (preview_enabled and has_results) else 0)
+            
+            count = len(results)
+            if count == 0:
+                target_h = 240
+            elif count <= 2:
+                target_h = 280
+            elif count <= 4:
+                target_h = 400
+            else:
+                target_h = 580
+            return target_w, target_h
+            
+        elif active in ("Apps", "Files", "Clipboard", "Emoji"):
+            return 1050, 560
+            
+        elif active == "Settings":
+            return 820, 660
+            
+        return 650, 560
 
     def update_revealer_state(self):
         active = self.mode_manager.active_mode_name
@@ -1006,31 +1103,38 @@ class EchoUI(Gtk.Window):
         
         if hasattr(self, 'results_revealer'):
             unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
-            self.results_revealer.set_reveal_child(should_reveal_results)
             if should_reveal_results:
+                target_w, target_h = self._calculate_target_geometry(active, True)
+                target_w, target_h = self._clamp_geometry_to_monitor(target_w, target_h)
+                
+                # Заранее выделяем необходимый холст окна, чтобы избежать ресайзов во время анимации
+                super().set_default_size(target_w, target_h)
+                
+                self.results_revealer.set_reveal_child(True)
                 self.results_container.remove_css_class("folded")
+                if getattr(self, "_spring_anim", None) and unfold_mode not in ("instant_dynamic", "none"):
+                    self._spring_anim.set_value_from(self.results_container.get_opacity())
+                    self._spring_anim.set_value_to(1.0)
+                    self._spring_anim.play()
+                else:
+                    self.results_container.set_opacity(1.0)
+
                 if unfold_mode == "jelly_wobble":
                     self.results_container.remove_css_class("anim-jelly-wobble")
                     self.results_container.add_css_class("anim-jelly-wobble")
                 else:
                     self.results_container.remove_css_class("anim-jelly-wobble")
-                if active == "Search":
-                    search_mode = self.mode_manager.modes.get("Search") if self.mode_manager else None
-                    has_results = bool(search_mode and getattr(search_mode, "current_results", None) and getattr(search_mode, "selected_index", -1) >= 0)
-                    preview_enabled = self.config_manager.get("preview_enabled") if getattr(self, "config_manager", None) else True
-                    preview_width = self.config_manager.get("preview_width") if getattr(self, "config_manager", None) else 420
-                    target_w = 650 + (preview_width if (preview_enabled and has_results) else 0)
-                    self.set_default_size(self._clamp_width_to_monitor(target_w), 1)
-                elif active in ("Apps", "Files", "Clipboard", "Emoji"):
-                    self.set_default_size(self._clamp_width_to_monitor(1050), 1)
-                elif active == "Settings":
-                    self.set_default_size(self._clamp_width_to_monitor(820), 1)
             else:
                 self.results_container.add_css_class("folded")
                 self.results_container.remove_css_class("anim-jelly-wobble")
-                unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
+                self.results_revealer.set_reveal_child(False)
+                if getattr(self, "_spring_anim", None) and unfold_mode not in ("instant_dynamic", "none"):
+                    self._spring_anim.set_value_from(self.results_container.get_opacity())
+                    self._spring_anim.set_value_to(0.0)
+                    self._spring_anim.play()
+                
                 if unfold_mode in ("instant_dynamic", "none") or not self.results_revealer.get_child_revealed():
-                    self.set_default_size(650, 1)
+                    super().set_default_size(650, 1)
                     self.queue_resize()
         
         # Обновляем подсветку кнопок
@@ -1096,18 +1200,22 @@ class EchoUI(Gtk.Window):
         # Обновляем анимации и стиль развертывания
         animations = self.config_manager.get("animations") if self.config_manager else True
         unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
-        anim_duration = 240 if animations else 0
+        anim_duration = 160 if animations else 0
         if unfold_mode == "instant_dynamic":
-            revealer_duration = 50 if animations else 0
+            revealer_duration = 45 if animations else 0
+        elif unfold_mode == "slide_down":
+            revealer_duration = 140 if animations else 0
+        elif unfold_mode == "swing_down":
+            revealer_duration = 160 if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 380 if animations else 0
+            revealer_duration = 220 if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
-            revealer_duration = 240
+            revealer_duration = 140
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         if hasattr(self, 'results_revealer'):
-            transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.CROSSFADE)
+            transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.SLIDE_DOWN)
             self.results_revealer.set_transition_type(transition_type)
             self.results_revealer.set_transition_duration(revealer_duration)
             

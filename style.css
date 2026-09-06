@@ -991,11 +991,13 @@ entry placeholder {
 
 .results-container {
     opacity: 1.0;
-    transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1);
+    transform: translateY(0);
+    transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1), transform 140ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .results-container.folded {
     opacity: 0.0;
+    transform: translateY(-8px);
 }
 
 /* ==============================
@@ -1534,21 +1536,18 @@ video.quick-look-video {
 /* Compiz Wobbly Windows Jelly Animation */
 @keyframes jelly_wobble_unfold {
     0% {
-        transform: scale(0.92, 0.28) translateY(-28px);
-        opacity: 0.15;
+        transform: scale(0.94, 0.35) translateY(-20px);
+        opacity: 0.2;
     }
-    32% {
-        transform: scale(1.06, 1.16) translateY(10px);
+    35% {
+        transform: scale(1.04, 1.10) translateY(6px);
         opacity: 0.95;
     }
-    54% {
-        transform: scale(0.95, 0.88) translateY(-6px);
+    60% {
+        transform: scale(0.97, 0.93) translateY(-3px);
     }
-    72% {
-        transform: scale(1.03, 1.05) translateY(3px);
-    }
-    86% {
-        transform: scale(0.99, 0.985) translateY(-1px);
+    82% {
+        transform: scale(1.01, 1.02) translateY(1px);
     }
     100% {
         transform: scale(1.0, 1.0) translateY(0);
@@ -1557,6 +1556,6 @@ video.quick-look-video {
 }
 
 .anim-jelly-wobble {
-    animation: jelly_wobble_unfold 380ms cubic-bezier(0.25, 1.4, 0.45, 1);
+    animation: jelly_wobble_unfold 220ms cubic-bezier(0.25, 1.4, 0.45, 1);
     transform-origin: center top;
 }

@@ -168,17 +168,19 @@ class SearchMode(BaseMode):
         
         if not query:
             self.current_results = []
-            self.separator.set_visible(False)
-            self.empty_state_box.set_visible(False)
-            self.scroll.set_visible(False)
-            self.results_listbox.set_visible(False)
-            
-            for row_data in self.pool:
-                row_data['row'].set_visible(False)
+            unfold_mode = self.main_window.config_manager.get("unfold_animation", "instant_dynamic") if getattr(self.main_window, "config_manager", None) else "instant_dynamic"
+            if unfold_mode in ("instant_dynamic", "none"):
+                self.separator.set_visible(False)
+                self.empty_state_box.set_visible(False)
+                self.scroll.set_visible(False)
+                self.results_listbox.set_visible(False)
                 
-            self.preview_container.set_visible(False)
-            self.main_window.set_default_size(650, 1)
-            self.main_window.queue_resize()
+                for row_data in self.pool:
+                    row_data['row'].set_visible(False)
+                    
+                self.preview_container.set_visible(False)
+                self.main_window.set_default_size(650, 1)
+                self.main_window.queue_resize()
             return
 
         if not self.current_results:
