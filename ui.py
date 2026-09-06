@@ -946,22 +946,27 @@ class EchoUI(Gtk.Window):
             # Анимация раскрытия завершена - калибруем под точный размер контента
             self.results_container.set_opacity(1.0)
             active = self.mode_manager.active_mode_name if self.mode_manager else "Search"
-            if active == "Search":
-                search_mode = self.mode_manager.modes.get("Search") if self.mode_manager else None
-                has_results = bool(search_mode and getattr(search_mode, "current_results", None) and getattr(search_mode, "selected_index", -1) >= 0)
-                preview_enabled = self.config_manager.get("preview_enabled", True) if getattr(self, "config_manager", None) else True
-                preview_width = self.config_manager.get("preview_width", 420) if getattr(self, "config_manager", None) else 420
-                target_w = 650 + (preview_width if (preview_enabled and has_results) else 0)
-                super().set_default_size(self._clamp_width_to_monitor(target_w), 1)
+            target_w, target_h = self._calculate_target_geometry(active, True)
+            target_w, target_h = self._clamp_geometry_to_monitor(target_w, target_h)
+            super().set_default_size(target_w, target_h)
 
     def set_default_size(self, width: int, height: int):
-        # Предотвращаем преждевременное схлопывание высоты окна во время анимации сворачивания
-        if hasattr(self, "results_revealer") and height == 1:
-            unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
-            if unfold_mode not in ("instant_dynamic", "none"):
-                if not self.results_revealer.get_reveal_child() and self.results_revealer.get_child_revealed():
-                    super().set_default_size(width, -1)
+        if hasattr(self, "results_revealer"):
+            if self.results_revealer.get_reveal_child():
+                # Окно раскрыто - высота не должна схлопываться до 1, -1 или мелкого размера
+                if height <= 1:
+                    active = self.mode_manager.active_mode_name if getattr(self, "mode_manager", None) else "Search"
+                    _, target_h = self._calculate_target_geometry(active, True)
+                    height = target_h
+                if width < 650:
+                    width = 650
+            else:
+                # Окно свернуто или в процессе сворачивания
+                if self.results_revealer.get_child_revealed():
+                    # Анимация сворачивания еще идет - не трогаем геометрию раньше времени
                     return
+                width = 650
+                height = 1
         super().set_default_size(width, height)
 
     def _setup_shortcuts(self):
@@ -1069,16 +1074,7 @@ class EchoUI(Gtk.Window):
             preview_enabled = self.config_manager.get("preview_enabled", True) if getattr(self, "config_manager", None) else True
             preview_width = self.config_manager.get("preview_width", 420) if getattr(self, "config_manager", None) else 420
             target_w = 650 + (preview_width if (preview_enabled and has_results) else 0)
-            
-            count = len(results)
-            if count == 0:
-                target_h = 240
-            elif count <= 2:
-                target_h = 280
-            elif count <= 4:
-                target_h = 400
-            else:
-                target_h = 580
+            target_h = 560
             return target_w, target_h
             
         elif active in ("Apps", "Files", "Clipboard", "Emoji"):
@@ -1103,6 +1099,8 @@ class EchoUI(Gtk.Window):
         
         if hasattr(self, 'results_revealer'):
             unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
+            was_revealed = self.results_revealer.get_reveal_child()
+            
             if should_reveal_results:
                 target_w, target_h = self._calculate_target_geometry(active, True)
                 target_w, target_h = self._clamp_geometry_to_monitor(target_w, target_h)
@@ -1112,7 +1110,8 @@ class EchoUI(Gtk.Window):
                 
                 self.results_revealer.set_reveal_child(True)
                 self.results_container.remove_css_class("folded")
-                if getattr(self, "_spring_anim", None) and unfold_mode not in ("instant_dynamic", "none"):
+                
+                if getattr(self, "_spring_anim", None) and unfold_mode not in ("instant_dynamic", "none", "jelly_wobble"):
                     self._spring_anim.set_value_from(self.results_container.get_opacity())
                     self._spring_anim.set_value_to(1.0)
                     self._spring_anim.play()
@@ -1120,15 +1119,16 @@ class EchoUI(Gtk.Window):
                     self.results_container.set_opacity(1.0)
 
                 if unfold_mode == "jelly_wobble":
-                    self.results_container.remove_css_class("anim-jelly-wobble")
-                    self.results_container.add_css_class("anim-jelly-wobble")
+                    if not was_revealed:
+                        self.results_container.remove_css_class("anim-jelly-wobble")
+                        self.results_container.add_css_class("anim-jelly-wobble")
                 else:
                     self.results_container.remove_css_class("anim-jelly-wobble")
             else:
                 self.results_container.add_css_class("folded")
                 self.results_container.remove_css_class("anim-jelly-wobble")
                 self.results_revealer.set_reveal_child(False)
-                if getattr(self, "_spring_anim", None) and unfold_mode not in ("instant_dynamic", "none"):
+                if getattr(self, "_spring_anim", None) and unfold_mode not in ("instant_dynamic", "none", "jelly_wobble"):
                     self._spring_anim.set_value_from(self.results_container.get_opacity())
                     self._spring_anim.set_value_to(0.0)
                     self._spring_anim.play()
@@ -1246,7 +1246,7 @@ class EchoUI(Gtk.Window):
                 preview_enabled = self.config_manager.get("preview_enabled") if self.config_manager else True
                 if not preview_enabled:
                     search_mode.preview_container.set_visible(False)
-                    self.set_default_size(650, 1)
+                    self.set_default_size(650, 560)
                     
         # Обновление подсказок и плейсхолдера при смене языка
         MODE_TOOLTIP_KEYS = {

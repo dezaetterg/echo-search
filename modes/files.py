@@ -378,13 +378,11 @@ class FilesMode(BaseMode):
         selected = flowbox.get_selected_children()
         if not selected:
             self.preview_container.set_visible(False)
-            self.main_window.set_default_size(650, 1)
             return
             
         child = selected[0]
         if not hasattr(child, 'result') or not child.result:
             self.preview_container.set_visible(False)
-            self.main_window.set_default_size(650, 1)
             return
             
         import preview_manager
@@ -401,7 +399,7 @@ class FilesMode(BaseMode):
         target_w = 1050
         if hasattr(self.main_window, "_clamp_width_to_monitor"):
             target_w = self.main_window._clamp_width_to_monitor(target_w)
-        self.main_window.set_default_size(target_w, 1)
+        self.main_window.set_default_size(target_w, 560)
 
     def on_category_clicked(self, button, cat_name):
         if self.active_category == cat_name:

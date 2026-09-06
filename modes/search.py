@@ -168,19 +168,15 @@ class SearchMode(BaseMode):
         
         if not query:
             self.current_results = []
-            unfold_mode = self.main_window.config_manager.get("unfold_animation", "instant_dynamic") if getattr(self.main_window, "config_manager", None) else "instant_dynamic"
-            if unfold_mode in ("instant_dynamic", "none"):
-                self.separator.set_visible(False)
-                self.empty_state_box.set_visible(False)
-                self.scroll.set_visible(False)
-                self.results_listbox.set_visible(False)
+            self.separator.set_visible(False)
+            self.empty_state_box.set_visible(False)
+            self.scroll.set_visible(False)
+            self.results_listbox.set_visible(False)
+            
+            for row_data in self.pool:
+                row_data['row'].set_visible(False)
                 
-                for row_data in self.pool:
-                    row_data['row'].set_visible(False)
-                    
-                self.preview_container.set_visible(False)
-                self.main_window.set_default_size(650, 1)
-                self.main_window.queue_resize()
+            self.preview_container.set_visible(False)
             return
 
         if not self.current_results:
@@ -196,7 +192,7 @@ class SearchMode(BaseMode):
                 row_data['row'].set_visible(False)
                 
             self.preview_container.set_visible(False)
-            self.main_window.set_default_size(650, 180)
+            self.main_window.set_default_size(650, 560)
             self.main_window.queue_resize()
             return
             
@@ -301,10 +297,10 @@ class SearchMode(BaseMode):
                     target_w = 650 + preview_width
                     if hasattr(self.main_window, "_clamp_width_to_monitor"):
                         target_w = self.main_window._clamp_width_to_monitor(target_w)
-                    self.main_window.set_default_size(target_w, 1)
+                    self.main_window.set_default_size(target_w, 560)
                 else:
                     self.preview_container.set_visible(False)
-                    self.main_window.set_default_size(650, 1)
+                    self.main_window.set_default_size(650, 560)
 
     def on_row_activated(self, listbox, row):
         if hasattr(row, 'result') and row.result:
