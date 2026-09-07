@@ -45,11 +45,23 @@ class QuickLookWindow(Gtk.Window):
         self._pdf_prev_btn = None
         self._pdf_next_btn = None
         self._pdf_scroll = None
+        self._pdf_zoom = 1.0
+        self._pdf_fit_mode = "width"
+        self._pdf_aspect = 1.414
+        self._pdf_cached_file = None
+        self._last_scroll_w = 0
+        self._pdf_zoom_label = None
+        self._pdf_zoom_in_btn = None
+        self._pdf_zoom_out_btn = None
+        self._pdf_fit_btn = None
+        self.maximize_btn = None
+        self._current_content_w = 980
+        self._current_content_h = 670
         
         self.set_title("Quick Look")
         self.set_decorated(False)
-        self.set_resizable(False)
-        self.set_default_size(780, 560)
+        self.set_resizable(True)
+        self.set_default_size(840, 580)
         
         if parent_window:
             self.set_transient_for(parent_window)
@@ -111,15 +123,39 @@ class QuickLookWindow(Gtk.Window):
         self.badges_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
         self.header_box.append(self.badges_box)
         
-        # Close button
+        # Window controls (Maximize & Close)
+        controls_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        
+        self.maximize_btn = Gtk.Button()
+        self.maximize_btn.add_css_class("quick-look-close-btn")
+        self.maximize_btn.add_css_class("circular")
+        self.maximize_btn.set_icon_name("view-fullscreen-symbolic")
+        self.maximize_btn.set_tooltip_text("Развернуть / Восстановить (F)")
+        self.maximize_btn.connect("clicked", lambda b: self._toggle_maximize())
+        controls_box.append(self.maximize_btn)
+        
         close_btn = Gtk.Button()
         close_btn.add_css_class("quick-look-close-btn")
         close_btn.add_css_class("circular")
         close_btn.set_icon_name("window-close-symbolic")
+        close_btn.set_tooltip_text("Закрыть (Esc / Пробел)")
         close_btn.connect("clicked", lambda b: self.hide_preview())
-        self.header_box.append(close_btn)
+        controls_box.append(close_btn)
         
+        self.header_box.append(controls_box)
         self.card_box.append(self.header_box)
+
+    def _toggle_maximize(self):
+        if self.is_maximized():
+            self.unmaximize()
+            if hasattr(self, "maximize_btn") and self.maximize_btn:
+                self.maximize_btn.set_icon_name("view-fullscreen-symbolic")
+        else:
+            self.maximize()
+            if hasattr(self, "maximize_btn") and self.maximize_btn:
+                self.maximize_btn.set_icon_name("view-restore-symbolic")
+        if getattr(self, "_pdf_path", None):
+            GLib.timeout_add(120, lambda: (self._update_pdf_page_size(), False)[1])
         
     def _build_footer(self):
         self.footer_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
@@ -190,6 +226,15 @@ class QuickLookWindow(Gtk.Window):
         self._pdf_prev_btn = None
         self._pdf_next_btn = None
         self._pdf_scroll = None
+        self._pdf_zoom_label = None
+        self._pdf_zoom_in_btn = None
+        self._pdf_zoom_out_btn = None
+        self._pdf_fit_btn = None
+        self._pdf_zoom = 1.0
+        self._pdf_fit_mode = "width"
+        self._pdf_aspect = 1.414
+        self._pdf_cached_file = None
+        self._last_scroll_w = 0
 
     def preview_result(self, result) -> bool:
         if not result:
@@ -223,6 +268,37 @@ class QuickLookWindow(Gtk.Window):
         is_directory = os.path.isdir(path)
         ext = "" if is_directory else os.path.splitext(path)[1].lower()
         self.title_label.set_label(filename)
+        
+        # Adaptive dimensions based on content category
+        is_doc = (ext in PDF_EXTENSIONS or ext in DOCUMENT_EXTENSIONS or 
+                  ext in CODE_EXTENSIONS or ext in (".txt", ".log", ".md", ".json", ".xml", ".yaml", ".yml"))
+        if is_doc:
+            target_w, target_h = 1040, 820
+            content_w, content_h = 980, 670
+        elif ext in IMAGE_EXTENSIONS or ext in VIDEO_EXTENSIONS:
+            target_w, target_h = 920, 680
+            content_w = 860, 530
+        else:
+            target_w, target_h = 820, 580
+            content_w = 760, 430
+
+        try:
+            display = Gdk.Display.get_default()
+            monitors = display.get_monitors()
+            if monitors and monitors.get_n_items() > 0:
+                mon = monitors.get_item(0)
+                geom = mon.get_geometry()
+                target_w = min(target_w, geom.width - 60)
+                target_h = min(target_h, geom.height - 120)
+                content_w = min(content_w, target_w - 50)
+                content_h = min(content_h, target_h - 150)
+        except Exception:
+            pass
+
+        self._current_content_w = content_w
+        self._current_content_h = content_h
+        if not self.is_maximized():
+            self.set_default_size(target_w, target_h)
         
         # Determine MIME & Size
         if is_directory:
@@ -566,22 +642,32 @@ class QuickLookWindow(Gtk.Window):
         self._pdf_gen = generation
         self._pdf_current_page = 1
         self._pdf_total_pages = 1
+        self._pdf_zoom = 1.0
+        self._pdf_fit_mode = "width"
+        self._pdf_aspect = 1.414
+        self._pdf_cached_file = None
+        self._last_scroll_w = 0
+        
+        content_w = getattr(self, "_current_content_w", 980)
+        content_h = getattr(self, "_current_content_h", 670)
         
         container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         container.add_css_class("quick-look-pdf-container")
         container.set_vexpand(True)
         container.set_hexpand(True)
-        container.set_size_request(740, 380)
+        container.set_size_request(content_w, content_h)
         
-        # Toolbar with page switcher
-        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        # Toolbar with page switcher & zoom controls
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         toolbar.add_css_class("quick-look-pdf-toolbar")
         toolbar.set_halign(Gtk.Align.CENTER)
         toolbar.set_valign(Gtk.Align.CENTER)
         
+        # Previous page
         prev_btn = Gtk.Button()
         prev_btn.set_icon_name("go-previous-symbolic")
         prev_btn.add_css_class("quick-look-page-btn")
+        prev_btn.set_tooltip_text("Предыдущая страница (Left / Page Up)")
         prev_btn.set_sensitive(False)
         prev_btn.connect("clicked", lambda _: self._on_pdf_prev_page())
         toolbar.append(prev_btn)
@@ -590,18 +676,62 @@ class QuickLookWindow(Gtk.Window):
         page_lbl.add_css_class("quick-look-page-label")
         toolbar.append(page_lbl)
         
+        # Next page
         next_btn = Gtk.Button()
         next_btn.set_icon_name("go-next-symbolic")
         next_btn.add_css_class("quick-look-page-btn")
+        next_btn.set_tooltip_text("Следующая страница (Right / Page Down)")
         next_btn.set_sensitive(False)
         next_btn.connect("clicked", lambda _: self._on_pdf_next_page())
         toolbar.append(next_btn)
+        
+        # Separator
+        sep1 = Gtk.Box()
+        sep1.add_css_class("quick-look-toolbar-sep")
+        toolbar.append(sep1)
+        
+        # Zoom out
+        zoom_out_btn = Gtk.Button()
+        zoom_out_btn.set_icon_name("zoom-out-symbolic")
+        zoom_out_btn.add_css_class("quick-look-page-btn")
+        zoom_out_btn.set_tooltip_text("Уменьшить (-)")
+        zoom_out_btn.connect("clicked", lambda _: self._pdf_zoom_out())
+        toolbar.append(zoom_out_btn)
+        
+        # Zoom percentage reset
+        zoom_lbl_btn = Gtk.Button(label="100%")
+        zoom_lbl_btn.add_css_class("quick-look-page-btn")
+        zoom_lbl_btn.add_css_class("quick-look-zoom-btn")
+        zoom_lbl_btn.set_tooltip_text("Сбросить масштаб (0)")
+        zoom_lbl_btn.connect("clicked", lambda _: self._pdf_zoom_reset())
+        toolbar.append(zoom_lbl_btn)
+        
+        # Zoom in
+        zoom_in_btn = Gtk.Button()
+        zoom_in_btn.set_icon_name("zoom-in-symbolic")
+        zoom_in_btn.add_css_class("quick-look-page-btn")
+        zoom_in_btn.set_tooltip_text("Увеличить (+)")
+        zoom_in_btn.connect("clicked", lambda _: self._pdf_zoom_in())
+        toolbar.append(zoom_in_btn)
+        
+        # Separator
+        sep2 = Gtk.Box()
+        sep2.add_css_class("quick-look-toolbar-sep")
+        toolbar.append(sep2)
+        
+        # Fit Width / Fit Page toggle
+        fit_btn = Gtk.Button()
+        fit_btn.set_icon_name("zoom-fit-best-symbolic")
+        fit_btn.add_css_class("quick-look-page-btn")
+        fit_btn.set_tooltip_text("По ширине / Вся страница (W)")
+        fit_btn.connect("clicked", lambda _: self._pdf_toggle_fit())
+        toolbar.append(fit_btn)
         
         container.append(toolbar)
         
         # ScrolledWindow with Page Picture
         scroll = Gtk.ScrolledWindow()
-        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         scroll.set_vexpand(True)
         scroll.set_hexpand(True)
         scroll.add_css_class("quick-look-pdf-scroll")
@@ -610,15 +740,14 @@ class QuickLookWindow(Gtk.Window):
         page_box.set_halign(Gtk.Align.CENTER)
         page_box.set_valign(Gtk.Align.START)
         page_box.set_margin_top(4)
-        page_box.set_margin_bottom(12)
+        page_box.set_margin_bottom(16)
         
         picture = Gtk.Picture()
         picture.set_can_shrink(True)
-        picture.set_content_fit(Gtk.ContentFit.SCALE_DOWN)
+        picture.set_content_fit(Gtk.ContentFit.FILL)
         picture.add_css_class("quick-look-pdf-page")
-        picture.set_size_request(600, -1)
-        page_box.append(picture)
         
+        page_box.append(picture)
         scroll.set_child(page_box)
         container.append(scroll)
         
@@ -630,6 +759,18 @@ class QuickLookWindow(Gtk.Window):
         self._pdf_next_btn = next_btn
         self._pdf_scroll = scroll
         self._pdf_toolbar = toolbar
+        self._pdf_zoom_label = zoom_lbl_btn
+        self._pdf_zoom_in_btn = zoom_in_btn
+        self._pdf_zoom_out_btn = zoom_out_btn
+        self._pdf_fit_btn = fit_btn
+        
+        def _on_scroll_notify(sc, pspec):
+            w = sc.get_allocated_width()
+            if w > 400 and abs(w - getattr(self, "_last_scroll_w", 0)) > 30:
+                self._last_scroll_w = w
+                if getattr(self, "_pdf_fit_mode", "width") == "width":
+                    self._update_pdf_page_size()
+        scroll.connect("notify::allocated-width", _on_scroll_notify)
         
         self._add_badge("PDF")
         self._add_badge(size_str)
@@ -661,9 +802,15 @@ class QuickLookWindow(Gtk.Window):
                 if self._load_generation == generation and self.is_visible() and getattr(self, "_pdf_path", None) == path:
                     self._pdf_total_pages = max(1, total_pages)
                     if total_pages <= 1:
-                        self._pdf_toolbar.set_visible(False)
+                        prev_btn.set_visible(False)
+                        page_lbl.set_visible(False)
+                        next_btn.set_visible(False)
+                        sep1.set_visible(False)
                     else:
-                        self._pdf_toolbar.set_visible(True)
+                        prev_btn.set_visible(True)
+                        page_lbl.set_visible(True)
+                        next_btn.set_visible(True)
+                        sep1.set_visible(True)
                     self._update_pdf_controls()
                     cur_lang = get_current_language()
                     pages_label = "стр." if cur_lang in ("ru", "kk", "uk", "be") else "pages"
@@ -674,6 +821,63 @@ class QuickLookWindow(Gtk.Window):
             GLib.idle_add(_apply_init)
             
         threading.Thread(target=_async_init_pdf, daemon=True).start()
+
+    def _get_base_width(self) -> int:
+        if getattr(self, "_pdf_scroll", None):
+            w = self._pdf_scroll.get_allocated_width()
+            if w > 500:
+                return max(760, min(1400, w - 70))
+        return getattr(self, "_current_content_w", 980) - 80
+
+    def _update_pdf_page_size(self):
+        if not getattr(self, "_pdf_picture", None):
+            return
+            
+        aspect = getattr(self, "_pdf_aspect", 1.414)
+        base_w = self._get_base_width()
+        zoom = getattr(self, "_pdf_zoom", 1.0)
+        
+        pw = max(320, int(base_w * zoom))
+        ph = max(420, int(pw * aspect))
+        
+        self._pdf_picture.set_size_request(pw, ph)
+        self._pdf_picture.set_can_shrink(True)
+        self._pdf_picture.set_content_fit(Gtk.ContentFit.FILL)
+        
+        if getattr(self, "_pdf_zoom_label", None):
+            pct = int(zoom * 100)
+            self._pdf_zoom_label.set_label(f"{pct}%")
+
+    def _pdf_zoom_in(self):
+        self._pdf_fit_mode = "custom"
+        self._pdf_zoom = min(2.5, round(getattr(self, "_pdf_zoom", 1.0) + 0.15, 2))
+        self._update_pdf_page_size()
+
+    def _pdf_zoom_out(self):
+        self._pdf_fit_mode = "custom"
+        self._pdf_zoom = max(0.4, round(getattr(self, "_pdf_zoom", 1.0) - 0.15, 2))
+        self._update_pdf_page_size()
+
+    def _pdf_zoom_reset(self):
+        self._pdf_fit_mode = "width"
+        self._pdf_zoom = 1.0
+        self._update_pdf_page_size()
+
+    def _pdf_toggle_fit(self):
+        if not getattr(self, "_pdf_picture", None):
+            return
+        if getattr(self, "_pdf_fit_mode", "width") == "width":
+            self._pdf_fit_mode = "page"
+            aspect = getattr(self, "_pdf_aspect", 1.414)
+            alloc_h = self._pdf_scroll.get_allocated_height() if self._pdf_scroll else 650
+            target_h = max(350, alloc_h - 40)
+            target_w = int(target_h / aspect)
+            base_w = self._get_base_width()
+            self._pdf_zoom = max(0.3, round(target_w / base_w, 2))
+        else:
+            self._pdf_fit_mode = "width"
+            self._pdf_zoom = 1.0
+        self._update_pdf_page_size()
 
     def _update_pdf_controls(self):
         if not getattr(self, "_pdf_page_label", None):
@@ -721,18 +925,30 @@ class QuickLookWindow(Gtk.Window):
                 
                 if not os.path.exists(cached_png):
                     out_prefix = os.path.join(cache_dir, f"tmp_{h}")
-                    cmd = ["pdftoppm", "-png", "-r", "140", "-f", str(page_num), "-l", str(page_num), path, out_prefix]
+                    cmd = ["pdftoppm", "-png", "-r", "150", "-f", str(page_num), "-l", str(page_num), path, out_prefix]
                     subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
                     matched = glob.glob(f"{out_prefix}*.png")
                     if matched:
                         os.replace(matched[0], cached_png)
                         
                 if os.path.exists(cached_png):
+                    aspect = 1.414
+                    try:
+                        from gi.repository import GdkPixbuf
+                        info, img_w, img_h = GdkPixbuf.Pixbuf.get_file_info(cached_png)
+                        if info and img_w > 0:
+                            aspect = img_h / img_w
+                    except Exception:
+                        pass
+                        
                     def _update_ui():
                         if (self._load_generation == gen and self.is_visible() and 
                                 getattr(self, "_pdf_path", None) == path and 
                                 getattr(self, "_pdf_current_page", 1) == page_num):
+                            self._pdf_aspect = aspect
+                            self._pdf_cached_file = cached_png
                             self._pdf_picture.set_filename(cached_png)
+                            self._update_pdf_page_size()
                             if self._pdf_scroll:
                                 vadj = self._pdf_scroll.get_vadjustment()
                                 if vadj:
@@ -749,7 +965,9 @@ class QuickLookWindow(Gtk.Window):
         scroll.add_css_class("quick-look-doc-scroll")
         scroll.set_vexpand(True)
         scroll.set_hexpand(True)
-        scroll.set_size_request(740, 380)
+        content_w = getattr(self, "_current_content_w", 980)
+        content_h = getattr(self, "_current_content_h", 670)
+        scroll.set_size_request(content_w, content_h)
         
         text_view = Gtk.TextView()
         text_view.set_editable(False)
@@ -843,7 +1061,9 @@ class QuickLookWindow(Gtk.Window):
         scroll.add_css_class("quick-look-text-scroll")
         scroll.set_vexpand(True)
         scroll.set_hexpand(True)
-        scroll.set_size_request(740, 380)
+        content_w = getattr(self, "_current_content_w", 980)
+        content_h = getattr(self, "_current_content_h", 670)
+        scroll.set_size_request(content_w, content_h)
         
         text_view = Gtk.TextView()
         text_view.set_editable(False)
@@ -935,6 +1155,30 @@ class QuickLookWindow(Gtk.Window):
                 if self._on_pdf_next_page():
                     return True
 
+        elif keyval in (Gdk.KEY_f, Gdk.KEY_F, Gdk.KEY_F11, Gdk.KEY_Cyrillic_a, Gdk.KEY_Cyrillic_A):
+            self._toggle_maximize()
+            return True
+
+        elif keyval in (Gdk.KEY_plus, Gdk.KEY_equal, Gdk.KEY_KP_Add):
+            if getattr(self, "_pdf_path", None):
+                self._pdf_zoom_in()
+                return True
+
+        elif keyval in (Gdk.KEY_minus, Gdk.KEY_underscore, Gdk.KEY_KP_Subtract):
+            if getattr(self, "_pdf_path", None):
+                self._pdf_zoom_out()
+                return True
+
+        elif keyval in (Gdk.KEY_0, Gdk.KEY_KP_0):
+            if getattr(self, "_pdf_path", None):
+                self._pdf_zoom_reset()
+                return True
+
+        elif keyval in (Gdk.KEY_w, Gdk.KEY_W, Gdk.KEY_Cyrillic_tse, Gdk.KEY_Cyrillic_TSE):
+            if getattr(self, "_pdf_path", None):
+                self._pdf_toggle_fit()
+                return True
+
         elif keyval in (Gdk.KEY_Up, Gdk.KEY_Down):
             # Forward arrow keys to parent mode to navigate to next file
             if self.parent_window and hasattr(self.parent_window, "mode_manager"):
@@ -994,6 +1238,10 @@ class QuickLookWindow(Gtk.Window):
 
     def hide_preview(self):
         self._cleanup_media()
+        if self.is_maximized():
+            self.unmaximize()
+            if hasattr(self, "maximize_btn") and self.maximize_btn:
+                self.maximize_btn.set_icon_name("view-fullscreen-symbolic")
         self.hide()
         self._load_generation += 1
         if self.parent_window and hasattr(self.parent_window, "entry"):
