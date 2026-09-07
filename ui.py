@@ -843,7 +843,7 @@ class EchoUI(Gtk.Window):
             ("Apps", "view-app-grid-symbolic"),
             ("Files", "folder-symbolic"),
             ("Clipboard", "edit-paste-symbolic"),
-            ("Emoji", "emblem-favorite-symbolic"),
+            ("Emoji", "face-smile-symbolic"),
             ("Settings", "preferences-system-symbolic")
         ]
         
@@ -987,12 +987,16 @@ class EchoUI(Gtk.Window):
 
 
     def on_key_pressed(self, controller, keyval, keycode, state):
+        from utils import matches_shortcut
+        cfg = getattr(self, "config_manager", None)
+        ql_sc = cfg.get("quick_look_shortcut", "space") if cfg else "space"
+
         if getattr(self, "quick_look", None) and self.quick_look.is_visible():
-            if keyval in (Gdk.KEY_Escape, Gdk.KEY_space):
+            if keyval == Gdk.KEY_Escape or matches_shortcut(keyval, state, ql_sc):
                 self.quick_look.hide_preview()
                 return True
 
-        if (state & Gdk.ModifierType.SHIFT_MASK) and keyval == Gdk.KEY_space:
+        if (state & Gdk.ModifierType.SHIFT_MASK and keyval == Gdk.KEY_space) or (ql_sc != "space" and matches_shortcut(keyval, state, ql_sc)):
             if getattr(self, "quick_look", None) and self.mode_manager:
                 mode = self.mode_manager.get_active_mode()
                 if mode and hasattr(mode, "current_results") and hasattr(mode, "selected_index"):
@@ -1270,3 +1274,6 @@ class EchoUI(Gtk.Window):
             btn.set_tooltip_text(t(MODE_TOOLTIP_KEYS.get(name, name)))
         if hasattr(self, 'mode_manager') and self.mode_manager:
             self.mode_manager.refresh_placeholder()
+            files_mode = self.mode_manager.modes.get("Files")
+            if files_mode and hasattr(files_mode, "_update_hint_label"):
+                files_mode._update_hint_label()

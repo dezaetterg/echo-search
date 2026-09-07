@@ -45,8 +45,8 @@ except (ValueError, ImportError):
     thumbnail_factory = None
 
 from .base import BaseMode
-from utils import set_icon_safe
-from i18n import t
+from utils import set_icon_safe, matches_shortcut, format_shortcut_display
+from i18n import t, get_current_language
 
 class FilesMode(BaseMode):
     category_filter = "Files"
@@ -189,6 +189,30 @@ class FilesMode(BaseMode):
         self.glass_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.glass_container.add_css_class("apps-glass-container")
         self.glass_container.append(self.scroll)
+        
+        footer_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+        footer_sep.add_css_class("files-footer-separator")
+        self.glass_container.append(footer_sep)
+        
+        self.footer_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.footer_box.add_css_class("files-footer-box")
+        self.footer_box.set_valign(Gtk.Align.CENTER)
+        self.footer_box.set_halign(Gtk.Align.END)
+        self.footer_box.set_margin_top(8)
+        self.footer_box.set_margin_bottom(2)
+        self.footer_box.set_margin_end(12)
+        
+        hint_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
+        hint_icon.set_pixel_size(13)
+        hint_icon.add_css_class("files-hint-icon")
+        self.footer_box.append(hint_icon)
+        
+        self.hint_label = Gtk.Label()
+        self.hint_label.add_css_class("files-hint-label")
+        self.footer_box.append(self.hint_label)
+        
+        self.glass_container.append(self.footer_box)
+        self._update_hint_label()
         
         self.left_box.append(self.glass_container)
         
@@ -484,8 +508,20 @@ class FilesMode(BaseMode):
         self.recents_flowbox.set_filter_func(self._filter_func)
             
 
+    def _update_hint_label(self):
+        if not hasattr(self, "hint_label"):
+            return
+        cfg = getattr(self.main_window, "config_manager", None)
+        sc = cfg.get("quick_look_shortcut", "space") if cfg else "space"
+        cur_lang = cfg.get("language", "auto") if cfg else "auto"
+        if cur_lang == "auto":
+            cur_lang = get_current_language()
+        key_display = format_shortcut_display(sc, cur_lang)
+        hint_text = t("files_quick_look_hint", key=f"<b>[{key_display}]</b>")
+        self.hint_label.set_markup(f"<span alpha='70%'>{hint_text}</span>")
+
     def on_activated(self):
-        pass
+        self._update_hint_label()
 
     def on_deactivated(self):
         pass
@@ -579,7 +615,9 @@ class FilesMode(BaseMode):
         if not result:
             return False
 
-        if keyval == Gdk.KEY_space:
+        cfg = getattr(self.main_window, "config_manager", None)
+        ql_sc = cfg.get("quick_look_shortcut", "space") if cfg else "space"
+        if matches_shortcut(keyval, state, ql_sc):
             if getattr(self.main_window, 'quick_look', None):
                 if self.main_window.quick_look.is_visible():
                     self.main_window.quick_look.hide_preview()

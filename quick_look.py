@@ -11,7 +11,8 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Gdk", "4.0")
 from gi.repository import Gtk, Gdk, GLib, Gio, Pango, GdkPixbuf
 
-from i18n import t
+from i18n import t, get_current_language
+from utils import format_shortcut_display
 
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".bmp", ".ico", ".tiff", ".avif"}
 CODE_EXTENSIONS = {
@@ -139,9 +140,9 @@ class QuickLookWindow(Gtk.Window):
         spacer.set_hexpand(True)
         self.footer_box.append(spacer)
         
-        hint_lbl = Gtk.Label(label=f"[Space / Esc] {t("action_close")}")
-        hint_lbl.add_css_class("quick-look-hint")
-        self.footer_box.append(hint_lbl)
+        self.hint_lbl = Gtk.Label(label=f"[Space / Esc] {t("action_close")}")
+        self.hint_lbl.add_css_class("quick-look-hint")
+        self.footer_box.append(self.hint_lbl)
         
         self.card_box.append(self.footer_box)
 
@@ -192,6 +193,14 @@ class QuickLookWindow(Gtk.Window):
         self._load_generation += 1
         gen = self._load_generation
         
+        cfg = getattr(self.parent_window, "config_manager", None)
+        sc = cfg.get("quick_look_shortcut", "space") if cfg else "space"
+        cur_lang = cfg.get("language", "auto") if cfg else "auto"
+        if cur_lang == "auto":
+            cur_lang = get_current_language()
+        key_display = format_shortcut_display(sc, cur_lang)
+        self.hint_lbl.set_text(f"[{key_display} / Esc] {t('action_close')}")
+
         filename = os.path.basename(path) or path
         is_directory = os.path.isdir(path)
         ext = "" if is_directory else os.path.splitext(path)[1].lower()

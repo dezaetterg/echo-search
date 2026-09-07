@@ -77,3 +77,71 @@ def set_icon_safe(widget: Gtk.Image, icon_ref: str, fallback_icon: str = "applic
         widget.set_from_icon_name("application-x-executable")
     except Exception:
         pass
+
+
+def matches_shortcut(keyval: int, state: int, shortcut: str) -> bool:
+    if not shortcut:
+        return False
+    s = shortcut.strip()
+    clean_modifiers = (
+        Gdk.ModifierType.CONTROL_MASK |
+        Gdk.ModifierType.ALT_MASK |
+        Gdk.ModifierType.SHIFT_MASK |
+        Gdk.ModifierType.SUPER_MASK
+    )
+    clean_state = state & clean_modifiers
+    req_ctrl = "<ctrl>" in s.lower() or "<control>" in s.lower()
+    req_alt = "<alt>" in s.lower()
+    req_shift = "<shift>" in s.lower()
+    req_super = "<super>" in s.lower()
+
+    if bool(clean_state & Gdk.ModifierType.CONTROL_MASK) != req_ctrl:
+        return False
+    if bool(clean_state & Gdk.ModifierType.ALT_MASK) != req_alt:
+        return False
+    if bool(clean_state & Gdk.ModifierType.SHIFT_MASK) != req_shift:
+        return False
+    if bool(clean_state & Gdk.ModifierType.SUPER_MASK) != req_super:
+        return False
+
+    base_key = s
+    for mod in ["<Ctrl>", "<ctrl>", "<Control>", "<Alt>", "<alt>", "<Shift>", "<shift>", "<Super>", "<super>"]:
+        base_key = base_key.replace(mod, "")
+    base_key = base_key.strip().lower()
+
+    key_name = (Gdk.keyval_name(keyval) or "").lower()
+    if base_key == "space":
+        return keyval in (Gdk.KEY_space, Gdk.KEY_KP_Space) or key_name in ("space", "kp_space")
+    elif base_key == "return":
+        return keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter) or key_name in ("return", "kp_enter")
+    elif base_key == "tab":
+        return keyval in (Gdk.KEY_Tab, Gdk.KEY_KP_Tab, Gdk.KEY_ISO_Left_Tab)
+    else:
+        return key_name == base_key
+
+
+def format_shortcut_display(shortcut: str, lang: str = "en") -> str:
+    if not shortcut:
+        return "-"
+    s = shortcut
+    s = s.replace("<Super>", "Super + ").replace("<super>", "Super + ")
+    s = s.replace("<Ctrl>", "Ctrl + ").replace("<ctrl>", "Ctrl + ")
+    s = s.replace("<Alt>", "Alt + ").replace("<alt>", "Alt + ")
+    s = s.replace("<Shift>", "Shift + ").replace("<shift>", "Shift + ")
+    parts = s.split(" + ")
+    last = parts[-1].strip().lower()
+    if last == "space":
+        if lang in ("ru", "kk"):
+            last_display = "Пробел"
+        elif lang == "uk":
+            last_display = "Пробіл"
+        else:
+            last_display = "Space"
+    elif last == "return":
+        last_display = "Enter"
+    else:
+        last_display = last.capitalize()
+
+    if len(parts) > 1:
+        return " + ".join(parts[:-1]) + " + " + last_display
+    return last_display

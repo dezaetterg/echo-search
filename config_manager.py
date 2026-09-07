@@ -132,6 +132,7 @@ class ConfigManager:
             "unfold_animation": "instant_dynamic",
             "launch_at_login": False,
             "launch_shortcut": "<Super>Space",
+            "quick_look_shortcut": "space",
             
             "applications": True,
             "files": True,

@@ -11,7 +11,7 @@ except ValueError:
 
 from .base import BaseMode
 import preview_manager
-from utils import set_icon_safe
+from utils import set_icon_safe, matches_shortcut
 from i18n import t
 
 
@@ -339,11 +339,12 @@ class SearchMode(BaseMode):
                 self.update_selection()
             return True
 
-        elif keyval == Gdk.KEY_space:
+        elif matches_shortcut(keyval, state, getattr(self.main_window, "config_manager", None).get("quick_look_shortcut", "space") if getattr(self.main_window, "config_manager", None) else "space"):
             if getattr(self.main_window, 'quick_look', None) and self.main_window.quick_look.is_visible():
                 self.main_window.quick_look.hide_preview()
                 return True
-            if self._navigated_with_arrows or (state & Gdk.ModifierType.SHIFT_MASK):
+            ql_sc = getattr(self.main_window, "config_manager", None).get("quick_look_shortcut", "space") if getattr(self.main_window, "config_manager", None) else "space"
+            if ql_sc != "space" or self._navigated_with_arrows or (state & Gdk.ModifierType.SHIFT_MASK):
                 if current_results and 0 <= self.selected_index < len(current_results):
                     result = current_results[self.selected_index]
                     if getattr(self.main_window, 'quick_look', None):

@@ -9,10 +9,11 @@ from .base import BaseMode
 from i18n import t, SUPPORTED_LANGUAGES
 
 class ShortcutButton(Gtk.Button):
-    def __init__(self, current_shortcut: str, on_changed_callback):
+    def __init__(self, current_shortcut: str, on_changed_callback, allow_single_key: bool = False):
         super().__init__()
         self.current_shortcut = current_shortcut or "<Super>space"
         self.on_changed_callback = on_changed_callback
+        self.allow_single_key = allow_single_key
         self.is_recording = False
         
         self.add_css_class("shortcut-button")
@@ -26,16 +27,9 @@ class ShortcutButton(Gtk.Button):
         self.add_controller(self.key_ctrl)
 
     def _format_display(self, shortcut: str) -> str:
-        if not shortcut: return "-"
-        s = shortcut
-        s = s.replace("<Super>", "Super + ")
-        s = s.replace("<Ctrl>", "Ctrl + ")
-        s = s.replace("<Alt>", "Alt + ")
-        s = s.replace("<Shift>", "Shift + ")
-        parts = s.split(" + ")
-        if len(parts) > 1:
-            return " + ".join(parts[:-1]) + " + " + parts[-1].capitalize()
-        return s.capitalize()
+        from utils import format_shortcut_display
+        from i18n import get_current_language
+        return format_shortcut_display(shortcut, get_current_language())
 
     def update_label(self):
         if self.is_recording:
@@ -117,8 +111,9 @@ class ShortcutButton(Gtk.Button):
         if not key_str:
             return False
 
-        if not mod_str and not key_str.startswith("f"):
-            mod_str = "<Super>"
+        if not mod_str and not key_str.lower().startswith("f"):
+            if not self.allow_single_key:
+                mod_str = "<Super>"
 
         new_shortcut = f"{mod_str}{key_str}"
         self.current_shortcut = new_shortcut
@@ -298,6 +293,18 @@ class SettingsMode(BaseMode):
                 )
             },
             {
+                "id": "quick_look_shortcut",
+                "group": t("settings_group_preview"),
+                "title": t("settings_quick_look_shortcut"),
+                "keywords": "горячие клавиши шорткат shortcut hotkey quick look просмотр пробел space клавиша",
+                "builder": lambda: self._create_shortcut_row(
+                    t("settings_quick_look_shortcut"),
+                    cfg.get("quick_look_shortcut", "space"),
+                    callback=lambda new_sc: self._on_setting_changed("quick_look_shortcut", new_sc),
+                    allow_single_key=True
+                )
+            },
+            {
                 "id": "cat_apps",
                 "group": t("settings_group_categories"),
                 "title": t("settings_cat_apps"),
@@ -426,6 +433,12 @@ class SettingsMode(BaseMode):
             t("settings_preview_width"), cfg.get("preview_width", 420),
             200, 800, 10, unit="px",
             callback=lambda val: self._on_setting_changed("preview_width", int(val))
+        ))
+        group_preview.append(self._create_shortcut_row(
+            t("settings_quick_look_shortcut"),
+            cfg.get("quick_look_shortcut", "space"),
+            callback=lambda new_sc: self._on_setting_changed("quick_look_shortcut", new_sc),
+            allow_single_key=True
         ))
 
         # 5. КАТЕГОРИИ ПОИСКА
@@ -726,7 +739,7 @@ class SettingsMode(BaseMode):
                 else:
                     btn.remove_css_class("active")
 
-    def _create_shortcut_row(self, title: str, shortcut_text: str) -> Gtk.Box:
+    def _create_shortcut_row(self, title: str, shortcut_text: str, callback=None, allow_single_key: bool = False) -> Gtk.Box:
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         row.add_css_class("settings-row")
 
@@ -737,9 +750,11 @@ class SettingsMode(BaseMode):
         title_lbl.add_css_class("settings-row-title")
         row.append(title_lbl)
 
+        cb = callback or (lambda new_sc: self._on_setting_changed("launch_shortcut", new_sc))
         btn = ShortcutButton(
             shortcut_text,
-            lambda new_sc: self._on_setting_changed("launch_shortcut", new_sc)
+            cb,
+            allow_single_key=allow_single_key
         )
         row.append(btn)
         return row

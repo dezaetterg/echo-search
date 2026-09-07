@@ -151,6 +151,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Скорость анимаций",
         "settings_preview_enabled": "Панель быстрого просмотра",
         "settings_preview_width": "Ширина предпросмотра",
+        "settings_quick_look_shortcut": "Клавиша Quick Look",
+        "files_quick_look_hint": "Нажмите {key} для быстрого просмотра файла",
+        "quick_look_title": "Быстрый просмотр",
+        "action_close": "Закрыть",
         "settings_cat_apps": "Приложения",
         "settings_cat_files": "Файлы и документы",
         "settings_cat_clipboard": "Буфер обмена",
@@ -295,6 +299,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Animation speed",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Quick Look shortcut",
+        "files_quick_look_hint": "Press {key} for file Quick Look",
+        "quick_look_title": "Quick Look",
+        "action_close": "Close",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -439,6 +447,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Velocidad de animaciones",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Atajo de Vista Rápida",
+        "files_quick_look_hint": "Presiona {key} para Vista Rápida del archivo",
+        "quick_look_title": "Vista Rápida",
+        "action_close": "Cerrar",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -581,6 +593,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Animationsgeschwindigkeit",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Quick Look Tastenkürzel",
+        "files_quick_look_hint": "Drücken Sie {key} für Quick Look der Datei",
+        "quick_look_title": "Quick Look",
+        "action_close": "Schließen",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -723,6 +739,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Vitesse des animations",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Raccourci Aperçu rapide",
+        "files_quick_look_hint": "Appuyez sur {key} pour Aperçu rapide du fichier",
+        "quick_look_title": "Aperçu rapide",
+        "action_close": "Fermer",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -865,6 +885,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "动画速度",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "快速预览快捷键",
+        "files_quick_look_hint": "按 {key} 快速预览文件",
+        "quick_look_title": "快速预览",
+        "action_close": "关闭",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -1007,6 +1031,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "アニメーション速度",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "クイックルックのショートカット",
+        "files_quick_look_hint": "{key} でファイルをクイックルック",
+        "quick_look_title": "クイックルック",
+        "action_close": "閉じる",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -1149,6 +1177,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Velocità animazioni",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Scorciatoia Vista Rapida",
+        "files_quick_look_hint": "Premi {key} per Vista Rapida del file",
+        "quick_look_title": "Vista Rapida",
+        "action_close": "Chiudi",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -1291,6 +1323,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Velocidade das animações",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Atalho de Pré-visualização Rápida",
+        "files_quick_look_hint": "Pressione {key} para Pré-visualização Rápida do arquivo",
+        "quick_look_title": "Pré-visualização Rápida",
+        "action_close": "Fechar",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -1433,6 +1469,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Animasyon hızı",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Hızlı Bakış kısayolu",
+        "files_quick_look_hint": "Dosyaya Hızlı Bakış için {key} tuşuna basın",
+        "quick_look_title": "Hızlı Bakış",
+        "action_close": "Kapat",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -1575,6 +1615,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Швидкість анімацій",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Клавіша Quick Look",
+        "files_quick_look_hint": "Натисніть {key} для швидкого перегляду файлу",
+        "quick_look_title": "Швидкий перегляд",
+        "action_close": "Закрити",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -1717,6 +1761,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "Анимация жылдамдығы",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "Quick Look пернесі",
+        "files_quick_look_hint": "Файлды жылдам қарау үшін {key} басыңыз",
+        "quick_look_title": "Жылдам қарау",
+        "action_close": "Жабу",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -1859,6 +1907,10 @@ TRANSLATIONS = {
         "settings_animation_speed": "سرعة الرسوم المتحركة",
         "settings_preview_enabled": "Quick preview panel",
         "settings_preview_width": "Preview width",
+        "settings_quick_look_shortcut": "مفتاح اختصار المعاينة السريعة",
+        "files_quick_look_hint": "اضغط {key} للمعاينة السريعة للملف",
+        "quick_look_title": "المعاينة السريعة",
+        "action_close": "إغلاق",
         "settings_cat_apps": "Applications",
         "settings_cat_files": "Files & documents",
         "settings_cat_clipboard": "Clipboard history",
@@ -1917,9 +1969,9 @@ class I18nManager:
         else:
             self.current_lang = "en"
 
-    def get_text(self, key: str, **kwargs) -> str:
+    def get_text(self, _msg_key: str, **kwargs) -> str:
         lang_dict = TRANSLATIONS.get(self.current_lang, TRANSLATIONS.get("en", {}))
-        text = lang_dict.get(key, TRANSLATIONS.get("en", {}).get(key, key))
+        text = lang_dict.get(_msg_key, TRANSLATIONS.get("en", {}).get(_msg_key, _msg_key))
         if kwargs:
             try:
                 text = text.format(**kwargs)
@@ -1929,5 +1981,8 @@ class I18nManager:
 
 i18n = I18nManager()
 
-def t(key: str, **kwargs) -> str:
-    return i18n.get_text(key, **kwargs)
+def t(_msg_key: str, **kwargs) -> str:
+    return i18n.get_text(_msg_key, **kwargs)
+
+def get_current_language() -> str:
+    return i18n.get_language()
