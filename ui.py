@@ -843,14 +843,19 @@ class EchoUI(Gtk.Window):
             ("Apps", "view-app-grid-symbolic"),
             ("Files", "folder-symbolic"),
             ("Clipboard", "edit-paste-symbolic"),
-            ("Emoji", "face-smile-symbolic"),
+            ("Emoji", "emojichooser-symbolic"),
             ("Settings", "preferences-system-symbolic")
         ]
         
-        # Проверка поддержки буфера обмена на текущем дисплее/сервере
+        # Проверка поддержки буфера обмена и регистрация путей иконок
         clipboard_supported = True
         try:
             disp = Gdk.Display.get_default()
+            if disp:
+                icon_theme = Gtk.IconTheme.get_for_display(disp)
+                local_icons = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "icons")
+                if os.path.isdir(local_icons):
+                    icon_theme.add_search_path(local_icons)
             if not disp or not disp.get_clipboard():
                 clipboard_supported = False
         except Exception:

@@ -54,7 +54,7 @@ chmod 755 "${BUILD_DIR}/usr/bin/echo-search"
 
 # Python код и стили в /usr/lib/echo-search
 cp *.py style.css emoji.json "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
-cp -r modes providers "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
+cp -r modes providers assets "${BUILD_DIR}/usr/lib/${PKG_NAME}/"
 
 # Удаление всех __pycache__ и .pyc из пакета
 find "${BUILD_DIR}/usr/lib/${PKG_NAME}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
