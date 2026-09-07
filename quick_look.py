@@ -22,6 +22,8 @@ CODE_EXTENSIONS = {
 }
 AUDIO_EXTENSIONS = {".mp3", ".wav", ".ogg", ".flac", ".m4a", ".aac", ".opus", ".wma"}
 VIDEO_EXTENSIONS = {".mp4", ".mkv", ".webm", ".avi", ".mov", ".flv", ".wmv", ".m4v"}
+PDF_EXTENSIONS = {".pdf"}
+DOCUMENT_EXTENSIONS = {".docx", ".odt", ".epub", ".fb2", ".rtf", ".doc"}
 
 class QuickLookWindow(Gtk.Window):
     def __init__(self, parent_window=None):
@@ -34,6 +36,15 @@ class QuickLookWindow(Gtk.Window):
         self.current_media_file = None
         self.current_video_widget = None
         self._audio_slider_handler_id = None
+        self._pdf_path = None
+        self._pdf_gen = 0
+        self._pdf_current_page = 1
+        self._pdf_total_pages = 1
+        self._pdf_picture = None
+        self._pdf_page_label = None
+        self._pdf_prev_btn = None
+        self._pdf_next_btn = None
+        self._pdf_scroll = None
         
         self.set_title("Quick Look")
         self.set_decorated(False)
@@ -173,6 +184,13 @@ class QuickLookWindow(Gtk.Window):
                 pass
             self.current_video_widget = None
 
+        self._pdf_path = None
+        self._pdf_picture = None
+        self._pdf_page_label = None
+        self._pdf_prev_btn = None
+        self._pdf_next_btn = None
+        self._pdf_scroll = None
+
     def preview_result(self, result) -> bool:
         if not result:
             return False
@@ -255,6 +273,10 @@ class QuickLookWindow(Gtk.Window):
             self._render_audio_view(path, gen, ext, mime, formatted_size)
         elif ext in IMAGE_EXTENSIONS:
             self._render_image_view(path, gen, formatted_size)
+        elif ext in PDF_EXTENSIONS or mime == "application/pdf":
+            self._render_pdf_view(path, gen, formatted_size, mime, mtime)
+        elif ext in DOCUMENT_EXTENSIONS:
+            self._render_document_view(path, gen, ext, formatted_size, mime, mtime)
         elif ext in CODE_EXTENSIONS or mime.startswith("text/"):
             self._render_text_view(path, gen, ext)
         else:
@@ -539,6 +561,283 @@ class QuickLookWindow(Gtk.Window):
                 
         threading.Thread(target=_async_load, daemon=True).start()
 
+    def _render_pdf_view(self, path: str, generation: int, size_str: str, mime: str = "", mtime: str = ""):
+        self._pdf_path = path
+        self._pdf_gen = generation
+        self._pdf_current_page = 1
+        self._pdf_total_pages = 1
+        
+        container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        container.add_css_class("quick-look-pdf-container")
+        container.set_vexpand(True)
+        container.set_hexpand(True)
+        container.set_size_request(740, 380)
+        
+        # Toolbar with page switcher
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        toolbar.add_css_class("quick-look-pdf-toolbar")
+        toolbar.set_halign(Gtk.Align.CENTER)
+        toolbar.set_valign(Gtk.Align.CENTER)
+        
+        prev_btn = Gtk.Button()
+        prev_btn.set_icon_name("go-previous-symbolic")
+        prev_btn.add_css_class("quick-look-page-btn")
+        prev_btn.set_sensitive(False)
+        prev_btn.connect("clicked", lambda _: self._on_pdf_prev_page())
+        toolbar.append(prev_btn)
+        
+        page_lbl = Gtk.Label(label="1 / 1")
+        page_lbl.add_css_class("quick-look-page-label")
+        toolbar.append(page_lbl)
+        
+        next_btn = Gtk.Button()
+        next_btn.set_icon_name("go-next-symbolic")
+        next_btn.add_css_class("quick-look-page-btn")
+        next_btn.set_sensitive(False)
+        next_btn.connect("clicked", lambda _: self._on_pdf_next_page())
+        toolbar.append(next_btn)
+        
+        container.append(toolbar)
+        
+        # ScrolledWindow with Page Picture
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_vexpand(True)
+        scroll.set_hexpand(True)
+        scroll.add_css_class("quick-look-pdf-scroll")
+        
+        page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        page_box.set_halign(Gtk.Align.CENTER)
+        page_box.set_valign(Gtk.Align.START)
+        page_box.set_margin_top(4)
+        page_box.set_margin_bottom(12)
+        
+        picture = Gtk.Picture()
+        picture.set_can_shrink(True)
+        picture.set_content_fit(Gtk.ContentFit.SCALE_DOWN)
+        picture.add_css_class("quick-look-pdf-page")
+        picture.set_size_request(600, -1)
+        page_box.append(picture)
+        
+        scroll.set_child(page_box)
+        container.append(scroll)
+        
+        self.body_container.append(container)
+        
+        self._pdf_picture = picture
+        self._pdf_page_label = page_lbl
+        self._pdf_prev_btn = prev_btn
+        self._pdf_next_btn = next_btn
+        self._pdf_scroll = scroll
+        self._pdf_toolbar = toolbar
+        
+        self._add_badge("PDF")
+        self._add_badge(size_str)
+        
+        def _async_init_pdf():
+            import subprocess, re
+            total_pages = 1
+            try:
+                res = subprocess.run(["pdfinfo", path], capture_output=True, text=True, timeout=2)
+                if res.returncode == 0:
+                    for line in res.stdout.splitlines():
+                        if line.startswith("Pages:"):
+                            total_pages = int(line.split(":", 1)[1].strip())
+                            break
+            except Exception:
+                pass
+                
+            if total_pages <= 1:
+                try:
+                    with open(path, "rb") as f:
+                        buf = f.read(1024 * 1024)
+                        m = re.findall(rb"/Count\s+(\d+)", buf)
+                        if m:
+                            total_pages = max(int(x) for x in m)
+                except Exception:
+                    pass
+                    
+            def _apply_init():
+                if self._load_generation == generation and self.is_visible() and getattr(self, "_pdf_path", None) == path:
+                    self._pdf_total_pages = max(1, total_pages)
+                    if total_pages <= 1:
+                        self._pdf_toolbar.set_visible(False)
+                    else:
+                        self._pdf_toolbar.set_visible(True)
+                    self._update_pdf_controls()
+                    cur_lang = get_current_language()
+                    pages_label = "стр." if cur_lang in ("ru", "kk", "uk", "be") else "pages"
+                    self._add_badge(f"{total_pages} {pages_label}")
+                    self._load_pdf_page(1)
+                return False
+                
+            GLib.idle_add(_apply_init)
+            
+        threading.Thread(target=_async_init_pdf, daemon=True).start()
+
+    def _update_pdf_controls(self):
+        if not getattr(self, "_pdf_page_label", None):
+            return
+        cur = getattr(self, "_pdf_current_page", 1)
+        total = getattr(self, "_pdf_total_pages", 1)
+        cur_lang = get_current_language()
+        prefix = "Стр." if cur_lang in ("ru", "kk", "uk", "be") else "Page"
+        self._pdf_page_label.set_text(f"{prefix} {cur} / {total}")
+        if getattr(self, "_pdf_prev_btn", None):
+            self._pdf_prev_btn.set_sensitive(cur > 1)
+        if getattr(self, "_pdf_next_btn", None):
+            self._pdf_next_btn.set_sensitive(cur < total)
+
+    def _on_pdf_prev_page(self):
+        if not getattr(self, "_pdf_path", None) or self._pdf_current_page <= 1:
+            return False
+        self._pdf_current_page -= 1
+        self._load_pdf_page(self._pdf_current_page)
+        return True
+
+    def _on_pdf_next_page(self):
+        if not getattr(self, "_pdf_path", None) or self._pdf_current_page >= getattr(self, "_pdf_total_pages", 1):
+            return False
+        self._pdf_current_page += 1
+        self._load_pdf_page(self._pdf_current_page)
+        return True
+
+    def _load_pdf_page(self, page_num: int):
+        path = getattr(self, "_pdf_path", None)
+        gen = getattr(self, "_pdf_gen", 0)
+        if not path:
+            return
+        self._update_pdf_controls()
+        
+        def _async_worker():
+            import hashlib, subprocess, tempfile, glob
+            try:
+                cache_dir = os.path.join(tempfile.gettempdir(), "echo_quicklook_pdf")
+                os.makedirs(cache_dir, exist_ok=True)
+                
+                mtime = os.path.getmtime(path)
+                h = hashlib.md5(f"{path}_{mtime}_{page_num}".encode("utf-8")).hexdigest()
+                cached_png = os.path.join(cache_dir, f"{h}.png")
+                
+                if not os.path.exists(cached_png):
+                    out_prefix = os.path.join(cache_dir, f"tmp_{h}")
+                    cmd = ["pdftoppm", "-png", "-r", "140", "-f", str(page_num), "-l", str(page_num), path, out_prefix]
+                    subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+                    matched = glob.glob(f"{out_prefix}*.png")
+                    if matched:
+                        os.replace(matched[0], cached_png)
+                        
+                if os.path.exists(cached_png):
+                    def _update_ui():
+                        if (self._load_generation == gen and self.is_visible() and 
+                                getattr(self, "_pdf_path", None) == path and 
+                                getattr(self, "_pdf_current_page", 1) == page_num):
+                            self._pdf_picture.set_filename(cached_png)
+                            if self._pdf_scroll:
+                                vadj = self._pdf_scroll.get_vadjustment()
+                                if vadj:
+                                    vadj.set_value(0)
+                        return False
+                    GLib.idle_add(_update_ui)
+            except Exception:
+                pass
+                
+        threading.Thread(target=_async_worker, daemon=True).start()
+
+    def _render_document_view(self, path: str, generation: int, ext: str, size_str: str, mime: str = "", mtime: str = ""):
+        scroll = Gtk.ScrolledWindow()
+        scroll.add_css_class("quick-look-doc-scroll")
+        scroll.set_vexpand(True)
+        scroll.set_hexpand(True)
+        scroll.set_size_request(740, 380)
+        
+        text_view = Gtk.TextView()
+        text_view.set_editable(False)
+        text_view.set_cursor_visible(False)
+        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        text_view.add_css_class("quick-look-doc-view")
+        scroll.set_child(text_view)
+        
+        self.body_container.append(scroll)
+        self._add_badge(ext.upper()[1:] if ext else "DOC")
+        self._add_badge(size_str)
+        
+        def _async_load_doc():
+            content = None
+            try:
+                if ext == ".docx":
+                    import zipfile, xml.etree.ElementTree as ET
+                    with zipfile.ZipFile(path) as z:
+                        xml_content = z.read("word/document.xml")
+                        tree = ET.fromstring(xml_content)
+                        paragraphs = []
+                        for p in tree.iter("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}p"):
+                            texts = [node.text for node in p.iter("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}t") if node.text]
+                            if texts:
+                                paragraphs.append("".join(texts))
+                        content = "\n\n".join(paragraphs)
+                elif ext == ".odt":
+                    import zipfile, xml.etree.ElementTree as ET
+                    with zipfile.ZipFile(path) as z:
+                        xml_content = z.read("content.xml")
+                        tree = ET.fromstring(xml_content)
+                        paragraphs = []
+                        for p in tree.iter("{urn:oasis:names:tc:opendocument:xmlns:text:1.0}p"):
+                            text = "".join(p.itertext())
+                            if text:
+                                paragraphs.append(text)
+                        content = "\n\n".join(paragraphs)
+                elif ext == ".rtf":
+                    with open(path, "r", encoding="utf-8", errors="ignore") as f:
+                        raw = f.read(50000)
+                        import re
+                        content = re.sub(r"\\[a-z0-9\-]+", " ", raw)
+                        content = re.sub(r"[{}]", "", content)
+                        content = re.sub(r"\s+", " ", content).strip()
+                elif ext in (".epub", ".fb2"):
+                    if ext == ".fb2":
+                        import xml.etree.ElementTree as ET
+                        tree = ET.parse(path)
+                        content = "\n\n".join(p.text for p in tree.iter() if p.tag.endswith("p") and p.text)
+                    elif ext == ".epub":
+                        import zipfile, re
+                        with zipfile.ZipFile(path) as z:
+                            html_files = [n for n in z.namelist() if n.endswith((".html", ".xhtml"))]
+                            texts = []
+                            for hf in html_files[:10]:
+                                html_text = z.read(hf).decode("utf-8", errors="ignore")
+                                clean_text = re.sub(r"<[^>]+>", " ", html_text)
+                                clean_text = re.sub(r"\s+", " ", clean_text).strip()
+                                if clean_text:
+                                    texts.append(clean_text)
+                            content = "\n\n".join(texts)
+            except Exception:
+                pass
+                
+            if not content:
+                try:
+                    with open(path, "r", encoding="utf-8", errors="replace") as f:
+                        content = "".join([f.readline() for _ in range(250)])
+                except Exception:
+                    pass
+                    
+            def _update_ui():
+                if self._load_generation == generation and self.is_visible():
+                    buffer = text_view.get_buffer()
+                    if content and content.strip():
+                        buffer.set_text(content)
+                        lines = content.count("\n") + 1
+                        self._add_badge(f"{lines} {t('label_lines')}")
+                    else:
+                        cur_lang = get_current_language()
+                        no_preview_text = "Предпросмотр содержимого недоступен" if cur_lang in ("ru", "kk", "uk", "be") else "Content preview unavailable"
+                        buffer.set_text(no_preview_text)
+                return False
+                
+            GLib.idle_add(_update_ui)
+            
+        threading.Thread(target=_async_load_doc, daemon=True).start()
+
     def _render_text_view(self, path: str, generation: int, ext: str):
         scroll = Gtk.ScrolledWindow()
         scroll.add_css_class("quick-look-text-scroll")
@@ -626,6 +925,16 @@ class QuickLookWindow(Gtk.Window):
             self._on_terminal_clicked(None)
             return True
             
+        elif keyval in (Gdk.KEY_Left, Gdk.KEY_Page_Up):
+            if getattr(self, "_pdf_path", None):
+                if self._on_pdf_prev_page():
+                    return True
+
+        elif keyval in (Gdk.KEY_Right, Gdk.KEY_Page_Down):
+            if getattr(self, "_pdf_path", None):
+                if self._on_pdf_next_page():
+                    return True
+
         elif keyval in (Gdk.KEY_Up, Gdk.KEY_Down):
             # Forward arrow keys to parent mode to navigate to next file
             if self.parent_window and hasattr(self.parent_window, "mode_manager"):

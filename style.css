@@ -1593,3 +1593,71 @@ video.quick-look-video {
     font-weight: 500;
     color: rgba(255, 255, 255, 0.6);
 }
+
+/* Quick Look PDF Preview */
+.quick-look-pdf-container {
+    background: transparent;
+}
+
+.quick-look-pdf-toolbar {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 9999px;
+    padding: 3px 8px;
+    margin-bottom: 6px;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+}
+
+.quick-look-page-btn {
+    background: transparent;
+    border: none;
+    border-radius: 9999px;
+    min-width: 26px;
+    min-height: 26px;
+    padding: 0;
+    color: rgba(255, 255, 255, 0.7);
+    transition: all 120ms ease;
+}
+
+.quick-look-page-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+}
+
+.quick-look-page-btn:disabled {
+    opacity: 0.3;
+}
+
+.quick-look-page-label {
+    font-family: "SF Pro Text", -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0 6px;
+}
+
+.quick-look-pdf-scroll {
+    background: transparent;
+}
+
+.quick-look-pdf-page {
+    border-radius: 6px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 1px 3px rgba(0, 0, 0, 0.3);
+    margin: 6px 0;
+}
+
+/* Document Text View (.docx, .odt, .epub, etc.) */
+.quick-look-doc-scroll {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 16px 20px;
+}
+
+.quick-look-doc-view {
+    font-family: "SF Pro Text", -apple-system, sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    color: rgba(255, 255, 255, 0.85);
+    background: transparent;
+}
