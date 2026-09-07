@@ -247,6 +247,18 @@ class SettingsMode(BaseMode):
                 )
             },
             {
+                "id": "animation_speed",
+                "group": t("settings_group_appearance"),
+                "title": t("settings_animation_speed"),
+                "keywords": "скорость анимаций animation speed плавность темп длительность регулятор",
+                "builder": lambda: self._create_slider_row(
+                    t("settings_animation_speed"),
+                    int(cfg.get("animation_speed", 100)),
+                    50, 200, 10, unit="%",
+                    callback=lambda val: self._on_setting_changed("animation_speed", int(val))
+                )
+            },
+            {
                 "id": "unfold_animation",
                 "group": t("settings_group_appearance"),
                 "title": t("settings_unfold_animation"),
@@ -368,6 +380,12 @@ class SettingsMode(BaseMode):
         group_appearance.append(self._create_switch_row(
             t("settings_animations"), None, cfg.get("animations", True),
             lambda active: self._on_setting_changed("animations", active)
+        ))
+        group_appearance.append(self._create_slider_row(
+            t("settings_animation_speed"),
+            int(cfg.get("animation_speed", 100)),
+            50, 200, 10, unit="%",
+            callback=lambda val: self._on_setting_changed("animation_speed", int(val))
         ))
         group_appearance.append(self._create_unfold_animation_row(cfg))
 

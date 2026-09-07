@@ -133,6 +133,9 @@ class EchoUI(Gtk.Window):
                 pass
                 
             transparency = self.config_manager.get("transparency", 0.60 if is_glass else 0.15)
+            anim_speed = self.config_manager.get("animation_speed", 100)
+            speed_factor = max(0.2, min(3.0, float(anim_speed) / 100.0))
+            jelly_duration = max(30, int(220 / speed_factor))
             alpha = max(0.0, min(1.0, round(1.0 - float(transparency), 2)))
             blur = self.config_manager.get("blur", True)
             
@@ -740,6 +743,9 @@ class EchoUI(Gtk.Window):
             }}
             {outer_box_style}
             {theme_css}
+            .anim-jelly-wobble {{
+                animation: jelly_wobble_unfold {jelly_duration}ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
+            }}
             """
             
             if hasattr(self, '_dynamic_css_provider') and self._dynamic_css_provider:
@@ -817,7 +823,9 @@ class EchoUI(Gtk.Window):
         self.mode_buttons_revealer.set_transition_type(Gtk.RevealerTransitionType.SLIDE_LEFT)
         
         animations = self.config_manager.get("animations") if self.config_manager else True
-        anim_duration = 260 if animations else 0
+        anim_speed = self.config_manager.get("animation_speed", 100) if self.config_manager else 100
+        speed_factor = max(0.2, min(3.0, float(anim_speed) / 100.0))
+        anim_duration = max(30, int(220 / speed_factor)) if animations else 0
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         
         self.mode_buttons_revealer.set_halign(Gtk.Align.END)
@@ -902,18 +910,20 @@ class EchoUI(Gtk.Window):
         unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
         transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.SLIDE_DOWN)
         animations = self.config_manager.get("animations", True) if self.config_manager else True
+        anim_speed = self.config_manager.get("animation_speed", 100) if self.config_manager else 100
+        speed_factor = max(0.2, min(3.0, float(anim_speed) / 100.0))
         if unfold_mode == "instant_dynamic":
-            revealer_duration = 45 if animations else 0
+            revealer_duration = max(10, int(45 / speed_factor)) if animations else 0
         elif unfold_mode == "slide_down":
-            revealer_duration = 140 if animations else 0
+            revealer_duration = max(20, int(140 / speed_factor)) if animations else 0
         elif unfold_mode == "swing_down":
-            revealer_duration = 160 if animations else 0
+            revealer_duration = max(20, int(160 / speed_factor)) if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 220 if animations else 0
+            revealer_duration = max(30, int(220 / speed_factor)) if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
-            revealer_duration = 140
+            revealer_duration = max(20, int(140 / speed_factor)) if animations else 0
         
         self.results_revealer = Gtk.Revealer()
         self.results_revealer.set_transition_type(transition_type)
@@ -1197,20 +1207,22 @@ class EchoUI(Gtk.Window):
         
         # Обновляем анимации и стиль развертывания
         animations = self.config_manager.get("animations") if self.config_manager else True
+        anim_speed = self.config_manager.get("animation_speed", 100) if self.config_manager else 100
+        speed_factor = max(0.2, min(3.0, float(anim_speed) / 100.0))
         unfold_mode = self.config_manager.get("unfold_animation", "instant_dynamic") if self.config_manager else "instant_dynamic"
-        anim_duration = 160 if animations else 0
+        anim_duration = max(30, int(220 / speed_factor)) if animations else 0
         if unfold_mode == "instant_dynamic":
-            revealer_duration = 45 if animations else 0
+            revealer_duration = max(10, int(45 / speed_factor)) if animations else 0
         elif unfold_mode == "slide_down":
-            revealer_duration = 140 if animations else 0
+            revealer_duration = max(20, int(140 / speed_factor)) if animations else 0
         elif unfold_mode == "swing_down":
-            revealer_duration = 160 if animations else 0
+            revealer_duration = max(20, int(160 / speed_factor)) if animations else 0
         elif unfold_mode == "jelly_wobble":
-            revealer_duration = 220 if animations else 0
+            revealer_duration = max(30, int(220 / speed_factor)) if animations else 0
         elif unfold_mode == "none" or not animations:
             revealer_duration = 0
         else:
-            revealer_duration = 140
+            revealer_duration = max(20, int(140 / speed_factor)) if animations else 0
         self.mode_buttons_revealer.set_transition_duration(anim_duration)
         if hasattr(self, 'results_revealer'):
             transition_type = UNFOLD_TRANSITION_MAP.get(unfold_mode, Gtk.RevealerTransitionType.SLIDE_DOWN)
