@@ -22,6 +22,7 @@ window, window.background, .background, window.solid-csd, window.csd, window dec
     padding: 1px;
     border-radius: 25px; 
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.40), 0 1px 3px rgba(0, 0, 0, 0.20);
+    transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-image 0.25s ease;
 }
 
 /* Основное окно (Светлое чистое стекло, без матовости) */
@@ -176,8 +177,10 @@ row:selected, row:selected:hover {
     outline: none;
 }
 
+.result-icon-stack {
+}
 .result-icon {
-    margin-right: 12px;
+    margin: 0;
 }
 
 .result-title {
@@ -980,12 +983,15 @@ entry placeholder {
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.08);
     border: 1px solid rgba(255, 255, 255, 0.1);
-    margin-right: 12px;
+    margin: 0;
+    padding: 0;
 }
 
 .result-emoji-label {
     font-size: 24px;
     font-family: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    margin: 0;
+    padding: 0;
 }
 
 /* ==============================
@@ -1675,4 +1681,823 @@ video.quick-look-video {
     line-height: 1.75;
     color: rgba(255, 255, 255, 0.92);
     background: transparent;
+}
+
+/* Timezone Clock Widget */
+.preview-timezone-clock {
+    font-family: "SF Pro Display", "Inter", sans-serif;
+    font-size: 58px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -1.5px;
+    margin: 6px 0 12px 0;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Currency Converter Preview Widget */
+.preview-currency-hero {
+    margin: 8px 0 14px 0;
+}
+
+.preview-currency-hero-value {
+    font-family: "SF Pro Display", "Inter", sans-serif;
+    font-size: 46px;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -1.2px;
+    margin: 4px 0 6px 0;
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.preview-currency-hero-sub {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.65);
+    margin-bottom: 4px;
+}
+
+/* ==========================================================================
+   Apple Weather Widget Preview Styles
+   ========================================================================== */
+
+.preview-weather-card {
+    border-radius: 28px;
+    padding: 22px 24px;
+    margin: 12px 14px 18px 14px;
+    min-height: 250px;
+    box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Gradients for day/night and conditions */
+.weather-grad-clear-night {
+    background: linear-gradient(175deg, #13172e 0%, #171d38 45%, #1b2446 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.weather-grad-clear-day {
+    background: linear-gradient(175deg, #1e6bd6 0%, #3084e8 50%, #5ba2f8 100%);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.weather-grad-clouds-night {
+    background: linear-gradient(175deg, #161b26 0%, #202737 55%, #2a3348 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.weather-grad-clouds-day {
+    background: linear-gradient(175deg, #3d5875 0%, #526f8e 55%, #6a8ba8 100%);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.weather-grad-rain-night,
+.weather-grad-rain-day {
+    background: linear-gradient(175deg, #1c2734 0%, #27374a 55%, #354961 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.weather-grad-snow-night,
+.weather-grad-snow-day {
+    background: linear-gradient(175deg, #2b3b4f 0%, #3e536c 55%, #567291 100%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.weather-grad-storm-night,
+.weather-grad-storm-day {
+    background: linear-gradient(175deg, #191c2b 0%, #262940 55%, #393b5a 100%);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.weather-grad-fog-night,
+.weather-grad-fog-day {
+    background: linear-gradient(175deg, #2b323c 0%, #3b4452 55%, #4f5b6c 100%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Card typography matching Apple SF Pro */
+.weather-card-city {
+    font-family: "SF Pro Display", "Inter", -apple-system, sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.4px;
+}
+
+.weather-card-arrow {
+    margin-left: 2px;
+    margin-top: 2px;
+    opacity: 0.95;
+}
+
+.weather-card-temp {
+    font-family: "SF Pro Display", "Inter", -apple-system, sans-serif;
+    font-size: 68px;
+    font-weight: 400;
+    color: #ffffff;
+    letter-spacing: -2px;
+    line-height: 1.05;
+    margin-top: 2px;
+    margin-bottom: 22px;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
+}
+
+.weather-card-condition-icon {
+    margin-bottom: 6px;
+}
+
+.weather-card-condition {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.weather-card-range {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.92);
+    margin-top: 2px;
+}
+
+/* Settings text entry */
+.settings-entry {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 8px;
+    padding: 6px 12px;
+    color: #ffffff;
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 13px;
+    min-width: 150px;
+    transition: all 0.2s ease;
+}
+
+.settings-entry:focus {
+    border-color: #3b82f6;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+/* ==========================================================================
+   Full Atmospheric iOS Weather Screen & Glass Cards
+   ========================================================================== */
+
+.capsule-window-ui .preview-panel.preview-panel-weather,
+.preview-panel.preview-panel-weather {
+    padding: 0;
+    margin: -12px -20px -20px 0;
+    border-radius: 0 0 24px 0;
+    border-left: 1px solid rgba(255, 255, 255, 0.14);
+    border-top: none;
+    border-right: none;
+    border-bottom: none;
+    box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.08);
+}
+
+/* Full Atmospheric Weather Canvas */
+.capsule-window-ui {
+    transition: background 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease;
+}
+
+.capsule-window-ui.weather-canvas-clear-day {
+    background: radial-gradient(circle at 75% 0%, rgba(255, 235, 175, 0.45) 0%, rgba(255, 255, 255, 0) 55%),
+                linear-gradient(180deg, #1c72e8 0%, #2f87ea 35%, #4fa3f7 70%, #68b5fd 100%);
+}
+.capsule-window-ui.weather-canvas-clear-night {
+    background: radial-gradient(circle at 78% 8%, rgba(180, 205, 255, 0.22) 0%, rgba(255, 255, 255, 0) 45%),
+                linear-gradient(180deg, #0a0d1a 0%, #11172e 40%, #16203d 75%, #1c274b 100%);
+}
+.capsule-window-ui.weather-canvas-clouds-day {
+    background: radial-gradient(circle at 60% 0%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 50%),
+                linear-gradient(180deg, #3c4a54 0%, #4a5c68 40%, #5d717e 75%, #6a808e 100%);
+}
+.capsule-window-ui.weather-canvas-clouds-night {
+    background: linear-gradient(180deg, #11151c 0%, #1a202a 40%, #222a38 75%, #2a3444 100%);
+}
+.capsule-window-ui.weather-canvas-rain-day {
+    background: radial-gradient(circle at 65% 0%, rgba(160, 200, 230, 0.25) 0%, rgba(255, 255, 255, 0) 50%),
+                linear-gradient(180deg, #233444 0%, #2e4458 40%, #3a546d 75%, #466480 100%);
+}
+.capsule-window-ui.weather-canvas-rain-night {
+    background: linear-gradient(180deg, #0c1219 0%, #131c26 40%, #1c2735 75%, #233142 100%);
+}
+.capsule-window-ui.weather-canvas-storm-day,
+.capsule-window-ui.weather-canvas-storm-night {
+    background: radial-gradient(circle at 65% 0%, rgba(200, 160, 255, 0.25) 0%, rgba(255, 255, 255, 0) 45%),
+                linear-gradient(180deg, #251c38 0%, #31254a 40%, #3e305c 75%, #4c3b6f 100%);
+}
+.capsule-window-ui.weather-canvas-snow-day {
+    background: radial-gradient(circle at 65% 0%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 50%),
+                linear-gradient(180deg, #5b7996 0%, #708ea8 40%, #88a4bc 75%, #9cb7cd 100%);
+}
+.capsule-window-ui.weather-canvas-snow-night {
+    background: linear-gradient(180deg, #121922 0%, #1b2430 40%, #253140 75%, #2f3e50 100%);
+}
+.capsule-window-ui.weather-canvas-fog-day,
+.capsule-window-ui.weather-canvas-fog-night {
+    background: linear-gradient(180deg, #37434d 0%, #465460 40%, #566673 75%, #657785 100%);
+}
+
+.capsule-window-ui.weather-canvas-active .preview-panel.preview-panel-weather {
+    background: transparent;
+    border-left: 1px solid rgba(255, 255, 255, 0.16);
+    box-shadow: none;
+}
+
+.capsule-window-ui.weather-canvas-active .search-wrapper {
+    background-color: rgba(255, 255, 255, 0.20);
+    border: 1px solid rgba(255, 255, 255, 0.26);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.capsule-window-ui.weather-canvas-active #search-entry {
+    color: #ffffff;
+}
+.capsule-window-ui.weather-canvas-active #search-entry placeholder {
+    color: rgba(255, 255, 255, 0.65);
+}
+.capsule-window-ui.weather-canvas-active .search-icon {
+    color: rgba(255, 255, 255, 0.90);
+}
+.capsule-window-ui.weather-canvas-active .mode-button {
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.20);
+    color: #ffffff;
+}
+.capsule-window-ui.weather-canvas-active .mode-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+    border-color: rgba(255, 255, 255, 0.35);
+}
+.capsule-window-ui.weather-canvas-active .mode-button.active {
+    background: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.45);
+}
+.capsule-window-ui.weather-canvas-active .result-title {
+    color: #ffffff;
+}
+.capsule-window-ui.weather-canvas-active .result-desc {
+    color: rgba(255, 255, 255, 0.75);
+}
+.capsule-window-ui.weather-canvas-active .result-row:selected,
+.capsule-window-ui.weather-canvas-active .result-row.selected {
+    background-color: rgba(255, 255, 255, 0.22);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.capsule-window-ui.weather-canvas-active .result-row:hover:not(:selected) {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Ambient Window Glow for Weather Conditions */
+.root-box .outer-border-box.ambient-weather-bg-clear-day,
+window.ambient-weather-bg-clear-day .outer-border-box {
+    box-shadow: 0 0 24px rgba(53, 142, 232, 0.50), 0 8px 24px rgba(0, 0, 0, 0.35);
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.08) 35%, rgba(255, 255, 255, 0.08) 65%, rgba(255, 255, 255, 0.75) 100%);
+}
+
+.root-box .outer-border-box.ambient-weather-bg-clear-night,
+window.ambient-weather-bg-clear-night .outer-border-box {
+    box-shadow: 0 0 24px rgba(35, 55, 110, 0.60), 0 8px 24px rgba(0, 0, 0, 0.55);
+    background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.08) 35%, rgba(255, 255, 255, 0.08) 65%, rgba(255, 255, 255, 0.75) 100%);
+}
+
+.root-box .outer-border-box.ambient-weather-bg-clouds-day,
+.root-box .outer-border-box.ambient-weather-bg-clouds-night,
+window.ambient-weather-bg-clouds-day .outer-border-box,
+window.ambient-weather-bg-clouds-night .outer-border-box {
+    box-shadow: 0 0 24px rgba(90, 115, 145, 0.55), 0 8px 24px rgba(0, 0, 0, 0.35);
+    background-image: linear-gradient(135deg, rgba(160, 185, 210, 0.75) 0%, rgba(130, 150, 175, 0.12) 50%, rgba(190, 205, 220, 0.55) 100%);
+}
+
+.root-box .outer-border-box.ambient-weather-bg-rain-day,
+.root-box .outer-border-box.ambient-weather-bg-rain-night,
+window.ambient-weather-bg-rain-day .outer-border-box,
+window.ambient-weather-bg-rain-night .outer-border-box {
+    box-shadow: 0 0 24px rgba(60, 100, 150, 0.60), 0 8px 24px rgba(0, 0, 0, 0.45);
+    background-image: linear-gradient(135deg, rgba(90, 150, 215, 0.8) 0%, rgba(60, 100, 160, 0.15) 50%, rgba(110, 180, 230, 0.55) 100%);
+}
+
+.root-box .outer-border-box.ambient-weather-bg-storm-day,
+.root-box .outer-border-box.ambient-weather-bg-storm-night,
+window.ambient-weather-bg-storm-day .outer-border-box,
+window.ambient-weather-bg-storm-night .outer-border-box {
+    box-shadow: 0 0 24px rgba(130, 80, 180, 0.65), 0 8px 24px rgba(0, 0, 0, 0.55);
+    background-image: linear-gradient(135deg, rgba(175, 110, 235, 0.85) 0%, rgba(100, 60, 160, 0.15) 50%, rgba(205, 140, 255, 0.55) 100%);
+}
+
+.root-box .outer-border-box.ambient-weather-bg-snow-day,
+.root-box .outer-border-box.ambient-weather-bg-snow-night,
+window.ambient-weather-bg-snow-day .outer-border-box,
+window.ambient-weather-bg-snow-night .outer-border-box {
+    box-shadow: 0 0 24px rgba(170, 215, 255, 0.60), 0 8px 24px rgba(0, 0, 0, 0.35);
+    background-image: linear-gradient(135deg, rgba(215, 240, 255, 0.9) 0%, rgba(180, 220, 255, 0.15) 50%, rgba(240, 250, 255, 0.75) 100%);
+}
+
+.root-box .outer-border-box.ambient-weather-bg-fog-day,
+.root-box .outer-border-box.ambient-weather-bg-fog-night,
+window.ambient-weather-bg-fog-day .outer-border-box,
+window.ambient-weather-bg-fog-night .outer-border-box {
+    box-shadow: 0 0 24px rgba(100, 120, 135, 0.50), 0 8px 24px rgba(0, 0, 0, 0.35);
+    background-image: linear-gradient(135deg, rgba(165, 180, 195, 0.75) 0%, rgba(120, 135, 150, 0.12) 50%, rgba(185, 200, 210, 0.55) 100%);
+}
+
+.preview-panel.preview-panel-weather scrollbar {
+    background: transparent;
+    border: none;
+    padding: 0;
+    margin: 0;
+}
+
+.preview-panel.preview-panel-weather scrollbar trough {
+    background: transparent;
+    border: none;
+}
+
+.preview-panel.preview-panel-weather scrollbar,
+.weather-scrolled-window scrollbar {
+    opacity: 0;
+    min-width: 0;
+    min-height: 0;
+    background: transparent;
+    border: none;
+}
+
+.preview-panel.preview-panel-weather scrollbar slider,
+.weather-scrolled-window scrollbar slider {
+    opacity: 0;
+    min-width: 0;
+    min-height: 0;
+    background: transparent;
+    border: none;
+}
+
+.preview-panel.preview-panel-weather scrollbar slider:hover,
+.weather-scrolled-window scrollbar slider:hover {
+    opacity: 0;
+    background: transparent;
+}
+
+.preview-weather-full-bg {
+    background: transparent;
+    border-radius: 16px;
+    transition: background 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Atmospheric dynamic weather backgrounds */
+.capsule-window-ui .preview-panel.weather-bg-clear-day,
+.preview-panel.weather-bg-clear-day,
+.weather-bg-clear-day {
+    background: radial-gradient(circle at 75% 12%, rgba(255, 245, 205, 0.5) 0%, rgba(255, 255, 255, 0) 48%),
+                linear-gradient(180deg, #186bd8 0%, #358ee8 42%, #58a9fa 85%, #6ebbfd 100%);
+}
+
+.capsule-window-ui .preview-panel.weather-bg-clear-night,
+.preview-panel.weather-bg-clear-night,
+.weather-bg-clear-night {
+    background: radial-gradient(circle at 78% 14%, rgba(190, 215, 255, 0.22) 0%, rgba(255, 255, 255, 0) 40%),
+                linear-gradient(180deg, #090c18 0%, #11172e 45%, #182244 85%, #1e2a54 100%);
+}
+
+.capsule-window-ui .preview-panel.weather-bg-clouds-day,
+.preview-panel.weather-bg-clouds-day,
+.weather-bg-clouds-day {
+    background: radial-gradient(circle at 70% 15%, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 45%),
+                linear-gradient(180deg, #37474f 0%, #455a64 45%, #546e7a 85%, #607d8b 100%);
+}
+
+.capsule-window-ui .preview-panel.weather-bg-clouds-night,
+.preview-panel.weather-bg-clouds-night,
+.weather-bg-clouds-night {
+    background: linear-gradient(180deg, #10141a 0%, #19202a 45%, #242d3c 85%, #2e394c 100%);
+}
+
+.capsule-window-ui .preview-panel.weather-bg-rain-day,
+.capsule-window-ui .preview-panel.weather-bg-rain-night,
+.preview-panel.weather-bg-rain-day,
+.preview-panel.weather-bg-rain-night,
+.weather-bg-rain-day,
+.weather-bg-rain-night {
+    background: radial-gradient(circle at 60% 10%, rgba(180, 205, 235, 0.15) 0%, rgba(255, 255, 255, 0) 50%),
+                linear-gradient(180deg, #1a232f 0%, #263344 45%, #35475e 85%, #425975 100%);
+}
+
+.capsule-window-ui .preview-panel.weather-bg-storm-day,
+.capsule-window-ui .preview-panel.weather-bg-storm-night,
+.preview-panel.weather-bg-storm-day,
+.preview-panel.weather-bg-storm-night,
+.weather-bg-storm-day,
+.weather-bg-storm-night {
+    background: radial-gradient(circle at 50% 10%, rgba(210, 190, 255, 0.15) 0%, rgba(255, 255, 255, 0) 45%),
+                linear-gradient(180deg, #141220 0%, #1e1a32 45%, #2c2548 85%, #382f5b 100%);
+}
+
+.capsule-window-ui .preview-panel.weather-bg-snow-day,
+.capsule-window-ui .preview-panel.weather-bg-snow-night,
+.preview-panel.weather-bg-snow-day,
+.preview-panel.weather-bg-snow-night,
+.weather-bg-snow-day,
+.weather-bg-snow-night {
+    background: radial-gradient(circle at 70% 12%, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 50%),
+                linear-gradient(180deg, #2c3e50 0%, #3e5368 45%, #526c85 85%, #6885a1 100%);
+}
+
+.capsule-window-ui .preview-panel.weather-bg-fog-day,
+.capsule-window-ui .preview-panel.weather-bg-fog-night,
+.preview-panel.weather-bg-fog-day,
+.preview-panel.weather-bg-fog-night,
+.weather-bg-fog-day,
+.weather-bg-fog-night {
+    background: linear-gradient(180deg, #2b333c 0%, #3c4652 45%, #505c6a 85%, #637180 100%);
+}
+
+/* Weather content padding */
+.weather-content-pad {
+    padding: 14px 14px 22px 14px;
+}
+
+/* Hero Section */
+.weather-hero-box {
+    margin-bottom: 6px;
+}
+
+.weather-location-arrow {
+    opacity: 0.95;
+}
+
+.weather-location-label {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.92);
+    letter-spacing: -0.1px;
+}
+
+.weather-hero-city {
+    font-family: "SF Pro Display", "Inter", -apple-system, sans-serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: -0.6px;
+    margin-top: -2px;
+    margin-bottom: 2px;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.25);
+}
+
+.weather-hero-temp {
+    font-family: "SF Pro Display", "Inter", -apple-system, sans-serif;
+    font-size: 50px;
+    font-weight: 300;
+    color: #ffffff;
+    letter-spacing: -1.5px;
+    line-height: 1.0;
+    margin-top: -2px;
+    margin-bottom: 2px;
+    text-shadow: 0 4px 18px rgba(0, 0, 0, 0.2);
+}
+
+.weather-hero-condition {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.weather-hero-extremes {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.88);
+    margin-top: 1px;
+}
+
+/* Apple Liquid / Frosted Glass Cards */
+.weather-glass-card {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin: 0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.weather-summary-text {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: #ffffff;
+    line-height: 1.35;
+    letter-spacing: -0.1px;
+}
+
+.weather-card-divider {
+    min-height: 1px;
+    background: rgba(255, 255, 255, 0.14);
+    margin: 4px 0 6px 0;
+}
+
+.weather-row-divider {
+    min-height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 3px 0;
+}
+
+/* Hourly Forecast Strip */
+.weather-hourly-box {
+    padding: 4px 0 2px 0;
+}
+
+.weather-hourly-col {
+    min-width: 44px;
+}
+
+.weather-hourly-time {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.88);
+}
+
+.weather-hourly-temp {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+/* 10-Day Forecast List */
+.weather-section-title {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+}
+
+.weather-daily-row {
+    padding: 3px 0;
+}
+
+.weather-daily-day {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.1px;
+}
+
+.weather-daily-temp-min {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.weather-daily-temp-max {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.weather-meta-grid {
+    margin: 2px 0 8px 0;
+}
+
+.weather-meta-grid .preview-meta-card {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+
+.weather-meta-grid .preview-meta-key {
+    color: rgba(255, 255, 255, 0.65);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.weather-meta-grid .preview-meta-val {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* Apple Weather Bento Grid */
+.weather-bento-grid {
+    margin: 4px 0 10px 0;
+}
+
+.weather-bento-card {
+    background: rgba(255, 255, 255, 0.16);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    border-radius: 18px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    min-height: 110px;
+}
+
+.weather-bento-header {
+    margin-bottom: 2px;
+}
+
+.weather-bento-title {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.weather-bento-val-large {
+    font-family: "SF Pro Display", "Inter", -apple-system, sans-serif;
+    font-size: 24px;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.1;
+    letter-spacing: -0.4px;
+}
+
+.weather-bento-val-hero {
+    font-family: "SF Pro Display", "Inter", -apple-system, sans-serif;
+    font-size: 28px;
+    font-weight: 600;
+    color: #ffffff;
+    line-height: 1.0;
+    letter-spacing: -0.5px;
+}
+
+.weather-bento-val-level {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 2px;
+}
+
+.weather-bento-subval {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #ffffff;
+}
+
+.weather-bento-sublabel {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.65);
+}
+
+.weather-bento-unit {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+}
+
+.weather-bento-desc {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.88);
+    line-height: 1.35;
+    margin-top: 4px;
+}
+
+.weather-bento-moon-title {
+    font-family: "SF Pro Display", "Inter", -apple-system, sans-serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    letter-spacing: -0.2px;
+}
+
+.weather-bento-moon-info {
+    font-family: "SF Pro Text", "Inter", -apple-system, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.78);
+    margin-top: 2px;
+}
+
+.weather-bento-divider {
+    min-height: 1px;
+    background: rgba(255, 255, 255, 0.12);
+    margin: 4px 0;
+}
+
+.weather-action-box {
+    margin: 6px 0 16px 0;
+}
+
+.weather-action-box .preview-btn {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    font-weight: 600;
+}
+
+.weather-action-box .preview-btn:hover {
+    background: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.36);
+}
+
+
+/* Quick Look Text & Code Editor */
+.quick-look-editor-card {
+    background: rgba(18, 19, 24, 0.70);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 16px;
+    margin: 2px 14px 10px 14px;
+    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08), 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+.quick-look-editor-toolbar {
+    background: rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 8px 14px;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+.quick-look-editor-stat {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.55);
+}
+.quick-look-editor-dirty-badge {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: #ffaa55;
+    background: rgba(255, 170, 85, 0.18);
+    border: 1px solid rgba(255, 170, 85, 0.35);
+    border-radius: 9999px;
+    padding: 1px 9px;
+}
+.quick-look-editor-saved-badge {
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: #56d364;
+    background: rgba(86, 211, 100, 0.18);
+    border: 1px solid rgba(86, 211, 100, 0.35);
+    border-radius: 9999px;
+    padding: 1px 9px;
+}
+.quick-look-save-btn {
+    background: rgba(255, 255, 255, 0.09);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 8px;
+    color: #ffffff;
+    font-family: "SF Pro Text", "Inter", sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 12px;
+    transition: all 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.quick-look-save-btn:hover {
+    background: rgba(255, 255, 255, 0.20);
+    border-color: rgba(255, 255, 255, 0.40);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
+}
+.quick-look-save-btn.dirty {
+    background: #238636;
+    border-color: #3fb950;
+    color: #ffffff;
+    box-shadow: 0 0 12px rgba(46, 160, 67, 0.50);
+}
+.quick-look-save-btn.dirty:hover {
+    background: #2ea043;
+    box-shadow: 0 0 16px rgba(46, 160, 67, 0.70);
+}
+.quick-look-line-numbers {
+    background: rgba(0, 0, 0, 0.25);
+    color: rgba(255, 255, 255, 0.32);
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "Source Code Pro", monospace;
+    font-size: 13px;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 12px 10px 16px 12px;
+    border-bottom-left-radius: 15px;
+}
+.quick-look-code-view {
+    background: transparent;
+    color: #e6edf3;
+    font-family: "JetBrains Mono", "Fira Code", "Cascadia Code", "Source Code Pro", monospace;
+    font-size: 13px;
+    padding: 12px 16px 16px 16px;
+    caret-color: #58a6ff;
+}
+.quick-look-code-view:focus {
+    outline: none;
 }

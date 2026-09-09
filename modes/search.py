@@ -41,7 +41,7 @@ class SearchMode(BaseMode):
         self.main_split = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         
         self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        self.left_box.set_size_request(650, -1)
+        self.left_box.set_size_request(650, 0)
         self.left_box.set_vexpand(True)
         
         # Разделитель
@@ -93,6 +93,7 @@ class SearchMode(BaseMode):
         # Превью панель (Новая версия)
         self.preview_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.preview_container.add_css_class("preview-panel")
+        self.preview_container.set_vexpand(True)
         preview_width = self.main_window.config_manager.get("preview_width") if getattr(self.main_window, "config_manager", None) else 420
         self.preview_container.set_size_request(preview_width, 440)
         self.main_split.append(self.preview_container)
@@ -105,6 +106,7 @@ class SearchMode(BaseMode):
             icon_stack = Gtk.Stack()
             icon_stack.set_valign(Gtk.Align.CENTER)
             icon_stack.set_size_request(48, 48)
+            icon_stack.set_margin_end(12)
             
             icon = Gtk.Image()
             icon.add_css_class("result-icon")
@@ -267,13 +269,14 @@ class SearchMode(BaseMode):
             self.update_selection()
         else:
             self.selected_index = -1
+            self.clear_preview_and_resources()
 
     def update_selection(self):
         row = self.results_listbox.get_row_at_index(self.selected_index)
         if row:
             self.results_listbox.select_row(row)
             try:
-                adj = self.results_scroll.get_vadjustment()
+                adj = self.scroll.get_vadjustment()
                 if adj:
                     row_h = row.get_height() or 54
                     r_top = self.selected_index * row_h
@@ -293,6 +296,7 @@ class SearchMode(BaseMode):
                 preview_enabled = self.main_window.config_manager.get("preview_enabled") if getattr(self.main_window, "config_manager", None) else True
                 
                 if preview_enabled:
+                    self._update_weather_preview_style(row.result)
                     if getattr(self, "_current_preview_id", None) != row.result.id or not self.preview_container.get_first_child():
                         self._current_preview_id = row.result.id
                         while widget := self.preview_container.get_first_child():
@@ -306,11 +310,72 @@ class SearchMode(BaseMode):
                         target_w = self.main_window._clamp_width_to_monitor(target_w)
                     self.main_window.set_default_size(target_w, 560)
                 else:
+                    self._update_weather_preview_style(None)
                     self._current_preview_id = None
                     while widget := self.preview_container.get_first_child():
                         self.preview_container.remove(widget)
                     self.preview_container.set_visible(False)
                     self.main_window.set_default_size(650, 560)
+
+    ALL_WEATHER_CLASSES = [
+        "preview-panel-weather",
+        "weather-bg-clear-day", "weather-bg-clear-night",
+        "weather-bg-clouds-day", "weather-bg-clouds-night",
+        "weather-bg-rain-day", "weather-bg-rain-night",
+        "weather-bg-storm-day", "weather-bg-storm-night",
+        "weather-bg-snow-day", "weather-bg-snow-night",
+        "weather-bg-fog-day", "weather-bg-fog-night",
+    ]
+
+    ALL_CANVAS_CLASSES = [
+        "weather-canvas-active",
+        "weather-canvas-clear-day", "weather-canvas-clear-night",
+        "weather-canvas-clouds-day", "weather-canvas-clouds-night",
+        "weather-canvas-rain-day", "weather-canvas-rain-night",
+        "weather-canvas-storm-day", "weather-canvas-storm-night",
+        "weather-canvas-snow-day", "weather-canvas-snow-night",
+        "weather-canvas-fog-day", "weather-canvas-fog-night",
+    ]
+
+    def _update_weather_preview_style(self, result):
+        main_box = getattr(self.main_window, "main_box", None) if hasattr(self, "main_window") and self.main_window else None
+        outer_box = getattr(self.main_window, "outer_box", None) if hasattr(self, "main_window") and self.main_window else None
+        
+        for cls in self.ALL_WEATHER_CLASSES:
+            self.preview_container.remove_css_class(cls)
+            if self.main_window:
+                try:
+                    self.main_window.remove_css_class(f"ambient-{cls}")
+                    self.main_window.remove_css_class(cls)
+                    if outer_box:
+                        outer_box.remove_css_class(f"ambient-{cls}")
+                        outer_box.remove_css_class(cls)
+                except Exception:
+                    pass
+                    
+        if main_box:
+            for ccls in self.ALL_CANVAS_CLASSES:
+                try:
+                    main_box.remove_css_class(ccls)
+                except Exception:
+                    pass
+            
+        if result and getattr(result, "category", None) == "Weather":
+            self.preview_container.add_css_class("preview-panel-weather")
+            bg_class = (result.preview_data or {}).get("bg_class", "weather-bg-clear-day")
+            cond = bg_class.replace("weather-bg-", "")
+            self.preview_container.add_css_class(bg_class)
+            
+            if self.main_window:
+                try:
+                    self.main_window.add_css_class(f"ambient-{bg_class}")
+                    if outer_box:
+                        outer_box.add_css_class(f"ambient-{bg_class}")
+                    if main_box:
+                        main_box.add_css_class("weather-canvas-active")
+                        main_box.add_css_class(f"weather-canvas-{cond}")
+                except Exception:
+                    pass
 
     def on_row_activated(self, listbox, row):
         if hasattr(row, 'result') and row.result:
@@ -338,6 +403,18 @@ class SearchMode(BaseMode):
                 self.selected_index -= 1
                 self.update_selection()
             return True
+
+        elif keyval in (Gdk.KEY_Page_Down, Gdk.KEY_Page_Up):
+            if hasattr(self, "preview_container") and self.preview_container.is_visible():
+                if child := self.preview_container.get_first_child():
+                    sw = child.get_first_child()
+                    if isinstance(sw, Gtk.ScrolledWindow):
+                        adj = sw.get_vadjustment()
+                        if adj:
+                            step = 180.0 if keyval == Gdk.KEY_Page_Down else -180.0
+                            new_val = max(adj.get_lower(), min(adj.get_upper() - adj.get_page_size(), adj.get_value() + step))
+                            adj.set_value(new_val)
+                            return True
 
         elif matches_shortcut(keyval, state, getattr(self.main_window, "config_manager", None).get("quick_look_shortcut", "space") if getattr(self.main_window, "config_manager", None) else "space"):
             if getattr(self.main_window, 'quick_look', None) and self.main_window.quick_look.is_visible():
@@ -388,8 +465,15 @@ class SearchMode(BaseMode):
             
         return False
 
+    def on_activated(self):
+        pass
+
+    def on_deactivated(self):
+        self.clear_preview_and_resources()
+
     def clear_preview_and_resources(self):
         try:
+            self._update_weather_preview_style(None)
             self._current_preview_id = None
             while widget := self.preview_container.get_first_child():
                 self.preview_container.remove(widget)
