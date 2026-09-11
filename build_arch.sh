@@ -36,6 +36,11 @@ mkdir -p "$DIST_DIR"
 cp -p *.py "$BUILD_DIR/usr/lib/echo-search/"
 cp -p modes/*.py "$BUILD_DIR/usr/lib/echo-search/modes/"
 cp -p providers/*.py "$BUILD_DIR/usr/lib/echo-search/providers/"
+cp -rp assets "$BUILD_DIR/usr/lib/echo-search/"
+
+# Clean cache
+find "$BUILD_DIR/usr/lib/echo-search" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+find "$BUILD_DIR/usr/lib/echo-search" -name "*.pyc" -delete 2>/dev/null || true
 
 # Copy assets & licenses
 cp -p style.css emoji.json "$BUILD_DIR/usr/share/echo-search/"

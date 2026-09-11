@@ -7,9 +7,12 @@ from providers import (
     CalculatorProvider, 
     UnitProvider, 
     CommandProvider,
+    TimezoneProvider,
+    CurrencyProvider,
     FileProvider,
     ClipboardProvider,
     EmojiProvider,
+    WeatherProvider,
     SearchResult
 )
 
@@ -21,19 +24,25 @@ class SearchEngine:
         self.calculator = CalculatorProvider(self.history)
         self.units = UnitProvider(self.history)
         self.commands = CommandProvider(self.history)
+        self.timezone = TimezoneProvider(self.history)
+        self.currency = CurrencyProvider(self.history)
         self.apps = AppProvider(self.history)
         self.files = FileProvider(self.history)
         self.clipboard = ClipboardProvider(self.history)
         self.emoji = EmojiProvider(self.history)
+        self.weather = WeatherProvider(self.history, config_manager)
         
         self.providers = [
             self.calculator,
             self.units,
             self.commands,
+            self.timezone,
+            self.currency,
             self.apps,
             self.files,
             self.clipboard,
-            self.emoji
+            self.emoji,
+            self.weather
         ]
         
         self._provider_map = {
@@ -42,9 +51,12 @@ class SearchEngine:
             "Files": [self.files],
             "Clipboard": [self.clipboard],
             "Emoji": [self.emoji],
-            "Math": [self.calculator, self.units],
-            "Units": [self.units],
-            "Commands": [self.commands]
+            "Math": [self.calculator, self.units, self.currency],
+            "Units": [self.units, self.currency],
+            "Currency": [self.currency],
+            "Commands": [self.commands],
+            "Time": [self.timezone],
+            "Weather": [self.weather]
         }
         
         self._current_search_id = 0

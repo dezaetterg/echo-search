@@ -140,6 +140,9 @@ class ConfigManager:
             "emoji": True,
             "calculator": True,
             "commands": True,
+            "timezone": True,
+            "weather": True,
+            "weather_default_city": "Нью-Йорк",
             "settings": True,
             
             "recent_when_empty": True,
@@ -232,6 +235,12 @@ class ConfigManager:
             elif name == "CommandProvider" and self.get("commands"):
                 active.append(p)
             elif name == "UnitProvider" and self.get("calculator"):
+                active.append(p)
+            elif name == "CurrencyProvider" and self.get("calculator"):
+                active.append(p)
+            elif name == "TimezoneProvider" and self.get("timezone", True):
+                active.append(p)
+            elif name == "WeatherProvider" and self.get("weather", True):
                 active.append(p)
                 
         engine.providers = active

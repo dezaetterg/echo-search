@@ -80,37 +80,33 @@ class EchoApp(BaseApplication):
             except Exception:
                 pass
 
+    def _setup_window_shell(self):
+        """Configure LayerShell or fallback decoration settings for the window."""
+        is_layer_shell = False
+        if HAS_LAYER_SHELL and Gtk4LayerShell is not None:
+            try:
+                if Gtk4LayerShell.is_supported():
+                    is_layer_shell = True
+            except Exception:
+                is_layer_shell = False
+
+        if is_layer_shell:
+            Gtk4LayerShell.init_for_window(self.window)
+            Gtk4LayerShell.set_layer(self.window, Gtk4LayerShell.Layer.OVERLAY)
+            Gtk4LayerShell.set_keyboard_mode(self.window, Gtk4LayerShell.KeyboardMode.ON_DEMAND)
+            Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.TOP, True)
+            Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.BOTTOM, False)
+            Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.LEFT, False)
+            Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.RIGHT, False)
+            Gtk4LayerShell.set_margin(self.window, Gtk4LayerShell.Edge.TOP, 160)
+        self.window.set_decorated(False)
+
     def do_activate(self):
         if not self.window:
             self.config_manager = ConfigManager()
             self.sync_color_scheme()
             self.window = EchoUI(application=self, config_manager=self.config_manager)
-            
-            # Настройка Gtk4LayerShell (Wayland) с fallback для X11 / других DE
-            is_layer_shell = False
-            if HAS_LAYER_SHELL and Gtk4LayerShell is not None:
-                try:
-                    if Gtk4LayerShell.is_supported():
-                        is_layer_shell = True
-                except Exception:
-                    is_layer_shell = False
-
-            if is_layer_shell:
-                Gtk4LayerShell.init_for_window(self.window)
-                Gtk4LayerShell.set_layer(self.window, Gtk4LayerShell.Layer.OVERLAY) # Поверх всего
-                Gtk4LayerShell.set_keyboard_mode(self.window, Gtk4LayerShell.KeyboardMode.ON_DEMAND)
-                
-                # Центрирование с отступом сверху
-                Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.TOP, True)
-                Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.BOTTOM, False)
-                Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.LEFT, False)
-                Gtk4LayerShell.set_anchor(self.window, Gtk4LayerShell.Edge.RIGHT, False)
-                Gtk4LayerShell.set_margin(self.window, Gtk4LayerShell.Edge.TOP, 160)
-            else:
-                # Fallback для X11 и сред без LayerShell
-                self.window.set_decorated(False)
-            
-            self.window.set_decorated(False)
+            self._setup_window_shell()
             self.window.present()
             self.window.entry.grab_focus()
         else:
@@ -121,13 +117,34 @@ class EchoApp(BaseApplication):
                 self.config_manager.load()
                 self.sync_color_scheme()
                 self.window.reload_config()
-                if self.window.mode_manager:
-                    self.window.mode_manager.set_mode("Search")
-                self.window.entry.set_text("")
+                if hasattr(self.window, "prepare_for_show"):
+                    self.window.prepare_for_show()
+                else:
+                    if self.window.mode_manager:
+                        self.window.mode_manager.set_mode("Search")
+                    self.window.entry.set_text("")
+                # present() должен поднять окно; на GNOME Wayland activation token
+                # передаётся через do_command_line -> notify_startup_complete выше.
                 self.window.present()
                 self.window.entry.grab_focus()
 
     def do_command_line(self, command_line):
+        # Extract startup notification ID / XDG activation token for GNOME Wayland
+        # This token is needed so that present() actually raises the window above others.
+        self._pending_startup_id = None
+        try:
+            platform_data = command_line.get_platform_data()
+            if platform_data:
+                for key in ("activation-token", "startup-notification-id", "desktop-startup-id"):
+                    try:
+                        val = platform_data.lookup_value(key, None)
+                        if val:
+                            self._pending_startup_id = val.get_string()
+                            break
+                    except Exception:
+                        pass
+        except Exception:
+            pass
         self.activate()
         return 0
 

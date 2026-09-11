@@ -33,6 +33,10 @@ class BaseMode:
         """Called when the user switches to this mode."""
         pass
 
+    def on_deactivated(self):
+        """Called when the user switches away from this mode."""
+        pass
+
 
 
     def on_key_pressed(self, keyval, state, current_results: list) -> bool:

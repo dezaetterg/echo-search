@@ -467,6 +467,16 @@ class SettingsMode(BaseMode):
             t("settings_cat_commands"), None, cfg.get("commands", True),
             lambda active: self._on_setting_changed("commands", active)
         ))
+        group_categories.append(self._create_switch_row(
+            t("settings_cat_weather"), None, cfg.get("weather", True),
+            lambda active: self._on_setting_changed("weather", active)
+        ))
+        group_categories.append(self._create_entry_row(
+            t("settings_weather_default_city"),
+            cfg.get("weather_default_city", "Новокузнецк"),
+            placeholder="Новокузнецк, Москва, Лондон...",
+            callback=lambda val: self._on_setting_changed("weather_default_city", val.strip() if val else "Новокузнецк")
+        ))
 
         # 6. КНОПКА СБРОСА
         reset_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
@@ -568,6 +578,35 @@ class SettingsMode(BaseMode):
         switch.connect("state-set", lambda sw, state: callback(state))
         row.append(switch)
 
+        return row
+
+    def _create_entry_row(self, title: str, current_val: str, placeholder: str, callback) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        label_box.set_hexpand(True)
+        label_box.set_valign(Gtk.Align.CENTER)
+
+        title_lbl = Gtk.Label(label=title)
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.add_css_class("settings-row-title")
+        label_box.append(title_lbl)
+
+        row.append(label_box)
+
+        entry = Gtk.Entry()
+        entry.set_text(current_val or "")
+        entry.set_placeholder_text(placeholder or "")
+        entry.set_valign(Gtk.Align.CENTER)
+        entry.add_css_class("settings-entry")
+
+        entry.connect("activate", lambda e: callback(e.get_text()))
+        focus_ctrl = Gtk.EventControllerFocus.new()
+        focus_ctrl.connect("leave", lambda ctrl: callback(entry.get_text()))
+        entry.add_controller(focus_ctrl)
+
+        row.append(entry)
         return row
 
     def _create_slider_row(self, title: str, current_val: int, min_val: int, max_val: int, step: int, unit: str, callback) -> Gtk.Box:

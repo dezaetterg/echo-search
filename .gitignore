@@ -60,3 +60,6 @@ venv.bak/
 
 # Local launch scripts
 run.sh
+
+# Scratch and temporary testing files
+scratch/

@@ -36,6 +36,7 @@ package() {
     install -m 644 *.py "$pkgdir/usr/lib/echo-search/"
     install -m 644 modes/*.py "$pkgdir/usr/lib/echo-search/modes/"
     install -m 644 providers/*.py "$pkgdir/usr/lib/echo-search/providers/"
+    cp -rp assets "$pkgdir/usr/lib/echo-search/"
     
     # Assets
     install -m 644 style.css "$pkgdir/usr/share/echo-search/"

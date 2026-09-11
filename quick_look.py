@@ -14,6 +14,14 @@ from gi.repository import Gtk, Gdk, GLib, Gio, Pango, GdkPixbuf
 from i18n import t, get_current_language
 from utils import format_shortcut_display
 
+try:
+    from pygments import lex
+    from pygments.lexers import get_lexer_for_filename, TextLexer
+    from pygments.token import Token
+    PYGMENTS_AVAILABLE = True
+except Exception:
+    PYGMENTS_AVAILABLE = False
+
 IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".bmp", ".ico", ".tiff", ".avif"}
 CODE_EXTENSIONS = {
     ".py", ".json", ".md", ".txt", ".sh", ".bash", ".zsh", ".js", ".ts", ".jsx", ".tsx",
@@ -36,6 +44,8 @@ class QuickLookWindow(Gtk.Window):
         self.current_media_file = None
         self.current_video_widget = None
         self._audio_slider_handler_id = None
+
+
         self._pdf_path = None
         self._pdf_gen = 0
         self._pdf_current_page = 1
@@ -55,6 +65,21 @@ class QuickLookWindow(Gtk.Window):
         self._pdf_zoom_out_btn = None
         self._pdf_fit_btn = None
         self.maximize_btn = None
+        self.save_btn = None
+        self._text_editor_active = False
+        self._text_path = None
+        self._text_view = None
+        self._text_buffer = None
+        self._text_line_numbers_tv = None
+        self._text_dirty = False
+        self._text_dirty_badge = None
+        self._text_stat_label = None
+        self._text_cursor_label = None
+        self._text_status_badge = None
+        self._text_save_btn = None
+        self._text_lexer = None
+        self._text_rehighlight_source_id = None
+        self._text_total_lines = 1
         self._current_content_w = 980
         self._current_content_h = 670
         
@@ -161,6 +186,12 @@ class QuickLookWindow(Gtk.Window):
         self.footer_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
         self.footer_box.add_css_class("quick-look-footer")
         
+        self.save_btn = Gtk.Button(label=f"💾 {t('action_save')} Ctrl+S")
+        self.save_btn.add_css_class("quick-look-action-btn")
+        self.save_btn.connect("clicked", lambda b: self._save_text_file())
+        self.save_btn.set_visible(False)
+        self.footer_box.append(self.save_btn)
+
         self.open_btn = Gtk.Button(label=f"{t("action_open")} ↵")
         self.open_btn.add_css_class("quick-look-action-btn")
         self.open_btn.add_css_class("primary-action")
@@ -220,6 +251,27 @@ class QuickLookWindow(Gtk.Window):
                 pass
             self.current_video_widget = None
 
+        if getattr(self, "_text_rehighlight_source_id", None):
+            try:
+                GLib.source_remove(self._text_rehighlight_source_id)
+            except Exception:
+                pass
+            self._text_rehighlight_source_id = None
+        self._text_editor_active = False
+        self._text_path = None
+        self._text_view = None
+        self._text_buffer = None
+        self._text_line_numbers_tv = None
+        self._text_dirty = False
+        self._text_dirty_badge = None
+        self._text_stat_label = None
+        self._text_cursor_label = None
+        self._text_status_badge = None
+        self._text_save_btn = None
+        self._text_lexer = None
+        if hasattr(self, "save_btn") and self.save_btn:
+            self.save_btn.set_visible(False)
+
         self._pdf_path = None
         self._pdf_picture = None
         self._pdf_page_label = None
@@ -277,10 +329,10 @@ class QuickLookWindow(Gtk.Window):
             content_w, content_h = 980, 670
         elif ext in IMAGE_EXTENSIONS or ext in VIDEO_EXTENSIONS:
             target_w, target_h = 920, 680
-            content_w = 860, 530
+            content_w, content_h = 860, 530
         else:
             target_w, target_h = 820, 580
-            content_w = 760, 430
+            content_w, content_h = 760, 430
 
         try:
             display = Gdk.Display.get_default()
@@ -341,22 +393,30 @@ class QuickLookWindow(Gtk.Window):
         while child := self.body_container.get_first_child():
             self.body_container.remove(child)
             
-        if is_directory:
-            self._render_folder_view(path, gen)
-        elif ext in VIDEO_EXTENSIONS or mime.startswith("video/"):
-            self._render_video_view(path, gen, ext, mime, formatted_size)
-        elif ext in AUDIO_EXTENSIONS or mime.startswith("audio/"):
-            self._render_audio_view(path, gen, ext, mime, formatted_size)
-        elif ext in IMAGE_EXTENSIONS:
-            self._render_image_view(path, gen, formatted_size)
-        elif ext in PDF_EXTENSIONS or mime == "application/pdf":
-            self._render_pdf_view(path, gen, formatted_size, mime, mtime)
-        elif ext in DOCUMENT_EXTENSIONS:
-            self._render_document_view(path, gen, ext, formatted_size, mime, mtime)
-        elif ext in CODE_EXTENSIONS or mime.startswith("text/"):
-            self._render_text_view(path, gen, ext)
-        else:
-            self._render_generic_view(path, gen, mime, formatted_size, mtime)
+        try:
+            if is_directory:
+                self._render_folder_view(path, gen)
+            elif ext in VIDEO_EXTENSIONS or mime.startswith("video/"):
+                self._render_video_view(path, gen, ext, mime, formatted_size)
+            elif ext in AUDIO_EXTENSIONS or mime.startswith("audio/"):
+                self._render_audio_view(path, gen, ext, mime, formatted_size)
+            elif ext in IMAGE_EXTENSIONS:
+                self._render_image_view(path, gen, formatted_size)
+            elif ext in PDF_EXTENSIONS or mime == "application/pdf":
+                self._render_pdf_view(path, gen, formatted_size, mime, mtime)
+            elif ext in DOCUMENT_EXTENSIONS:
+                self._render_document_view(path, gen, ext, formatted_size, mime, mtime)
+            elif ext in CODE_EXTENSIONS or mime.startswith("text/"):
+                self._render_text_view(path, gen, ext)
+            else:
+                self._render_generic_view(path, gen, mime, formatted_size, mtime)
+        except Exception as e:
+            try:
+                while child := self.body_container.get_first_child():
+                    self.body_container.remove(child)
+                self._render_generic_view(path, gen, mime, formatted_size, mtime)
+            except Exception:
+                pass
             
         self.present()
         return True
@@ -366,7 +426,7 @@ class QuickLookWindow(Gtk.Window):
         container.add_css_class("quick-look-folder-container")
         container.set_vexpand(True)
         container.set_hexpand(True)
-        container.set_size_request(740, 380)
+        container.set_size_request(getattr(self, "_current_content_w", 760), getattr(self, "_current_content_h", 430))
         
         scroll = Gtk.ScrolledWindow()
         scroll.add_css_class("quick-look-folder-scroll")
@@ -476,7 +536,7 @@ class QuickLookWindow(Gtk.Window):
         hero_box.add_css_class("quick-look-audio-hero")
         hero_box.set_vexpand(True)
         hero_box.set_hexpand(True)
-        hero_box.set_size_request(740, 380)
+        hero_box.set_size_request(getattr(self, "_current_content_w", 760), getattr(self, "_current_content_h", 430))
         hero_box.set_valign(Gtk.Align.CENTER)
         
         disc_icon = Gtk.Image.new_from_icon_name("media-optical-audio-symbolic")
@@ -569,7 +629,7 @@ class QuickLookWindow(Gtk.Window):
         video_box.add_css_class("quick-look-video-container")
         video_box.set_vexpand(True)
         video_box.set_hexpand(True)
-        video_box.set_size_request(740, 380)
+        video_box.set_size_request(getattr(self, "_current_content_w", 860), getattr(self, "_current_content_h", 530))
         
         try:
             video_widget = Gtk.Video.new_for_filename(path)
@@ -593,7 +653,7 @@ class QuickLookWindow(Gtk.Window):
         img_box.add_css_class("quick-look-image-container")
         img_box.set_vexpand(True)
         img_box.set_hexpand(True)
-        img_box.set_size_request(740, 380)
+        img_box.set_size_request(getattr(self, "_current_content_w", 860), getattr(self, "_current_content_h", 530))
         img_box.set_valign(Gtk.Align.CENTER)
         img_box.set_halign(Gtk.Align.CENTER)
         
@@ -739,12 +799,18 @@ class QuickLookWindow(Gtk.Window):
         page_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         page_box.set_halign(Gtk.Align.CENTER)
         page_box.set_valign(Gtk.Align.START)
+        page_box.set_hexpand(False)
+        page_box.set_vexpand(False)
         page_box.set_margin_top(4)
         page_box.set_margin_bottom(16)
         
         picture = Gtk.Picture()
         picture.set_can_shrink(True)
-        picture.set_content_fit(Gtk.ContentFit.FILL)
+        picture.set_content_fit(Gtk.ContentFit.CONTAIN)
+        picture.set_halign(Gtk.Align.CENTER)
+        picture.set_valign(Gtk.Align.START)
+        picture.set_hexpand(False)
+        picture.set_vexpand(False)
         picture.add_css_class("quick-look-pdf-page")
         
         page_box.append(picture)
@@ -825,8 +891,8 @@ class QuickLookWindow(Gtk.Window):
     def _get_base_width(self) -> int:
         if getattr(self, "_pdf_scroll", None):
             w = self._pdf_scroll.get_allocated_width()
-            if w > 500:
-                return max(760, min(1400, w - 70))
+            if w > 300:
+                return max(360, min(1400, w - 80))
         return getattr(self, "_current_content_w", 980) - 80
 
     def _update_pdf_page_size(self):
@@ -837,12 +903,12 @@ class QuickLookWindow(Gtk.Window):
         base_w = self._get_base_width()
         zoom = getattr(self, "_pdf_zoom", 1.0)
         
-        pw = max(320, int(base_w * zoom))
-        ph = max(420, int(pw * aspect))
+        pw = max(180, int(base_w * zoom))
+        ph = int(pw * aspect)
         
         self._pdf_picture.set_size_request(pw, ph)
         self._pdf_picture.set_can_shrink(True)
-        self._pdf_picture.set_content_fit(Gtk.ContentFit.FILL)
+        self._pdf_picture.set_content_fit(Gtk.ContentFit.CONTAIN)
         
         if getattr(self, "_pdf_zoom_label", None):
             pct = int(zoom * 100)
@@ -850,12 +916,12 @@ class QuickLookWindow(Gtk.Window):
 
     def _pdf_zoom_in(self):
         self._pdf_fit_mode = "custom"
-        self._pdf_zoom = min(2.5, round(getattr(self, "_pdf_zoom", 1.0) + 0.15, 2))
+        self._pdf_zoom = min(3.0, round(getattr(self, "_pdf_zoom", 1.0) + 0.15, 2))
         self._update_pdf_page_size()
 
     def _pdf_zoom_out(self):
         self._pdf_fit_mode = "custom"
-        self._pdf_zoom = max(0.4, round(getattr(self, "_pdf_zoom", 1.0) - 0.15, 2))
+        self._pdf_zoom = max(0.25, round(getattr(self, "_pdf_zoom", 1.0) - 0.15, 2))
         self._update_pdf_page_size()
 
     def _pdf_zoom_reset(self):
@@ -1056,41 +1122,322 @@ class QuickLookWindow(Gtk.Window):
             
         threading.Thread(target=_async_load_doc, daemon=True).start()
 
+    def _init_syntax_tags(self, buffer):
+        tags = {
+            "tok_kw": {"foreground": "#ff7b72", "weight": Pango.Weight.BOLD},
+            "tok_str": {"foreground": "#a5d6ff"},
+            "tok_comment": {"foreground": "#8b949e", "style": Pango.Style.ITALIC},
+            "tok_fn": {"foreground": "#d2a8ff", "weight": Pango.Weight.BOLD},
+            "tok_num": {"foreground": "#79c0ff"},
+            "tok_op": {"foreground": "#ff7b72"},
+            "tok_builtin": {"foreground": "#ffa657"},
+            "tok_var": {"foreground": "#7ee787"},
+            "tok_type": {"foreground": "#e3b341", "weight": Pango.Weight.BOLD},
+            "tok_tag": {"foreground": "#7ee787"},
+        }
+        table = buffer.get_tag_table()
+        for name, props in tags.items():
+            if not table.lookup(name):
+                buffer.create_tag(name, **props)
+
+    def _apply_syntax_highlight(self, buffer, content: str, lexer):
+        if not PYGMENTS_AVAILABLE or not content or not lexer:
+            return
+        if len(content) > 300_000:
+            return
+        try:
+            buffer.remove_all_tags(buffer.get_start_iter(), buffer.get_end_iter())
+            tokens = list(lex(content, lexer))
+            iter_cur = buffer.get_start_iter()
+            
+            for ttype, val in tokens:
+                length = len(val)
+                if length == 0:
+                    continue
+                tag_name = None
+                if ttype in Token.Keyword or ttype in Token.Operator.Word:
+                    tag_name = "tok_kw"
+                elif ttype in Token.String:
+                    tag_name = "tok_str"
+                elif ttype in Token.Comment:
+                    tag_name = "tok_comment"
+                elif ttype in (Token.Name.Function, Token.Name.Class, Token.Name.Decorator):
+                    tag_name = "tok_fn"
+                elif ttype in Token.Number:
+                    tag_name = "tok_num"
+                elif ttype in Token.Operator:
+                    tag_name = "tok_op"
+                elif ttype in Token.Name.Builtin:
+                    tag_name = "tok_builtin"
+                elif ttype in Token.Name.Variable or ttype in Token.Name.Attribute:
+                    tag_name = "tok_var"
+                elif ttype in Token.Name.Constant or ttype in Token.Name.Entity or ttype in Token.Keyword.Type:
+                    tag_name = "tok_type"
+                elif ttype in Token.Name.Tag:
+                    tag_name = "tok_tag"
+
+                end_iter = iter_cur.copy()
+                end_iter.forward_chars(length)
+                if tag_name:
+                    buffer.apply_tag_by_name(tag_name, iter_cur, end_iter)
+                iter_cur = end_iter
+        except Exception:
+            pass
+
+    def _update_line_numbers(self, total_lines: int):
+        if not getattr(self, "_text_line_numbers_tv", None):
+            return
+        buf = self._text_line_numbers_tv.get_buffer()
+        max_display = min(total_lines, 5000)
+        nums = chr(10).join(str(i) for i in range(1, max_display + 1))
+        buf.set_text(nums)
+
+    def _update_editor_status(self, saved=False):
+        dirty = getattr(self, "_text_dirty", False)
+        
+        if getattr(self, "save_btn", None):
+            if dirty:
+                self.save_btn.set_label(f"💾 {t('action_save')} Ctrl+S")
+                self.save_btn.add_css_class("primary-action")
+            elif saved:
+                self.save_btn.set_label(f"✓ {t('label_saved')}")
+                self.save_btn.remove_css_class("primary-action")
+            else:
+                self.save_btn.set_label(f"💾 {t('action_save')} Ctrl+S")
+                self.save_btn.remove_css_class("primary-action")
+                
+        if getattr(self, "_text_save_btn", None):
+            if dirty:
+                self._text_save_btn.add_css_class("dirty")
+                self._text_save_btn.set_label(f"💾 {t('action_save')}")
+            elif saved:
+                self._text_save_btn.remove_css_class("dirty")
+                self._text_save_btn.set_label(f"✓ {t('label_saved')}")
+            else:
+                self._text_save_btn.remove_css_class("dirty")
+                self._text_save_btn.set_label(f"💾 {t('action_save')}")
+                
+        if getattr(self, "_text_status_badge", None):
+            if dirty:
+                self._text_status_badge.set_label(f"● {t('label_unsaved')}")
+                self._text_status_badge.remove_css_class("quick-look-editor-saved-badge")
+                self._text_status_badge.add_css_class("quick-look-editor-dirty-badge")
+                self._text_status_badge.set_visible(True)
+            elif saved:
+                self._text_status_badge.set_label(f"✓ {t('label_saved')}")
+                self._text_status_badge.remove_css_class("quick-look-editor-dirty-badge")
+                self._text_status_badge.add_css_class("quick-look-editor-saved-badge")
+                self._text_status_badge.set_visible(True)
+            else:
+                self._text_status_badge.set_visible(False)
+
+    def _on_text_buffer_changed(self, buffer):
+        if not getattr(self, "_text_editor_active", False):
+            return
+        if not getattr(self, "_text_dirty", False):
+            self._text_dirty = True
+            self._update_editor_status()
+            
+        text = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), True)
+        curr_lines = text.count(chr(10)) + 1
+        if curr_lines != getattr(self, "_text_total_lines", 0):
+            self._text_total_lines = curr_lines
+            self._update_line_numbers(curr_lines)
+            if getattr(self, "_text_stat_label", None):
+                self._text_stat_label.set_label(f"{curr_lines} {t('label_lines')}")
+                
+        if getattr(self, "_text_rehighlight_source_id", None):
+            try:
+                GLib.source_remove(self._text_rehighlight_source_id)
+            except Exception:
+                pass
+            self._text_rehighlight_source_id = None
+            
+        if getattr(self, "_text_lexer", None):
+            def _rehighlight_worker():
+                self._text_rehighlight_source_id = None
+                if getattr(self, "_text_editor_active", False) and self._text_buffer == buffer:
+                    txt = buffer.get_text(buffer.get_start_iter(), buffer.get_end_iter(), True)
+                    self._apply_syntax_highlight(buffer, txt, self._text_lexer)
+                return False
+            self._text_rehighlight_source_id = GLib.timeout_add(350, _rehighlight_worker)
+
+    def _on_text_mark_set(self, buffer, location, mark):
+        if mark.get_name() == "insert" and getattr(self, "_text_cursor_label", None):
+            line = location.get_line() + 1
+            col = location.get_line_offset() + 1
+            self._text_cursor_label.set_label(f"Ln {line}, Col {col}")
+
+    def _save_text_file(self):
+        if not getattr(self, "_text_editor_active", False) or not getattr(self, "_text_path", None):
+            return
+        if not getattr(self, "_text_buffer", None):
+            return
+            
+        buf = self._text_buffer
+        text = buf.get_text(buf.get_start_iter(), buf.get_end_iter(), True)
+        path = self._text_path
+        
+        try:
+            with open(path, "w", encoding="utf-8") as f:
+                f.write(text)
+            self._text_dirty = False
+            self._update_editor_status(saved=True)
+            
+            try:
+                stat = os.stat(path)
+                size_bytes = stat.st_size
+                for unit in ["B", "KB", "MB", "GB", "TB"]:
+                    if size_bytes < 1024.0:
+                        formatted_size = f"{size_bytes:.1f} {unit}"
+                        break
+                    size_bytes /= 1024.0
+                mtime = datetime.fromtimestamp(stat.st_mtime).strftime("%d.%m.%Y %H:%M")
+                guessed_mime, _ = mimetypes.guess_type(path)
+                mime = guessed_mime or "text/plain"
+                self.subtitle_label.set_label(f"{mime} • {formatted_size} • {mtime}")
+            except Exception:
+                pass
+                
+            def _reset_saved_badge():
+                if not getattr(self, "_text_dirty", False) and getattr(self, "_text_status_badge", None):
+                    self._text_status_badge.set_visible(False)
+                return False
+            GLib.timeout_add(2500, _reset_saved_badge)
+                
+        except Exception as e:
+            if getattr(self, "_text_status_badge", None):
+                self._text_status_badge.set_label(f"Ошибка: {str(e)[:25]}")
+                self._text_status_badge.remove_css_class("quick-look-editor-saved-badge")
+                self._text_status_badge.add_css_class("quick-look-editor-dirty-badge")
+                self._text_status_badge.set_visible(True)
+
     def _render_text_view(self, path: str, generation: int, ext: str):
-        scroll = Gtk.ScrolledWindow()
-        scroll.add_css_class("quick-look-text-scroll")
-        scroll.set_vexpand(True)
-        scroll.set_hexpand(True)
+        self._text_editor_active = True
+        self._text_path = path
+        self._text_dirty = False
+        self._text_total_lines = 1
+        
         content_w = getattr(self, "_current_content_w", 980)
         content_h = getattr(self, "_current_content_h", 670)
-        scroll.set_size_request(content_w, content_h)
+        
+        editor_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        editor_card.add_css_class("quick-look-editor-card")
+        editor_card.set_vexpand(True)
+        editor_card.set_hexpand(True)
+        editor_card.set_size_request(content_w, content_h)
+        
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        toolbar.add_css_class("quick-look-editor-toolbar")
+        
+        try:
+            lexer = get_lexer_for_filename(path, "") if PYGMENTS_AVAILABLE else None
+            lexer_name = lexer.name if lexer else (ext.upper()[1:] if ext else "Text")
+        except Exception:
+            lexer = TextLexer() if PYGMENTS_AVAILABLE else None
+            lexer_name = ext.upper()[1:] if ext else "Text"
+            
+        self._text_lexer = lexer
+        
+        lang_badge = Gtk.Label(label=lexer_name)
+        lang_badge.add_css_class("quick-look-badge")
+        toolbar.append(lang_badge)
+        
+        self._text_stat_label = Gtk.Label(label=f"1 {t('label_lines')}")
+        self._text_stat_label.add_css_class("quick-look-editor-stat")
+        toolbar.append(self._text_stat_label)
+        
+        self._text_cursor_label = Gtk.Label(label="Ln 1, Col 1")
+        self._text_cursor_label.add_css_class("quick-look-editor-stat")
+        toolbar.append(self._text_cursor_label)
+        
+        enc_lbl = Gtk.Label(label="UTF-8")
+        enc_lbl.add_css_class("quick-look-editor-stat")
+        toolbar.append(enc_lbl)
+        
+        spacer = Gtk.Box()
+        spacer.set_hexpand(True)
+        toolbar.append(spacer)
+        
+        self._text_status_badge = Gtk.Label(label="")
+        self._text_status_badge.set_visible(False)
+        toolbar.append(self._text_status_badge)
+        
+        self._text_save_btn = Gtk.Button(label=f"💾 {t('action_save')}")
+        self._text_save_btn.add_css_class("quick-look-save-btn")
+        self._text_save_btn.set_tooltip_text(f"{t('action_save')} (Ctrl+S)")
+        self._text_save_btn.connect("clicked", lambda b: self._save_text_file())
+        toolbar.append(self._text_save_btn)
+        
+        editor_card.append(toolbar)
+        
+        content_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        content_box.set_vexpand(True)
+        content_box.set_hexpand(True)
+        
+        lines_tv = Gtk.TextView()
+        lines_tv.set_editable(False)
+        lines_tv.set_can_focus(False)
+        lines_tv.set_monospace(True)
+        lines_tv.add_css_class("quick-look-line-numbers")
+        self._text_line_numbers_tv = lines_tv
+        content_box.append(lines_tv)
+        
+        scroll = Gtk.ScrolledWindow()
+        scroll.add_css_class("quick-look-text-scroll")
+        scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_vexpand(True)
+        scroll.set_hexpand(True)
         
         text_view = Gtk.TextView()
-        text_view.set_editable(False)
-        text_view.set_cursor_visible(False)
-        text_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+        text_view.set_editable(True)
+        text_view.set_cursor_visible(True)
         text_view.set_monospace(True)
+        text_view.set_accepts_tab(True)
+        text_view.set_wrap_mode(Gtk.WrapMode.NONE)
         text_view.add_css_class("quick-look-code-view")
         scroll.set_child(text_view)
+        content_box.append(scroll)
         
-        self.body_container.append(scroll)
+        lines_tv.set_vadjustment(scroll.get_vadjustment())
         
+        editor_card.append(content_box)
+        self.body_container.append(editor_card)
+        
+        self._text_view = text_view
+        buffer = text_view.get_buffer()
+        self._text_buffer = buffer
+        self._init_syntax_tags(buffer)
+        
+        if getattr(self, "save_btn", None):
+            self.save_btn.set_visible(True)
+            self._update_editor_status()
+            
         def _async_read_text():
             try:
                 with open(path, "r", encoding="utf-8", errors="replace") as f:
-                    lines = [f.readline() for _ in range(350)]
-                content = "".join(lines)
-                total_lines = len(lines)
+                    content_str = f.read(5 * 1024 * 1024)
+                total_lines = content_str.count(chr(10)) + 1
                 
-                def _update_text():
-                    if self._load_generation == generation and self.is_visible():
-                        buffer = text_view.get_buffer()
-                        buffer.set_text(content)
-                        self._add_badge(f"{ext.upper()[1:] if ext else "TXT"}")
-                        self._add_badge(f"{total_lines} {t("label_lines")}")
+                def _update_ui():
+                    if self._load_generation == generation and self.is_visible() and getattr(self, "_text_path", None) == path:
+                        buffer.set_text(content_str)
+                        self._text_dirty = False
+                        self._text_total_lines = total_lines
+                        self._update_line_numbers(total_lines)
+                        self._apply_syntax_highlight(buffer, content_str, lexer)
+                        
+                        if getattr(self, "_text_stat_label", None):
+                            self._text_stat_label.set_label(f"{total_lines} {t('label_lines')}")
+                        self._add_badge(lexer_name)
+                        self._add_badge(f"{total_lines} {t('label_lines')}")
+                        
+                        buffer.connect("changed", self._on_text_buffer_changed)
+                        buffer.connect("mark-set", self._on_text_mark_set)
+                        self._update_editor_status()
                     return False
                     
-                GLib.idle_add(_update_text)
+                GLib.idle_add(_update_ui)
             except Exception:
                 pass
                 
@@ -1102,7 +1449,7 @@ class QuickLookWindow(Gtk.Window):
         box.set_vexpand(True)
         box.set_valign(Gtk.Align.CENTER)
         box.set_halign(Gtk.Align.CENTER)
-        box.set_size_request(740, 380)
+        box.set_size_request(getattr(self, "_current_content_w", 760), getattr(self, "_current_content_h", 430))
         
         icon = Gtk.Image.new_from_icon_name("package-x-generic")
         icon.set_pixel_size(96)
@@ -1120,6 +1467,22 @@ class QuickLookWindow(Gtk.Window):
         self.body_container.append(box)
 
     def _on_key_pressed(self, controller, keyval, keycode, state):
+        focus = self.get_focus()
+        is_editor_focused = isinstance(focus, Gtk.TextView) and focus.get_editable()
+        
+        # Save shortcut (Ctrl+S / Ctrl+Ы)
+        if (keyval in (Gdk.KEY_s, Gdk.KEY_S, Gdk.KEY_Cyrillic_yeru, Gdk.KEY_Cyrillic_YERU)) and (state & Gdk.ModifierType.CONTROL_MASK):
+            if getattr(self, "_text_editor_active", False):
+                self._save_text_file()
+                return True
+                
+        # If text editor is focused, do not let typing space close preview
+        if is_editor_focused:
+            if keyval == Gdk.KEY_Escape:
+                self.hide_preview()
+                return True
+            return False
+
         if keyval == Gdk.KEY_space:
             if time.time() - getattr(self, "_opened_timestamp", 0) < 0.2:
                 return True

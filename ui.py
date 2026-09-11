@@ -60,8 +60,15 @@ class EchoUI(Gtk.Window):
     def _on_unmap(self, widget):
         """Reclaims preview resources and triggers garbage collection when window is hidden."""
         try:
-            if getattr(self, "quick_look", None):
+            if getattr(self, "quick_look", None) and self.quick_look.is_visible():
                 self.quick_look.hide_preview()
+            if getattr(self, "mode_manager", None):
+                self.mode_manager.set_mode("Search")
+            if hasattr(self, "entry"):
+                self.entry.set_text("")
+            self.update_revealer_state()
+            super().set_default_size(650, 1)
+            self.queue_resize()
             import gc
             if self.mode_manager and hasattr(self.mode_manager, "modes"):
                 search_mode = self.mode_manager.modes.get("Search")
@@ -345,6 +352,17 @@ class EchoUI(Gtk.Window):
                     box-shadow: {card_shadow};
                 }}
                 
+                .capsule-window-ui .preview-panel.preview-panel-weather {{
+                    padding: 0;
+                    margin: -12px 0 -20px 0;
+                    border-radius: 0 0 24px 0;
+                    border-left: 1px solid rgba(255, 255, 255, 0.14);
+                    border-top: none;
+                    border-right: none;
+                    border-bottom: none;
+                    box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.08);
+                }}
+                
                 .capsule-window-ui .preview-meta-card {{
                     background: {meta_card_bg};
                     border: 1px solid rgba(0, 0, 0, 0.04);
@@ -368,22 +386,28 @@ class EchoUI(Gtk.Window):
                     background: {mode_btn_bg};
                     border: {mode_btn_border};
                     color: #636366;
-                    box-shadow: {card_shadow};
+                    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
                     border-radius: 9999px;
                     min-width: 36px;
                     min-height: 36px;
                     padding: 0;
+                    outline: none;
                 }}
                 .capsule-window-ui .mode-button:hover {{
                     background: {mode_btn_active};
                     color: #1c1c1e;
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+                    border: 1px solid rgba(0, 0, 0, 0.10);
+                    border-radius: 9999px;
+                    outline: none;
+                    box-shadow: inset 0 1px 1px #ffffff;
                 }}
                 .capsule-window-ui .mode-button.active {{
                     background: {mode_btn_active};
                     color: #1c1c1e;
-                    border: 1px solid rgba(0, 0, 0, 0.12);
-                    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+                    border: 1px solid rgba(0, 0, 0, 0.16);
+                    border-radius: 9999px;
+                    outline: none;
+                    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
                 }}
                 
                 /* Настройки в светлой теме */
@@ -620,33 +644,43 @@ class EchoUI(Gtk.Window):
                                 0 4px 16px rgba(0, 0, 0, 0.40);
                 }}
                 
+                .capsule-window-ui .preview-panel.preview-panel-weather {{
+                    padding: 0;
+                    margin: -12px 0 -20px 0;
+                    border-radius: 0 0 24px 0;
+                    border-left: 1px solid rgba(255, 255, 255, 0.14);
+                    border-top: none;
+                    border-right: none;
+                    border-bottom: none;
+                    box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.08);
+                }}
+                
                 .capsule-window-ui .mode-button {{
                     background: {mode_btn_bg};
                     color: rgba(255, 255, 255, 0.75);
                     border: {mode_btn_border};
-                    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.35),
-                                0 4px 14px rgba(0, 0, 0, 0.30),
-                                0 1px 3px rgba(0, 0, 0, 0.20);
+                    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.25);
                     border-radius: 9999px;
                     min-width: 36px;
                     min-height: 36px;
                     padding: 0;
+                    outline: none;
                 }}
                 .capsule-window-ui .mode-button:hover {{
                     background: {mode_btn_active};
                     color: #ffffff;
-                    border: 1px solid rgba(255, 255, 255, 0.48);
-                    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.60),
-                                0 6px 18px rgba(0, 0, 0, 0.35),
-                                0 0 14px rgba(255, 255, 255, 0.20);
+                    border: 1px solid rgba(255, 255, 255, 0.45);
+                    box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.50);
+                    border-radius: 9999px;
+                    outline: none;
                 }}
                 .capsule-window-ui .mode-button.active {{
                     background: {mode_btn_active};
                     color: #ffffff;
-                    border: 1px solid rgba(255, 255, 255, 0.70);
-                    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.75),
-                                0 6px 20px rgba(0, 0, 0, 0.40),
-                                0 0 18px rgba(255, 255, 255, 0.30);
+                    border: 1px solid rgba(255, 255, 255, 0.65);
+                    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.60);
+                    border-radius: 9999px;
+                    outline: none;
                 }}
                 
                 /* Настройки в темной теме */
@@ -742,7 +776,227 @@ class EchoUI(Gtk.Window):
                 {backdrop}
             }}
             {outer_box_style}
-            {theme_css}
+{theme_css}
+
+            /* ==========================================================
+               FULL ATMOSPHERIC WEATHER CANVAS & AMBIENT GLOW OVERRIDES
+               ========================================================== */
+            .outer-border-box {{
+                transition: box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), background-image 0.25s ease;
+            }}
+            .root-box .outer-border-box.ambient-weather-bg-clear-day,
+            window.ambient-weather-bg-clear-day .outer-border-box {{
+                box-shadow: 0 0 24px rgba(53, 142, 232, 0.50), 0 8px 24px rgba(0, 0, 0, 0.35);
+                background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0.08) 35%, rgba(255, 255, 255, 0.08) 65%, rgba(255, 255, 255, 0.75) 100%);
+            }}
+            .root-box .outer-border-box.ambient-weather-bg-clear-night,
+            window.ambient-weather-bg-clear-night .outer-border-box {{
+                box-shadow: 0 0 24px rgba(35, 55, 110, 0.60), 0 8px 24px rgba(0, 0, 0, 0.55);
+                background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.80) 0%, rgba(255, 255, 255, 0.08) 35%, rgba(255, 255, 255, 0.08) 65%, rgba(255, 255, 255, 0.75) 100%);
+            }}
+            .root-box .outer-border-box.ambient-weather-bg-clouds-day,
+            .root-box .outer-border-box.ambient-weather-bg-clouds-night,
+            window.ambient-weather-bg-clouds-day .outer-border-box,
+            window.ambient-weather-bg-clouds-night .outer-border-box {{
+                box-shadow: 0 0 24px rgba(90, 115, 145, 0.55), 0 8px 24px rgba(0, 0, 0, 0.35);
+                background-image: linear-gradient(135deg, rgba(160, 185, 210, 0.75) 0%, rgba(130, 150, 175, 0.12) 50%, rgba(190, 205, 220, 0.55) 100%);
+            }}
+            .root-box .outer-border-box.ambient-weather-bg-rain-day,
+            .root-box .outer-border-box.ambient-weather-bg-rain-night,
+            window.ambient-weather-bg-rain-day .outer-border-box,
+            window.ambient-weather-bg-rain-night .outer-border-box {{
+                box-shadow: 0 0 24px rgba(60, 100, 150, 0.60), 0 8px 24px rgba(0, 0, 0, 0.45);
+                background-image: linear-gradient(135deg, rgba(90, 150, 215, 0.8) 0%, rgba(60, 100, 160, 0.15) 50%, rgba(110, 180, 230, 0.55) 100%);
+            }}
+            .root-box .outer-border-box.ambient-weather-bg-storm-day,
+            .root-box .outer-border-box.ambient-weather-bg-storm-night,
+            window.ambient-weather-bg-storm-day .outer-border-box,
+            window.ambient-weather-bg-storm-night .outer-border-box {{
+                box-shadow: 0 0 24px rgba(130, 80, 180, 0.65), 0 8px 24px rgba(0, 0, 0, 0.55);
+                background-image: linear-gradient(135deg, rgba(175, 110, 235, 0.85) 0%, rgba(100, 60, 160, 0.15) 50%, rgba(205, 140, 255, 0.55) 100%);
+            }}
+            .root-box .outer-border-box.ambient-weather-bg-snow-day,
+            .root-box .outer-border-box.ambient-weather-bg-snow-night,
+            window.ambient-weather-bg-snow-day .outer-border-box,
+            window.ambient-weather-bg-snow-night .outer-border-box {{
+                box-shadow: 0 0 24px rgba(170, 215, 255, 0.60), 0 8px 24px rgba(0, 0, 0, 0.35);
+                background-image: linear-gradient(135deg, rgba(215, 240, 255, 0.9) 0%, rgba(180, 220, 255, 0.15) 50%, rgba(240, 250, 255, 0.75) 100%);
+            }}
+            .root-box .outer-border-box.ambient-weather-bg-fog-day,
+            .root-box .outer-border-box.ambient-weather-bg-fog-night,
+            window.ambient-weather-bg-fog-day .outer-border-box,
+            window.ambient-weather-bg-fog-night .outer-border-box {{
+                box-shadow: 0 0 24px rgba(100, 120, 135, 0.50), 0 8px 24px rgba(0, 0, 0, 0.35);
+                background-image: linear-gradient(135deg, rgba(165, 180, 195, 0.75) 0%, rgba(120, 135, 150, 0.12) 50%, rgba(185, 200, 210, 0.55) 100%);
+            }}
+
+            .capsule-window-ui {{
+                transition: background 0.35s cubic-bezier(0.16, 1, 0.3, 1), color 0.25s ease;
+            }}
+            
+            /* Full Atmospheric Weather Canvas Gradients */
+            .capsule-window-ui.weather-canvas-active {{
+                color: #ffffff;
+            }}
+            .capsule-window-ui.weather-canvas-clear-day {{
+                background: radial-gradient(circle at 75% 0%, rgba(255, 235, 175, 0.45) 0%, rgba(255, 255, 255, 0) 55%),
+                            linear-gradient(180deg, #1c72e8 0%, #2f87ea 35%, #4fa3f7 70%, #68b5fd 100%);
+            }}
+            .capsule-window-ui.weather-canvas-clear-night {{
+                background: radial-gradient(circle at 78% 8%, rgba(180, 205, 255, 0.22) 0%, rgba(255, 255, 255, 0) 45%),
+                            linear-gradient(180deg, #0a0d1a 0%, #11172e 40%, #16203d 75%, #1c274b 100%);
+            }}
+            .capsule-window-ui.weather-canvas-clouds-day {{
+                background: radial-gradient(circle at 60% 0%, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0) 50%),
+                            linear-gradient(180deg, #3c4a54 0%, #4a5c68 40%, #5d717e 75%, #6a808e 100%);
+            }}
+            .capsule-window-ui.weather-canvas-clouds-night {{
+                background: linear-gradient(180deg, #11151c 0%, #1a202a 40%, #222a38 75%, #2a3444 100%);
+            }}
+            .capsule-window-ui.weather-canvas-rain-day {{
+                background: radial-gradient(circle at 65% 0%, rgba(160, 200, 230, 0.25) 0%, rgba(255, 255, 255, 0) 50%),
+                            linear-gradient(180deg, #233444 0%, #2e4458 40%, #3a546d 75%, #466480 100%);
+            }}
+            .capsule-window-ui.weather-canvas-rain-night {{
+                background: linear-gradient(180deg, #0c1219 0%, #131c26 40%, #1c2735 75%, #233142 100%);
+            }}
+            .capsule-window-ui.weather-canvas-storm-day,
+            .capsule-window-ui.weather-canvas-storm-night {{
+                background: radial-gradient(circle at 65% 0%, rgba(200, 160, 255, 0.25) 0%, rgba(255, 255, 255, 0) 45%),
+                            linear-gradient(180deg, #251c38 0%, #31254a 40%, #3e305c 75%, #4c3b6f 100%);
+            }}
+            .capsule-window-ui.weather-canvas-snow-day {{
+                background: radial-gradient(circle at 65% 0%, rgba(255, 255, 255, 0.4) 0%, rgba(255, 255, 255, 0) 50%),
+                            linear-gradient(180deg, #5b7996 0%, #708ea8 40%, #88a4bc 75%, #9cb7cd 100%);
+            }}
+            .capsule-window-ui.weather-canvas-snow-night {{
+                background: linear-gradient(180deg, #121922 0%, #1b2430 40%, #253140 75%, #2f3e50 100%);
+            }}
+            .capsule-window-ui.weather-canvas-fog-day,
+            .capsule-window-ui.weather-canvas-fog-night {{
+                background: linear-gradient(180deg, #37434d 0%, #465460 40%, #566673 75%, #657785 100%);
+            }}
+
+            /* Seamless Weather Preview Panel over Full Canvas */
+            .capsule-window-ui.weather-canvas-active .preview-weather-full-bg,
+            .capsule-window-ui.weather-canvas-active .preview-panel,
+            .capsule-window-ui.weather-canvas-active .preview-panel-weather,
+            .capsule-window-ui.weather-canvas-active .weather-bg-clear-day,
+            .capsule-window-ui.weather-canvas-active .weather-bg-clear-night,
+            .capsule-window-ui.weather-canvas-active .weather-bg-clouds-day,
+            .capsule-window-ui.weather-canvas-active .weather-bg-clouds-night,
+            .capsule-window-ui.weather-canvas-active .weather-bg-rain-day,
+            .capsule-window-ui.weather-canvas-active .weather-bg-rain-night,
+            .capsule-window-ui.weather-canvas-active .weather-bg-storm-day,
+            .capsule-window-ui.weather-canvas-active .weather-bg-storm-night,
+            .capsule-window-ui.weather-canvas-active .weather-bg-snow-day,
+            .capsule-window-ui.weather-canvas-active .weather-bg-snow-night,
+            .capsule-window-ui.weather-canvas-active .weather-bg-fog-day,
+            .capsule-window-ui.weather-canvas-active .weather-bg-fog-night {{
+                background: transparent;
+                background-image: none;
+                box-shadow: none;
+            }}
+            .capsule-window-ui.weather-canvas-active .preview-panel.preview-panel-weather {{
+                border-left: 1px solid rgba(255, 255, 255, 0.12);
+            }}
+
+            /* Completely Invisible Scrollbars in Weather Mode */
+            .capsule-window-ui.weather-canvas-active .preview-panel scrollbar,
+            .capsule-window-ui.weather-canvas-active .preview-panel scrollbar slider,
+            .capsule-window-ui.weather-canvas-active .weather-scrolled-window scrollbar,
+            .capsule-window-ui.weather-canvas-active .weather-scrolled-window scrollbar slider,
+            .capsule-window-ui.weather-canvas-active .preview-panel scrollbar slider:hover,
+            .capsule-window-ui.weather-canvas-active .weather-scrolled-window scrollbar slider:hover {{
+                opacity: 0;
+                min-width: 0;
+                min-height: 0;
+                background: transparent;
+                border: none;
+            }}
+
+            /* Unified Frosted Header in Weather Mode */
+            .capsule-window-ui.weather-canvas-active .search-wrapper {{
+                background-color: rgba(255, 255, 255, 0.18);
+                border: 1px solid rgba(255, 255, 255, 0.24);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.22);
+            }}
+            .capsule-window-ui.weather-canvas-active #search-entry,
+            .capsule-window-ui.weather-canvas-active #search-entry text {{
+                color: #ffffff;
+            }}
+            .capsule-window-ui.weather-canvas-active #search-entry placeholder {{
+                color: rgba(255, 255, 255, 0.65);
+            }}
+            .capsule-window-ui.weather-canvas-active .search-icon {{
+                color: rgba(255, 255, 255, 0.90);
+            }}
+            .capsule-window-ui.weather-canvas-active .mode-button {{
+                background: rgba(255, 255, 255, 0.12);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+                color: #ffffff;
+                border-radius: 9999px;
+                outline: none;
+                box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.20);
+            }}
+            .capsule-window-ui.weather-canvas-active .mode-button image {{
+                color: #ffffff;
+            }}
+            .capsule-window-ui.weather-canvas-active .mode-button:hover {{
+                background: rgba(255, 255, 255, 0.22);
+                border-color: rgba(255, 255, 255, 0.32);
+                border-radius: 9999px;
+                outline: none;
+                box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.40);
+            }}
+            .capsule-window-ui.weather-canvas-active .mode-button.active {{
+                background: rgba(255, 255, 255, 0.30);
+                border-color: rgba(255, 255, 255, 0.40);
+                border-radius: 9999px;
+                outline: none;
+                box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.50);
+            }}
+
+            /* Seamless Results List on Left */
+            .capsule-window-ui.weather-canvas-active #results-list {{
+                background: transparent;
+                background-color: transparent;
+                border: none;
+                box-shadow: none;
+                padding: 0 12px;
+            }}
+            .capsule-window-ui.weather-canvas-active #results-list row,
+            .capsule-window-ui.weather-canvas-active #results-list .result-row {{
+                background: transparent;
+                background-color: transparent;
+                border: 1px solid transparent;
+                border-radius: 14px;
+                margin-bottom: 2px;
+            }}
+            .capsule-window-ui.weather-canvas-active #results-list row:selected,
+            .capsule-window-ui.weather-canvas-active #results-list .result-row:selected,
+            .capsule-window-ui.weather-canvas-active #results-list .result-row.selected {{
+                background-color: rgba(255, 255, 255, 0.20);
+                color: #ffffff;
+                border: 1px solid rgba(255, 255, 255, 0.28);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+                border-radius: 14px;
+            }}
+            .capsule-window-ui.weather-canvas-active #results-list row:hover:not(:selected),
+            .capsule-window-ui.weather-canvas-active #results-list .result-row:hover:not(:selected) {{
+                background-color: rgba(255, 255, 255, 0.10);
+                border-radius: 14px;
+            }}
+            .capsule-window-ui.weather-canvas-active #results-list label.result-title,
+            .capsule-window-ui.weather-canvas-active #results-list .result-title {{
+                color: #ffffff;
+            }}
+            .capsule-window-ui.weather-canvas-active #results-list label.result-desc,
+            .capsule-window-ui.weather-canvas-active #results-list .result-desc {{
+                color: rgba(255, 255, 255, 0.75);
+            }}
+
+
             .anim-jelly-wobble {{
                 animation: jelly_wobble_unfold {jelly_duration}ms cubic-bezier(0.2, 0.9, 0.3, 1) forwards;
             }}
@@ -782,7 +1036,8 @@ class EchoUI(Gtk.Window):
         # Основной контейнер-капсула (UI)
         self.main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.main_box.add_css_class("capsule-window-ui")
-        self.main_box.set_valign(Gtk.Align.START) 
+        self.main_box.set_valign(Gtk.Align.START)
+        self.main_box.set_overflow(Gtk.Overflow.HIDDEN)
         self.outer_box.append(self.main_box)
 
         # --- ОБНОВЛЕННЫЙ HEADER ДЛЯ СВЕТЛОЙ ТЕМЫ ---
@@ -963,7 +1218,24 @@ class EchoUI(Gtk.Window):
             active = self.mode_manager.active_mode_name if self.mode_manager else "Search"
             target_w, target_h = self._calculate_target_geometry(active, True)
             target_w, target_h = self._clamp_geometry_to_monitor(target_w, target_h)
-            super().set_default_size(target_w, target_h)
+            cur_w, cur_h = self.get_default_size()
+            if cur_w != target_w or cur_h != target_h:
+                super().set_default_size(target_w, target_h)
+
+    def prepare_for_show(self):
+        """Prepares the window to be shown freshly: resets to Search mode, collapses revealer, resets geometry."""
+        try:
+            if getattr(self, "quick_look", None) and self.quick_look.is_visible():
+                self.quick_look.hide_preview()
+            if getattr(self, "mode_manager", None):
+                self.mode_manager.set_mode("Search")
+            if hasattr(self, "entry"):
+                self.entry.set_text("")
+            self.update_revealer_state()
+            super().set_default_size(650, 1)
+            self.queue_resize()
+        except Exception:
+            pass
 
     def set_default_size(self, width: int, height: int):
         if hasattr(self, "results_revealer"):
@@ -977,7 +1249,7 @@ class EchoUI(Gtk.Window):
                     width = 650
             else:
                 # Окно свернуто или в процессе сворачивания
-                if self.results_revealer.get_child_revealed():
+                if self.is_visible() and self.results_revealer.get_child_revealed():
                     # Анимация сворачивания еще идет - не трогаем геометрию раньше времени
                     return
                 width = 650
@@ -1150,7 +1422,7 @@ class EchoUI(Gtk.Window):
                     self._spring_anim.set_value_to(0.0)
                     self._spring_anim.play()
                 
-                if unfold_mode in ("instant_dynamic", "none"):
+                if unfold_mode in ("instant_dynamic", "none") or not self.is_visible():
                     super().set_default_size(650, 1)
                     self.queue_resize()
         
@@ -1260,7 +1532,7 @@ class EchoUI(Gtk.Window):
             search_mode = self.mode_manager.modes.get("Search")
             if search_mode and hasattr(search_mode, 'preview_container'):
                 preview_width = self.config_manager.get("preview_width") if self.config_manager else 420
-                search_mode.preview_container.set_size_request(preview_width, -1)
+                search_mode.preview_container.set_size_request(preview_width, 0)
                 
                 preview_enabled = self.config_manager.get("preview_enabled") if self.config_manager else True
                 if not preview_enabled:

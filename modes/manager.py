@@ -51,6 +51,20 @@ class ModeManager:
         if hasattr(self.modes["Files"], "_preload_files"):
             GLib.idle_add(self.modes["Files"]._preload_files)
 
+        if hasattr(self.engine, "weather") and self.engine.weather:
+            self.engine.weather.on_data_updated = self._on_weather_data_updated
+
+    def _on_weather_data_updated(self):
+        try:
+            if not self.main_window or not hasattr(self.main_window, "entry"):
+                return False
+            query = self.main_window.entry.get_text().strip()
+            if query and self.active_mode_name == "Search":
+                self.on_search_changed(query)
+        except Exception:
+            pass
+        return False
+
     def get_widget(self) -> Gtk.Widget:
         return self.stack
 

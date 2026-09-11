@@ -25,9 +25,14 @@ if [ "$EUID" -ne 0 ]; then
     fi
 fi
 
-# 1. Удаление пакета
+# 1. Удаление пакета и системных файлов
 echo -e "${BLUE}[1/2] Удаление системного пакета echo-search...${RESET}"
-$SUDO_CMD apt remove -y echo-search || true
+if command -v apt >/dev/null 2>&1; then
+    $SUDO_CMD apt remove -y echo-search 2>/dev/null || true
+fi
+if [ -d "/usr/lib/echo-search" ]; then
+    $SUDO_CMD rm -rf /usr/lib/echo-search /usr/share/echo-search /usr/bin/echo-search /usr/share/applications/com.echo.search.desktop
+fi
 
 # 2. Удаление шортката из GNOME
 echo -e "${BLUE}[2/2] Очистка сочетаний клавиш...${RESET}"

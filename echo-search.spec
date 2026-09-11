@@ -32,6 +32,7 @@ mkdir -p %{buildroot}%{_datadir}/licenses/echo-search
 cp -p *.py %{buildroot}%{_prefix}/lib/echo-search/
 cp -p modes/*.py %{buildroot}%{_prefix}/lib/echo-search/modes/
 cp -p providers/*.py %{buildroot}%{_prefix}/lib/echo-search/providers/
+cp -rp assets %{buildroot}%{_prefix}/lib/echo-search/
 cp -p style.css emoji.json %{buildroot}%{_datadir}/echo-search/
 cp -p LICENSE %{buildroot}%{_datadir}/licenses/echo-search/
 
