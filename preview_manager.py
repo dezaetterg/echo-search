@@ -6,16 +6,21 @@ from pathlib import Path
 
 try:
     import gi
-    gi.require_version('GnomeDesktop', '4.0')
-    from gi.repository import GnomeDesktop
-    preview_thumbnail_factory = GnomeDesktop.DesktopThumbnailFactory()
-except (ValueError, ImportError):
-    preview_thumbnail_factory = None
+    try:
+        gi.require_version('GnomeDesktop', '4.0')
+        from gi.repository import GnomeDesktop
+        preview_thumbnail_factory = GnomeDesktop.DesktopThumbnailFactory()
+    except (ValueError, ImportError, AttributeError):
+        preview_thumbnail_factory = None
 
-try:
-    gi.require_version('GdkPixbuf', '2.0')
-    from gi.repository import GdkPixbuf
-except (ValueError, ImportError):
+    try:
+        gi.require_version('GdkPixbuf', '2.0')
+        from gi.repository import GdkPixbuf
+    except (ValueError, ImportError, AttributeError):
+        GdkPixbuf = None
+except (ImportError, ModuleNotFoundError):
+    gi = None
+    preview_thumbnail_factory = None
     GdkPixbuf = None
 
 _PREVIEW_THUMBNAIL_CACHE = collections.OrderedDict()
@@ -82,11 +87,11 @@ def _load_file_thumbnail_pixbuf(path: str, mime: str = "", target_size: int = 28
     return pixbuf
 
 try:
-    import gi
-    gi.require_version('Gtk', '4.0')
-    gi.require_version('Gdk', '4.0')
-    from gi.repository import Gdk, GLib, Gtk, Pango
-except ValueError:
+    if gi is not None:
+        gi.require_version('Gtk', '4.0')
+        gi.require_version('Gdk', '4.0')
+        from gi.repository import Gdk, GLib, Gtk, Pango
+except (ValueError, ImportError, AttributeError):
     pass
 
 from i18n import get_current_language, t
