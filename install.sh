@@ -130,15 +130,7 @@ check_and_resolve_dependencies() {
         MISSING_REQUIRED+=("gtk4")
     fi
 
-    # 4. Cairo
-    if python3 -c "import cairo" 2>/dev/null; then
-        info "Cairo (python3-cairo) found."
-    else
-        err "Cairo (python3-cairo / pycairo) not found."
-        MISSING_REQUIRED+=("cairo")
-    fi
-
-    # 5. RapidFuzz (ultra fast fuzzy search matching)
+    # 4. RapidFuzz (ultra fast fuzzy search matching)
     if python3 -c "import rapidfuzz" 2>/dev/null; then
         info "RapidFuzz found."
     else
@@ -216,7 +208,6 @@ get_distro_packages() {
                 python3)      echo "python3" ;;
                 gi)           echo "python3-gi" ;;
                 gtk4)         echo "gir1.2-gtk-4.0" ;;
-                cairo)        echo "python3-gi-cairo python3-cairo" ;;
                 rapidfuzz)    echo "python3-rapidfuzz" ;;
                 adw)          echo "gir1.2-adw-1" ;;
                 layer_shell)  echo "gir1.2-gtk4layershell-1.0 libgtk4-layer-shell0" ;;
@@ -231,7 +222,6 @@ get_distro_packages() {
                 python3)      echo "python3" ;;
                 gi)           echo "python3-gobject" ;;
                 gtk4)         echo "gtk4" ;;
-                cairo)        echo "python3-cairo" ;;
                 rapidfuzz)    echo "python3-rapidfuzz" ;;
                 adw)          echo "libadwaita" ;;
                 layer_shell)  echo "gtk4-layer-shell" ;;
@@ -246,7 +236,6 @@ get_distro_packages() {
                 python3)      echo "python" ;;
                 gi)           echo "python-gobject" ;;
                 gtk4)         echo "gtk4" ;;
-                cairo)        echo "python-cairo" ;;
                 rapidfuzz)    echo "python-rapidfuzz" ;;
                 adw)          echo "libadwaita" ;;
                 layer_shell)  echo "gtk4-layer-shell" ;;
@@ -261,7 +250,6 @@ get_distro_packages() {
                 python3)      echo "python3" ;;
                 gi)           echo "python3-gobject" ;;
                 gtk4)         echo "gtk4-schema" ;;
-                cairo)        echo "python3-cairo" ;;
                 rapidfuzz)    echo "python3-rapidfuzz" ;;
                 adw)          echo "libadwaita-1-0" ;;
                 layer_shell)  echo "gtk4-layer-shell" ;;

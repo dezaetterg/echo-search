@@ -1,7 +1,6 @@
 import math
 import random
 
-import cairo
 import gi
 
 gi.require_version('Gtk', '4.0')
@@ -100,8 +99,6 @@ class AtmosphericCapsuleBox(Gtk.Box):
         self._comets = []
         self._particles = []
         self._particle_mode = None
-        # Tiny 1x1 surface placeholder to avoid heavy 1800x560 (4MB) allocation
-        self._night_clouds_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, 1, 1)
 
     def _get_w_code(self) -> int:
         if not self._weather_data:

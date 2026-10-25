@@ -1,8 +1,6 @@
 import os
 from unittest.mock import MagicMock
 
-import cairo
-
 from modes.search import SearchMode
 from providers.base import SearchResult
 from weather_atmosphere import AtmosphericCapsuleBox, CometParticle, StarParticle
@@ -45,7 +43,6 @@ def test_star_particle_properties():
 def test_atmospheric_capsule_night_state():
     box = AtmosphericCapsuleBox()
     assert len(box._stars) > 100
-    assert box._night_clouds_surface is not None
 
     # Simulate night overcast data
     night_data = {
