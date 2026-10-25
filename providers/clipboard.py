@@ -1,12 +1,18 @@
 import datetime
+
+from logger import get_logger
+from utils import set_clipboard_text
+
 from .base import BaseProvider, SearchResult
 
 try:
     import gi
     gi.require_version("Gtk", "4.0")
-    from gi.repository import Gtk, Gdk, GLib, Pango
+    from gi.repository import Gdk, GLib, Gtk, Pango
 except (ValueError, ImportError):
     pass
+
+logger = get_logger("clipboard")
 
 # Standard Linux desktop privacy hints used by password managers (KeePassXC, 1Password, Bitwarden, GNOME Secrets)
 PASSWORD_MANAGER_MIME_HINTS = {
@@ -32,7 +38,7 @@ class ClipboardProvider(BaseProvider):
                 self.clipboard.connect("changed", self._on_clipboard_changed)
                 self._check_and_read(self.clipboard)
         except Exception as e:
-            print(f"Warning: Could not initialize ClipboardProvider: {e}")
+            logger.warning("Could not initialize ClipboardProvider: %s", e)
 
     def _is_secret_clipboard(self, clipboard) -> bool:
         """Checks whether the clipboard contains sensitive password manager hints."""
@@ -45,8 +51,8 @@ class ClipboardProvider(BaseProvider):
                     for hint in PASSWORD_MANAGER_MIME_HINTS:
                         if hint in mime_lower:
                             return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Error checking secret clipboard formats: %s", e)
         return False
 
     def _check_and_read(self, clipboard):
@@ -88,8 +94,8 @@ class ClipboardProvider(BaseProvider):
                     from gi.repository import GLib
                     res = self._create_result(item, 0)
                     GLib.idle_add(self.on_new_item, res)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Error updating clipboard history: %s", e)
 
     def _create_result(self, item: dict, index: int) -> SearchResult:
         text = item["text"]
@@ -97,19 +103,14 @@ class ClipboardProvider(BaseProvider):
         title = "\n".join(lines[:3])
 
         def _copy_callback():
-            try:
-                display = Gdk.Display.get_default()
-                if display:
-                    display.get_clipboard().set(text)
-            except Exception:
-                pass
+            set_clipboard_text(text)
 
         def _delete_callback():
             try:
                 if item in self.history:
                     self.history.remove(item)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Clipboard history remove failed: %s", e)
 
         time_str = item["time"].strftime("%H:%M:%S")
 

@@ -1,39 +1,46 @@
-import sys
+__version__ = "1.4.0"
 import os
 import signal
+import sys
 
-# --- Проверка критических зависимостей с понятными подсказками по установке ---
+from logger import get_logger
+
+logger = get_logger("main")
+
+
 def _check_system_dependencies():
     missing = []
     try:
         import gi
         gi.require_version("Gtk", "4.0")
-        from gi.repository import Gtk, Gio, GLib
-    except Exception:
+    except (ValueError, ImportError):
         missing.append("GTK4 / PyGObject (gir1.2-gtk-4.0, python3-gi)")
 
     try:
-        import rapidfuzz
+        import rapidfuzz  # noqa: F401
     except ImportError:
         missing.append("rapidfuzz (python3-rapidfuzz или pip install rapidfuzz)")
 
     if missing:
-        print("\n=======================================================", file=sys.stderr)
-        print("🌊 Echo Search — Не найдены необходимые зависимости:", file=sys.stderr)
+        logger.critical("=======================================================")
+        logger.critical("Echo Search — Не найдены необходимые зависимости:")
         for item in missing:
-            print(f"  • {item}", file=sys.stderr)
-        print("\nУстановите зависимости с помощью пакетного менеджера вашей системы:", file=sys.stderr)
-        print("  Debian / Ubuntu / Mint: sudo apt install python3-gi gir1.2-gtk-4.0 python3-rapidfuzz", file=sys.stderr)
-        print("  Arch Linux:             sudo pacman -S python-gobject gtk4 python-rapidfuzz", file=sys.stderr)
-        print("  Fedora:                 sudo dnf install python3-gobject gtk4 python3-rapidfuzz", file=sys.stderr)
-        print("  openSUSE:               sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 python3-rapidfuzz", file=sys.stderr)
-        print("  Или выполните:          ./install.sh", file=sys.stderr)
-        print("=======================================================\n", file=sys.stderr)
+            logger.critical("  • %s", item)
+        logger.critical("")
+        logger.critical("Установите зависимости с помощью пакетного менеджера вашей системы:")
+        logger.critical("  Debian / Ubuntu / Mint: sudo apt install python3-gi gir1.2-gtk-4.0 python3-rapidfuzz")
+        logger.critical("  Arch Linux:             sudo pacman -S python-gobject gtk4 python-rapidfuzz")
+        logger.critical("  Fedora:                 sudo dnf install python3-gobject gtk4 python3-rapidfuzz")
+        logger.critical("  openSUSE:               sudo zypper install python3-gobject typelib-1_0-Gtk-4_0 python3-rapidfuzz")
+        logger.critical("  Или выполните:          ./install.sh")
+        logger.critical("=======================================================")
         sys.exit(1)
+
 
 _check_system_dependencies()
 
 import gi
+
 gi.require_version("Gtk", "4.0")
 
 HAS_ADW = False
@@ -41,7 +48,7 @@ try:
     gi.require_version("Adw", "1")
     from gi.repository import Adw
     HAS_ADW = True
-except Exception:
+except (ValueError, ImportError):
     HAS_ADW = False
 
 HAS_LAYER_SHELL = False
@@ -53,7 +60,8 @@ try:
 except (ValueError, ImportError):
     HAS_LAYER_SHELL = False
 
-from gi.repository import Gtk, Gio, GLib
+from gi.repository import Gio, GLib, Gtk
+
 from config_manager import ConfigManager
 from ui import EchoUI
 
@@ -77,8 +85,8 @@ class EchoApp(BaseApplication):
                     sm.set_color_scheme(Adw.ColorScheme.PREFER_LIGHT)
                 else:
                     sm.set_color_scheme(Adw.ColorScheme.DEFAULT)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Error setting Adw theme: %s", e)
 
     def _setup_window_shell(self):
         """Configure LayerShell or fallback decoration settings for the window."""
@@ -87,7 +95,8 @@ class EchoApp(BaseApplication):
             try:
                 if Gtk4LayerShell.is_supported():
                     is_layer_shell = True
-            except Exception:
+            except Exception as e:
+                logger.debug("LayerShell support check failed: %s", e)
                 is_layer_shell = False
 
         if is_layer_shell:
@@ -107,6 +116,8 @@ class EchoApp(BaseApplication):
             self.sync_color_scheme()
             self.window = EchoUI(application=self, config_manager=self.config_manager)
             self._setup_window_shell()
+            if hasattr(self.window, "prepare_for_show"):
+                self.window.prepare_for_show()
             self.window.present()
             self.window.entry.grab_focus()
         else:
@@ -141,10 +152,10 @@ class EchoApp(BaseApplication):
                         if val:
                             self._pending_startup_id = val.get_string()
                             break
-                    except Exception:
-                        pass
-        except Exception:
-            pass
+                    except Exception as e:
+                        logger.debug("Platform data token lookup failed: %s", e)
+        except Exception as e:
+            logger.debug("Platform data extraction failed: %s", e)
         self.activate()
         return 0
 
@@ -155,7 +166,7 @@ if __name__ == "__main__":
     # Корректная обработка Ctrl+C
     signal.signal(signal.SIGINT, on_signal)
     signal.signal(signal.SIGTERM, on_signal)
-    
+
     app = EchoApp()
     exit_status = app.run(sys.argv)
     sys.exit(exit_status)

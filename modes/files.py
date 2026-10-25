@@ -27,13 +27,14 @@ def _get_cropped_image_pixbuf(path, target_size=256):
         except Exception:
             return None
 
+import collections
 import os
 import urllib.parse
-import collections
+
 try:
     import gi
     gi.require_version('Gtk', '4.0')
-    from gi.repository import Gtk, Gdk, Pango, GLib
+    from gi.repository import Gdk, GLib, Gtk, Pango
 except ValueError:
     pass
 
@@ -44,57 +45,89 @@ try:
 except (ValueError, ImportError):
     thumbnail_factory = None
 
+from i18n import get_current_language, t
+from logger import get_logger
+from utils import format_shortcut_display, matches_shortcut, set_icon_safe
+
 from .base import BaseMode
-from utils import set_icon_safe, matches_shortcut, format_shortcut_display
-from i18n import t, get_current_language
+
+logger = get_logger("modes.files")
+
+DOC_EXTENSIONS = {
+    ".pdf", ".djvu", ".djv", ".epub", ".fb2", ".mobi", ".azw", ".azw3", ".cbr", ".cbz",
+    ".doc", ".docx", ".docm", ".dot", ".dotx", ".odt", ".ott", ".rtf", ".txt", ".text",
+    ".md", ".markdown", ".rst", ".tex", ".org", ".pages", ".adoc", ".asciidoc",
+    ".xlsx", ".xls", ".xlsm", ".xlsb", ".ods", ".ots", ".csv", ".tsv", ".numbers",
+    ".xlt", ".xltx",
+    ".pptx", ".ppt", ".pptm", ".pps", ".ppsx", ".odp", ".otp", ".key", ".keynote",
+    ".pot", ".potx",
+    ".odg", ".otg"
+}
+IMAGE_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".bmp", ".ico",
+    ".tiff", ".tif", ".avif", ".heic", ".heif", ".raw", ".cr2", ".nef", ".dng"
+}
+VIDEO_EXTENSIONS = {
+    ".mp4", ".mkv", ".webm", ".avi", ".mov", ".wmv", ".flv", ".m4v", ".ts"
+}
+AUDIO_EXTENSIONS = {
+    ".mp3", ".wav", ".flac", ".ogg", ".m4a", ".aac", ".opus", ".wma", ".mid", ".midi"
+}
+ARCHIVE_EXTENSIONS = {
+    ".zip", ".rar", ".7z", ".tar", ".gz", ".tgz", ".bz2", ".xz", ".zst",
+    ".iso", ".deb", ".rpm", ".appimage"
+}
 
 class FilesMode(BaseMode):
     category_filter = "Files"
-    
+
     def __init__(self, main_window):
         self.current_query = ""
         self.active_category = "All"
         self._THUMBNAIL_CACHE = collections.OrderedDict()
         self._CACHE_LIMIT = 100
         super().__init__(main_window)
-        
+
         self.CAT_MAPPING = {
             "All": None,
-            "Documents": ["pdf", "text", "document", "vnd.ms-", "vnd.oasis.opendocument", "rtf", "pages"],
+            "Documents": [
+                "pdf", "text", "document", "msword", "officedocument",
+                "opendocument", "spreadsheet", "presentation", "rtf",
+                "pages", "numbers", "keynote", "epub", "fictionbook", "djvu", "mobipocket"
+            ],
             "Images": ["image/"],
             "Videos": ["video/"],
             "Audio": ["audio/"],
             "PDF": ["pdf"],
             "Folders": ["inode/directory"],
-            "Archives": ["zip", "rar", "tar", "gzip", "7z", "x-bzip", "x-xz"]
+            "Archives": ["zip", "rar", "tar", "gzip", "7z", "x-bzip", "x-xz", "compressed", "x-archive"]
         }
-        
+
         self.suggestions_flowbox.set_filter_func(self._filter_func)
         self.recents_flowbox.set_filter_func(self._filter_func)
         self._connected_cache_callback = False
-        
+
     def _create_widget(self) -> Gtk.Widget:
 
-        
+
         # Левая часть (Списки файлов)
         self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.left_box.set_hexpand(True)
-        
-        # --- HEADER (Filters) ---
+
         self.filters_scroll = Gtk.ScrolledWindow()
         self.filters_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
         self.filters_scroll.set_margin_start(16)
         self.filters_scroll.set_margin_end(16)
         self.filters_scroll.set_margin_bottom(12)
         self.filters_scroll.add_css_class("apps-filters-scroll")
-        
+
         hscrollbar = self.filters_scroll.get_hscrollbar()
         if hscrollbar:
             hscrollbar.set_visible(False)
-            
+
         self.filters_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.filters_box.set_spacing(8)
-        
+
         self.filter_buttons = {}
         categories = ["All", "Documents", "Images", "Videos", "Audio", "PDF", "Folders", "Archives"]
         for cat in categories:
@@ -106,36 +139,34 @@ class FilesMode(BaseMode):
             btn.connect("clicked", self.on_category_clicked, cat)
             self.filters_box.append(btn)
             self.filter_buttons[cat] = btn
-            
+
         self.filters_scroll.set_child(self.filters_box)
         self.left_box.append(self.filters_scroll)
-        
-        # --- SEPARATOR ---
+
         separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         separator.add_css_class("apps-separator")
         self.left_box.append(separator)
-        
-        # --- SCROLLABLE CONTENT ---
+
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.scroll.set_min_content_height(420)
         self.scroll.set_max_content_height(420)
-        
+
         self.content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.content_box.set_spacing(12)
-        
 
-        
+
+
         # Suggestions Section
         self.suggestions_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.suggestions_box.set_spacing(8)
-        
+
         self.suggestions_label = Gtk.Label(label=t("section_suggestions"))
         self.suggestions_label.add_css_class("files-section-title")
         self.suggestions_label.set_halign(Gtk.Align.START)
         self.suggestions_label.set_margin_start(16)
         self.suggestions_box.append(self.suggestions_label)
-        
+
         self.suggestions_flowbox = Gtk.FlowBox()
         self.suggestions_flowbox.set_valign(Gtk.Align.START)
         self.suggestions_flowbox.set_halign(Gtk.Align.FILL)
@@ -152,19 +183,19 @@ class FilesMode(BaseMode):
         self.suggestions_flowbox.connect("child-activated", self.on_child_activated)
         self.suggestions_flowbox.connect("selected-children-changed", self.on_selection_changed)
         self.suggestions_box.append(self.suggestions_flowbox)
-        
+
         self.content_box.append(self.suggestions_box)
-        
+
         # Recents Section
         self.recents_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.recents_box.set_spacing(8)
-        
+
         self.recents_label = Gtk.Label(label=t("section_recent"))
         self.recents_label.add_css_class("files-section-title")
         self.recents_label.set_halign(Gtk.Align.START)
         self.recents_label.set_margin_start(16)
         self.recents_box.append(self.recents_label)
-        
+
         self.recents_flowbox = Gtk.FlowBox()
         self.recents_flowbox.set_valign(Gtk.Align.START)
         self.recents_flowbox.set_halign(Gtk.Align.FILL)
@@ -182,18 +213,18 @@ class FilesMode(BaseMode):
         self.recents_flowbox.connect("child-activated", self.on_child_activated)
         self.recents_flowbox.connect("selected-children-changed", self.on_selection_changed)
         self.recents_box.append(self.recents_flowbox)
-        
+
         self.content_box.append(self.recents_box)
-        
+
         self.scroll.set_child(self.content_box)
         self.glass_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.glass_container.add_css_class("apps-glass-container")
         self.glass_container.append(self.scroll)
-        
+
         footer_sep = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
         footer_sep.add_css_class("files-footer-separator")
         self.glass_container.append(footer_sep)
-        
+
         self.footer_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         self.footer_box.add_css_class("files-footer-box")
         self.footer_box.set_valign(Gtk.Align.CENTER)
@@ -201,21 +232,21 @@ class FilesMode(BaseMode):
         self.footer_box.set_margin_top(8)
         self.footer_box.set_margin_bottom(2)
         self.footer_box.set_margin_end(12)
-        
+
         hint_icon = Gtk.Image.new_from_icon_name("help-about-symbolic")
         hint_icon.set_pixel_size(13)
         hint_icon.add_css_class("files-hint-icon")
         self.footer_box.append(hint_icon)
-        
+
         self.hint_label = Gtk.Label()
         self.hint_label.add_css_class("files-hint-label")
         self.footer_box.append(self.hint_label)
-        
+
         self.glass_container.append(self.footer_box)
         self._update_hint_label()
-        
+
         self.left_box.append(self.glass_container)
-        
+
         self.populated = False
         return self.left_box
 
@@ -253,38 +284,37 @@ class FilesMode(BaseMode):
         card.set_halign(Gtk.Align.FILL)
         card.set_valign(Gtk.Align.START)
         card.set_hexpand(True)
-        
+
         icon = Gtk.Image()
         icon.set_pixel_size(112)
         icon.set_halign(Gtk.Align.CENTER)
         icon.set_margin_bottom(8)
         icon.set_valign(Gtk.Align.CENTER)
         icon.add_css_class("finder-icon")
-        
+
         path = result.preview_data.get("path", "")
         try:
             uri = GLib.filename_to_uri(path)
         except GLib.Error:
             uri = f"file://{urllib.parse.quote(path)}"
-        
-        # Проверка кэша для мгновенной загрузки
+
         if uri in self._THUMBNAIL_CACHE:
             set_icon_safe(icon, None, raw_pixbuf=self._THUMBNAIL_CACHE[uri], is_paintable=True)
-            icon.add_css_class("loaded") # Мгновенно показываем без анимации
+            icon.add_css_class("loaded")
             self._THUMBNAIL_CACHE.move_to_end(uri)
         else:
-            # Placeholder (opacity 0.5 через CSS)
             set_icon_safe(icon, "text-x-generic", fallback_icon="application-x-executable")
-            
+
             import threading
+
             from gi.repository import GdkPixbuf
-            
+
             def _load_icon():
                 try:
                     pixbuf = None
                     mime_type = result.preview_data.get("mime", "unknown")
                     ext = os.path.splitext(path)[1].lower()
-                    
+
                     # 1. For images: load directly from original file at 256x256 for maximum sharpness
                     if os.path.exists(path) and (mime_type.startswith("image/") or ext in (".png", ".jpg", ".jpeg", ".webp", ".svg", ".gif", ".bmp", ".avif", ".ico")):
                         pixbuf = _get_cropped_image_pixbuf(path, 256)
@@ -303,15 +333,15 @@ class FilesMode(BaseMode):
                                         if pixbuf:
                                             thumbnail_factory.save_thumbnail(pixbuf, uri, mtime)
                                             pixbuf = pixbuf.scale_simple(256, 256, GdkPixbuf.InterpType.HYPER)
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug("Thumbnail factory generation failed: %s", e)
 
                     # 3. Fallback to icon path (e.g. system thumbnail cache from provider)
                     if not pixbuf and result.icon and os.path.exists(result.icon) and os.path.isabs(result.icon):
                         try:
                             pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(result.icon, 256, 256, True)
-                        except Exception:
-                            pass
+                        except Exception as e:
+                            logger.debug("File thumbnail icon load failed: %s", e)
 
                     def _set():
                         if pixbuf:
@@ -324,13 +354,13 @@ class FilesMode(BaseMode):
                             set_icon_safe(icon, result.icon, fallback_icon="application-x-executable", pixel_size=96)
                     GLib.idle_add(_set)
                 except Exception as e:
-                    print(f"Thumbnail error: {e}")
+                    logger.debug("Thumbnail error: %s", e)
                     GLib.idle_add(lambda: set_icon_safe(icon, "application-x-executable", fallback_icon="application-x-executable", pixel_size=96))
-                    
+
             threading.Thread(target=_load_icon, daemon=True).start()
-            
+
         card.append(icon)
-        
+
         title = Gtk.Label(label=result.title)
         title.set_wrap(True)
         title.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
@@ -340,7 +370,7 @@ class FilesMode(BaseMode):
         title.set_max_width_chars(15)
         title.add_css_class("finder-title")
         card.append(title)
-        
+
         return card
 
     def _populate(self, results: list):
@@ -348,12 +378,12 @@ class FilesMode(BaseMode):
         while child:
             self.suggestions_flowbox.remove(child)
             child = self.suggestions_flowbox.get_first_child()
-            
+
         child = self.recents_flowbox.get_first_child()
         while child:
             self.recents_flowbox.remove(child)
             child = self.recents_flowbox.get_first_child()
-            
+
         if not self.current_query:
             suggestions = []
             recents = results[:40]
@@ -365,7 +395,7 @@ class FilesMode(BaseMode):
             recents = results[5:35]
             self.suggestions_box.set_visible(bool(suggestions))
             self.recents_label.set_label(t("section_recent"))
-        
+
         for result in suggestions:
             card = self._create_card(result)
             child = Gtk.FlowBoxChild()
@@ -373,7 +403,7 @@ class FilesMode(BaseMode):
             child.result = result
             child.add_css_class("app-card-container")
             self.suggestions_flowbox.append(child)
-            
+
         for result in recents:
             card = self._create_card(result)
             child = Gtk.FlowBoxChild()
@@ -381,9 +411,9 @@ class FilesMode(BaseMode):
             child.result = result
             child.add_css_class("app-card-container")
             self.recents_flowbox.append(child)
-            
+
         self.populated = True
-        
+
         # Auto-select first item
         first = self.suggestions_flowbox.get_child_at_index(0) if (self.suggestions_box.get_visible() and self.suggestions_flowbox.get_child_at_index(0)) else self.recents_flowbox.get_child_at_index(0)
         if first:
@@ -395,7 +425,7 @@ class FilesMode(BaseMode):
             child.result.execute()
         self.main_window.hide()
         self.main_window.entry.set_text("")
-        
+
     def on_selection_changed(self, flowbox):
         if not hasattr(self, 'preview_container') or not self.preview_container:
             return
@@ -403,17 +433,17 @@ class FilesMode(BaseMode):
         if not selected:
             self.preview_container.set_visible(False)
             return
-            
+
         child = selected[0]
         if not hasattr(child, 'result') or not child.result:
             self.preview_container.set_visible(False)
             return
-            
+
         import preview_manager
-        
+
         while widget := self.preview_container.get_first_child():
             self.preview_container.remove(widget)
-            
+
         if getattr(self.main_window, 'quick_look', None) and self.main_window.quick_look.is_visible():
             self.main_window.quick_look.preview_result(child.result)
 
@@ -425,21 +455,32 @@ class FilesMode(BaseMode):
             target_w = self.main_window._clamp_width_to_monitor(target_w)
         self.main_window.set_default_size(target_w, 560)
 
+
+    def retranslate(self):
+        for cat, btn in self.filter_buttons.items():
+            btn.set_label(t(f"cat_{cat.lower()}"))
+        if hasattr(self, "recents_label"):
+            cat_label = t(f"cat_{self.active_category.lower()}") if getattr(self, "active_category", "All") != "All" else t("section_recent")
+            self.recents_label.set_label(cat_label)
+        self._update_hint_label()
+
     def on_category_clicked(self, button, cat_name):
         if self.active_category == cat_name:
             return
-            
+
         if self.active_category in self.filter_buttons:
             self.filter_buttons[self.active_category].remove_css_class("active")
         self.active_category = cat_name
         self.filter_buttons[cat_name].add_css_class("active")
-        
+
         if not self.current_query and hasattr(self.main_window, "engine"):
             file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
             if file_provider and hasattr(file_provider, "get_files_by_category"):
                 results = file_provider.get_files_by_category(cat_name, limit=40)
                 self.current_results = results
                 self._populate(results)
+                self.suggestions_flowbox.set_filter_func(self._filter_func)
+                self.recents_flowbox.set_filter_func(self._filter_func)
                 return
 
         self.suggestions_flowbox.set_filter_func(None)
@@ -448,34 +489,62 @@ class FilesMode(BaseMode):
         self.recents_flowbox.set_filter_func(self._filter_func)
 
     def _filter_func(self, child):
-        if not hasattr(child, "result"):
+        if not hasattr(child, "result") or not child.result:
             return True
-            
+
+        res = child.result
+        pdata = getattr(res, "preview_data", {}) or {}
+        mime = (pdata.get("mime") or "").lower()
+        path = (pdata.get("path") or "").lower()
+        item_cat = pdata.get("category")
+        ext = os.path.splitext(path)[1].lower()
+
         if self.active_category != "All":
-            target_cats = self.CAT_MAPPING.get(self.active_category, [])
-            mime = child.result.preview_data.get("mime", "").lower()
-            path = child.result.preview_data.get("path", "").lower()
-            
             matched = False
-            for target in target_cats:
-                if target in mime or target in path:
+
+            # 1. Check explicit category if provider assigned one
+            if item_cat:
+                if self.active_category == "Documents" and item_cat in ("Documents", "PDF"):
                     matched = True
-                    break
-            
-            if self.active_category == "Folders" and (mime == "inode/directory" or os.path.isdir(child.result.preview_data.get("path", ""))):
-                matched = True
-                
+                elif item_cat == self.active_category:
+                    matched = True
+
+            # 2. Check extension and MIME
+            if not matched:
+                if self.active_category == "Documents":
+                    if ext in DOC_EXTENSIONS:
+                        matched = True
+                    else:
+                        target_cats = self.CAT_MAPPING.get("Documents", [])
+                        matched = any(t in mime for t in target_cats)
+                elif self.active_category == "PDF":
+                    matched = (ext == ".pdf" or "pdf" in mime)
+                elif self.active_category == "Images":
+                    matched = (ext in IMAGE_EXTENSIONS or mime.startswith("image/"))
+                elif self.active_category == "Videos":
+                    matched = (ext in VIDEO_EXTENSIONS or mime.startswith("video/"))
+                elif self.active_category == "Audio":
+                    matched = (ext in AUDIO_EXTENSIONS or mime.startswith("audio/"))
+                elif self.active_category == "Folders":
+                    matched = (mime == "inode/directory" or pdata.get("is_dir") or os.path.isdir(pdata.get("path", "")))
+                elif self.active_category == "Archives":
+                    if ext in ARCHIVE_EXTENSIONS:
+                        matched = True
+                    else:
+                        target_cats = self.CAT_MAPPING.get("Archives", [])
+                        matched = any(t in mime for t in target_cats)
+
             if not matched:
                 return False
-                
+
         if not self.current_query:
             return True
         q = self.current_query.lower()
-        return q in child.result.title.lower()
+        return q in res.title.lower() or q in path
 
     def render(self, results: list):
         self.current_query = self.main_window.entry.get_text().strip()
-        
+
         # Ensure callback is connected
         if not self._connected_cache_callback and hasattr(self.main_window, "engine"):
             file_provider = next((p for p in self.main_window.engine.providers if type(p).__name__ == "FileProvider"), None)
@@ -491,22 +560,22 @@ class FilesMode(BaseMode):
                     results = cat_results
 
         self.current_results = results
-        
+
         # Пересобираем сетку для обновления карточек при каждом новом рендеринге (важно для кэша и пула)
         self._populate(results)
-            
+
         if not self.current_query:
             self.suggestions_box.set_visible(False)
             self.recents_label.set_label(t("section_recent"))
         else:
             self.suggestions_box.set_visible(True)
             self.recents_label.set_label(t("section_recent"))
-            
+
         self.suggestions_flowbox.set_filter_func(None)
         self.suggestions_flowbox.set_filter_func(self._filter_func)
         self.recents_flowbox.set_filter_func(None)
         self.recents_flowbox.set_filter_func(self._filter_func)
-            
+
 
     def _update_hint_label(self):
         if not hasattr(self, "hint_label"):
@@ -580,7 +649,7 @@ class FilesMode(BaseMode):
                     self.suggestions_flowbox.select_child(self.suggestions_flowbox.get_child_at_index(s_count - 1))
             return True
 
-        elif keyval == Gdk.KEY_Down:
+        elif keyval == Gdk.KEY_Down or ((state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_n, Gdk.KEY_N, Gdk.KEY_j, Gdk.KEY_J)):
             if cur_idx + cols < cur_count:
                 nxt = active_fb.get_child_at_index(cur_idx + cols)
                 if nxt:
@@ -594,7 +663,7 @@ class FilesMode(BaseMode):
                     other_fb.select_child(other_fb.get_child_at_index(target_idx))
             return True
 
-        elif keyval == Gdk.KEY_Up:
+        elif keyval == Gdk.KEY_Up or ((state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_p, Gdk.KEY_P)):
             if cur_idx - cols >= 0:
                 prv = active_fb.get_child_at_index(cur_idx - cols)
                 if prv:
@@ -610,7 +679,7 @@ class FilesMode(BaseMode):
             return True
 
         child = selected
-            
+
         result = getattr(child[0], 'result', None)
         if not result:
             return False
@@ -627,21 +696,36 @@ class FilesMode(BaseMode):
 
         is_ctrl = bool(state & Gdk.ModifierType.CONTROL_MASK)
 
+        # Хоткей переключения Quick Look: Ctrl+Y
+        if (keyval in (Gdk.KEY_y, Gdk.KEY_Y)) and is_ctrl:
+            if getattr(self.main_window, 'quick_look', None):
+                if self.main_window.quick_look.is_visible():
+                    self.main_window.quick_look.hide_preview()
+                    return True
+                else:
+                    return self.main_window.quick_look.preview_result(result)
+
+        # Копирование пути: Alt+C, Ctrl+C или Ctrl+Shift+C
+        if (keyval in (Gdk.KEY_c, Gdk.KEY_C)) and (
+            (state & Gdk.ModifierType.ALT_MASK) or is_ctrl
+        ):
+            if getattr(result, 'copy_value', None):
+                result.copy_value()
+                self.main_window.hide()
+                self.main_window.entry.set_text("")
+                return True
+
         if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
-            if is_ctrl and getattr(result, 'open_location', None):
+            # Shift+Enter, Alt+Enter или Ctrl+Enter открывают содержащую папку
+            if ((state & Gdk.ModifierType.SHIFT_MASK) or (state & Gdk.ModifierType.ALT_MASK) or is_ctrl) and getattr(result, 'open_location', None):
                 result.open_location()
                 self.main_window.hide()
                 self.main_window.entry.set_text("")
                 return True
-            elif not is_ctrl and getattr(result, 'execute', None):
+            elif getattr(result, 'execute', None):
                 result.execute()
                 self.main_window.hide()
                 self.main_window.entry.set_text("")
                 return True
-                
-        if is_ctrl and keyval in (Gdk.KEY_c, Gdk.KEY_C):
-            if getattr(result, 'copy_value', None):
-                result.copy_value()
-                return True
-                
+
         return False

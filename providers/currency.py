@@ -1,19 +1,18 @@
+import json
 import os
 import re
-import json
+import threading
 import time
 import urllib.request
-import threading
 from datetime import datetime
-from .base import BaseProvider, SearchResult
-from i18n import t, get_current_language
 
-try:
-    import gi
-    gi.require_version('Gtk', '4.0')
-    from gi.repository import Gdk
-except (ValueError, ImportError):
-    pass
+from i18n import get_current_language, t
+from logger import get_logger
+from utils import set_clipboard_text
+
+from .base import BaseProvider, SearchResult
+
+logger = get_logger("currency")
 
 CURRENCY_ICON_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), '..', 'assets', 'icons', 'currency-converter.svg')
@@ -176,7 +175,7 @@ class CurrencyProvider(BaseProvider):
                             self._rates_cache.update(data["rates"])
                             self._rates_timestamp = data.get("timestamp", 0)
             except Exception as e:
-                print(f"[CurrencyProvider] Error reading cache: {e}")
+                logger.warning("Error reading cache: %s", e)
 
         # 2. Check if update needed (> 6 hours old or no timestamp)
         now = time.time()
@@ -204,7 +203,7 @@ class CurrencyProvider(BaseProvider):
                             if rate and rate > 0:
                                 usd_values[code.upper()] = 1.0 / float(rate)
             except Exception as e:
-                print(f"[CurrencyProvider] Fiat update failed: {e}")
+                logger.warning("Fiat update failed: %s", e)
 
             # 2. Crypto
             try:
@@ -227,7 +226,7 @@ class CurrencyProvider(BaseProvider):
                         if cid in cdata and "usd" in cdata[cid]:
                             usd_values[code] = float(cdata[cid]["usd"])
             except Exception as e:
-                print(f"[CurrencyProvider] Crypto update failed: {e}")
+                logger.warning("Crypto update failed: %s", e)
 
             if usd_values:
                 with self._lock:
@@ -243,15 +242,13 @@ class CurrencyProvider(BaseProvider):
                         "rates": self._rates_cache
                     }, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            print(f"[CurrencyProvider] Background update failed: {e}")
+            logger.error("Background update failed: %s", e)
         finally:
             with self._lock:
                 CurrencyProvider._updating = False
 
     def _format_value(self, val: float, cur: str, is_ru: bool) -> str:
-        if val >= 1000:
-            s = f"{val:,.2f}"
-        elif val >= 1:
+        if val >= 1:
             s = f"{val:,.2f}"
         elif val >= 0.01:
             s = f"{val:,.4f}"
@@ -336,20 +333,10 @@ class CurrencyProvider(BaseProvider):
         }
 
         def _copy_val():
-            try:
-                display = Gdk.Display.get_default()
-                if display:
-                    display.get_clipboard().set(copy_text)
-            except Exception:
-                pass
+            set_clipboard_text(copy_text)
 
         def _copy_all():
-            try:
-                display = Gdk.Display.get_default()
-                if display:
-                    display.get_clipboard().set(f"{title} ({rate_str})")
-            except Exception:
-                pass
+            set_clipboard_text(f"{title} ({rate_str})")
 
         return SearchResult(
             id=f"cur_{cur_from}_{cur_to}_{val_from}",
@@ -418,8 +405,8 @@ class CurrencyProvider(BaseProvider):
                     res = self._create_result(val, cur_from, cur_to, score=160)
                     if res:
                         return [res]
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.debug("Currency float parse failed for '%s': %s", val_str, e)
 
         # Case 3: '<cur_from> (in/to/в/во/->) <cur_to>' (implied amount 1)
         pair_match = re.match(r'^([a-zа-яё\$\€\₽\₸\£\₺\₾\₴\₹\฿\₿\Ξ\₮]+)\s*(?:in|to|в|во|->)\s*([a-zа-яё\$\€\₽\₸\£\₺\₾\₴\₹\฿\₿\Ξ\₮]+)$', q)
@@ -467,7 +454,7 @@ class CurrencyProvider(BaseProvider):
                         if res:
                             results.append(res)
                     return results
-                except ValueError:
-                    pass
+                except ValueError as e:
+                    logger.debug("Currency float parse failed for '%s': %s", val_str, e)
 
         return []

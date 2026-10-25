@@ -1,56 +1,76 @@
 #!/bin/bash
-set -e
+# Echo Search Uninstaller
+set -euo pipefail
 
-# ==========================================================
-# 🌊 Echo (Spotlight Liquid Glass) - Скрипт удаления
-# ==========================================================
+INSTALL_DIR="${XDG_BIN_HOME:-$HOME/.local/bin}"
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}"
+DESKTOP_DIR="$DATA_DIR/applications"
+ICON_DIR="$DATA_DIR/icons/hicolor/scalable/apps"
+THEMES_ICON_DIR="$DATA_DIR/icons/echo-search"
+APP_DIR="$DATA_DIR/echo-search"
+CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/echo-search"
+CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/echo-search"
 
-GREEN="\033[1;32m"
-BLUE="\033[1;34m"
-YELLOW="\033[1;33m"
-RED="\033[1;31m"
-RESET="\033[0m"
+BOLD='\033[1m'
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m'
 
-echo -e "${YELLOW}==========================================${RESET}"
-echo -e "${YELLOW}       Удаление Echo (Spotlight Glass)    ${RESET}"
-echo -e "${YELLOW}==========================================${RESET}"
+echo -e "${BOLD}Echo Search Uninstaller${NC}"
+echo
+echo "The following will be removed:"
+echo "  $INSTALL_DIR/echo-search"
+echo "  $DESKTOP_DIR/com.echo.search.desktop"
+echo "  $ICON_DIR/com.echo.search.svg"
+echo "  $DATA_DIR/icons/hicolor/*/apps/com.echo.search.png"
+echo "  $THEMES_ICON_DIR"
+echo "  $APP_DIR/"
+echo
+echo "The following will be KEPT (your settings, custom styles, and search history):"
+echo "  $CONFIG_DIR"
+echo "  $CACHE_DIR"
+echo
 
-SUDO_CMD=""
-if [ "$EUID" -ne 0 ]; then
-    if command -v sudo >/dev/null 2>&1; then
-        SUDO_CMD="sudo"
-    else
-        echo -e "${RED}❌ Для удаления необходимы привилегии sudo.${RESET}"
-        exit 1
-    fi
+AUTO_CONFIRM=false
+for arg in "$@"; do
+    case "$arg" in
+        -y|--yes)
+            AUTO_CONFIRM=true
+            ;;
+    esac
+done
+
+if [ "$AUTO_CONFIRM" = false ]; then
+    read -rp "Proceed with uninstall? [y/N] " answer
+    case "$answer" in
+        [yY][eE][sS]|[yY]) ;;
+        *)
+            echo "Uninstall cancelled."
+            exit 0
+            ;;
+    esac
 fi
 
-# 1. Удаление пакета и системных файлов
-echo -e "${BLUE}[1/2] Удаление системного пакета echo-search...${RESET}"
-if command -v apt >/dev/null 2>&1; then
-    $SUDO_CMD apt remove -y echo-search 2>/dev/null || true
-fi
-if [ -d "/usr/lib/echo-search" ]; then
-    $SUDO_CMD rm -rf /usr/lib/echo-search /usr/share/echo-search /usr/bin/echo-search /usr/share/applications/com.echo.search.desktop
-fi
+echo "Removing files..."
+rm -f  "$INSTALL_DIR/echo-search"
+rm -f  "$DESKTOP_DIR/com.echo.search.desktop"
+rm -f  "$ICON_DIR/com.echo.search.svg"
+for s in 48 64 128 256 512; do
+    rm -f "$DATA_DIR/icons/hicolor/${s}x${s}/apps/com.echo.search.png"
+done
+rm -rf "$THEMES_ICON_DIR"
+rm -rf "$APP_DIR"
 
-# 2. Удаление шортката из GNOME
-echo -e "${BLUE}[2/2] Очистка сочетаний клавиш...${RESET}"
-if command -v gsettings >/dev/null 2>&1; then
-    CUSTOM_KEY_SCHEMA="org.gnome.settings-daemon.plugins.media-keys.custom-keybinding"
-    MEDIA_KEYS="org.gnome.settings-daemon.plugins.media-keys"
-
-    for i in {0..15}; do
-        KEY_PATH="/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom$i/"
-        EXISTING_NAME=$(gsettings get "${CUSTOM_KEY_SCHEMA}:${KEY_PATH}" name 2>/dev/null || true)
-        if [[ "$EXISTING_NAME" == *"Echo"* ]]; then
-            gsettings reset-recursively "${CUSTOM_KEY_SCHEMA}:${KEY_PATH}" || true
-        fi
-    done
+if command -v update-desktop-database > /dev/null 2>&1; then
+    update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
+fi
+if command -v gtk-update-icon-cache > /dev/null 2>&1; then
+    gtk-update-icon-cache -f -t "$DATA_DIR/icons/hicolor" 2>/dev/null || true
 fi
 
-echo -e "\n${GREEN}==========================================${RESET}"
-echo -e "${GREEN}✓ Echo успешно удален из системы.${RESET}"
-echo -e "Пользовательские настройки сохранены в ~/.config/echo-search."
-echo -e "Если вы хотите удалить и их, выполните: rm -rf ~/.config/echo-search ~/.local/share/echo"
-echo -e "${GREEN}==========================================${RESET}"
+echo
+echo -e "${GREEN}Echo Search has been uninstalled.${NC}"
+echo
+echo "Your configuration and history are preserved at: $CONFIG_DIR"
+echo "To also remove them, run:"
+echo -e "  ${RED}rm -rf $CONFIG_DIR $CACHE_DIR${NC}"

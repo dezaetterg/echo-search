@@ -1,7 +1,14 @@
-import os
 import json
+import os
 import re
+
+from i18n import get_current_language
+from logger import get_logger
+
 from .base import BaseProvider, SearchResult
+from .emoji_ru import get_emoji_ru_name
+
+logger = get_logger("emoji")
 
 # Базовый словарь часто используемых английских тегов -> русские синонимы
 COMMON_RU_TRANSLATIONS = {
@@ -241,7 +248,7 @@ class EmojiProvider(BaseProvider):
                         aliases = item.get("aliases", [])
                         tags = item.get("tags", [])
                         keywords = set(aliases + tags)
-                        
+
                         # Добавляем русские переводы из базового словаря по полным словам
                         for tag in list(keywords):
                             words = set(re.split(r'[^a-zA-Z0-9]+', tag.lower()))
@@ -249,17 +256,20 @@ class EmojiProvider(BaseProvider):
                                 if en_k in words:
                                     for ru_v in ru_vals:
                                         keywords.add(ru_v)
-                                        
+
                         # Добавляем прямые русские синонимы по символу эмодзи
                         if char in RU_EMOJI_SYNONYMS:
                             for ru_syn in RU_EMOJI_SYNONYMS[char]:
                                 keywords.add(ru_syn)
-                                
-                        kw_list = list(keywords)
+
                         direct_ru_list = RU_EMOJI_SYNONYMS.get(char, [])
+                        name_ru = get_emoji_ru_name(char, name, direct_ru=direct_ru_list)
+                        keywords.add(name_ru.lower())
+                        kw_list = list(keywords)
                         self.emojis.append({
                             "char": char,
                             "name": name,
+                            "name_ru": name_ru,
                             "name_lower": name.lower(),
                             "category": category,
                             "kw": kw_list,
@@ -268,8 +278,8 @@ class EmojiProvider(BaseProvider):
                             "direct_ru_lower": [r.lower() for r in direct_ru_list]
                         })
         except Exception as e:
-            print("Failed to load emoji DB:", e)
-            
+            logger.warning("Failed to load emoji DB: %s", e)
+
         self._load_characters()
 
     def _load_characters(self):
@@ -309,18 +319,21 @@ class EmojiProvider(BaseProvider):
         ]
         for char, name, tags in chars:
             direct_ru = [t for t in tags if any(ord(c) > 127 for c in t)]
+            name_ru = get_emoji_ru_name(char, name, direct_ru=direct_ru)
+            tags_with_ru = list(tags) + [name_ru.lower()]
             self.emojis.append({
                 "char": char,
                 "name": name,
+                "name_ru": name_ru,
                 "name_lower": name.lower(),
                 "category": "Characters",
-                "kw": tags,
-                "kw_lower": [t.lower() for t in tags],
+                "kw": tags_with_ru,
+                "kw_lower": [t.lower() for t in tags_with_ru],
                 "direct_ru": direct_ru,
                 "direct_ru_lower": [r.lower() for r in direct_ru]
             })
-            
-    def _create_result(self, emoji_char: str, name: str, keywords: list, category: str, score: float) -> SearchResult:
+
+    def _create_result(self, emoji_char: str, name: str, keywords: list, category: str, score: float, direct_ru: list = None, name_ru: str = None) -> SearchResult:
         def _copy_callback():
             try:
                 import gi
@@ -328,14 +341,21 @@ class EmojiProvider(BaseProvider):
                 from gi.repository import Gdk
                 clipboard = Gdk.Display.get_default().get_clipboard()
                 clipboard.set(emoji_char)
-            except Exception: pass
+            except Exception as e:
+                logger.debug("Failed copying emoji to clipboard: %s", e)
+
+        if not name_ru:
+            name_ru = get_emoji_ru_name(emoji_char, name, direct_ru=direct_ru)
+
+        is_ru = (get_current_language() == "ru")
+        display_title = name_ru if is_ru else name.capitalize()
 
         subtitle = ", ".join(keywords[:5])
         if len(subtitle) > 60:
             subtitle = subtitle[:57] + "..."
 
         unicode_code = " ".join([f"U+{ord(c):04X}" for c in emoji_char])
-        
+
         def _copy_unicode_callback():
             try:
                 import gi
@@ -343,17 +363,18 @@ class EmojiProvider(BaseProvider):
                 from gi.repository import Gdk
                 clipboard = Gdk.Display.get_default().get_clipboard()
                 clipboard.set(unicode_code)
-            except Exception: pass
+            except Exception as e:
+                logger.debug("Failed copying unicode to clipboard: %s", e)
 
         return SearchResult(
             id=f"emoji_{emoji_char}",
-            title=f"{emoji_char}  {name}",
+            title=f"{emoji_char}  {display_title}",
             subtitle=subtitle,
             icon=emoji_char,
             score=score,
             category="Emoji",
             provider="EmojiProvider",
-            preview_data={"char": emoji_char, "name": name, "keywords": keywords, "emoji_category": category, "unicode_code": unicode_code},
+            preview_data={"char": emoji_char, "name": name, "name_ru": name_ru, "keywords": keywords, "emoji_category": category, "unicode_code": unicode_code},
             action_execute=_copy_callback,
             action_copy=_copy_callback,
             action_open_location=_copy_unicode_callback
@@ -362,27 +383,27 @@ class EmojiProvider(BaseProvider):
     def search(self, query: str, limit: int = 40, category_filter: str = None) -> list[SearchResult]:
         if category_filter not in (None, "All", "Emoji"):
             return []
-            
+
         q = query.lower().strip()
-        
+
         if category_filter == "Emoji" and not q:
-            return [self._create_result(em["char"], em["name"], em["kw"], em["category"], 100) for em in self.emojis]
-            
+            return [self._create_result(em["char"], em["name"], em["kw"], em["category"], 100, direct_ru=em.get("direct_ru"), name_ru=em.get("name_ru")) for em in self.emojis]
+
         if not q or len(q) < 2:
             return []
-            
+
         # Убираем двоеточия при вводе типа :smile: или :кот:
         if q.startswith(":") and q.endswith(":") and len(q) > 2:
             q = q[1:-1]
         elif q.startswith(":"):
             q = q[1:]
-            
+
         results = []
         for em in self.emojis:
             score = 0
             name_lower = em["name_lower"]
             direct_ru_lower = em.get("direct_ru_lower", [])
-            
+
             if q == name_lower:
                 score = 110
             elif q in direct_ru_lower:
@@ -402,9 +423,9 @@ class EmojiProvider(BaseProvider):
                     elif q in kw_lower:
                         score = 70
                         break
-                    
+
             if score > 0:
-                results.append(self._create_result(em["char"], em["name"], em["kw"], em["category"], score))
-                
+                results.append(self._create_result(em["char"], em["name"], em["kw"], em["category"], score, direct_ru=em.get("direct_ru"), name_ru=em.get("name_ru")))
+
         results.sort(key=lambda x: x.score, reverse=True)
         return results[:limit]

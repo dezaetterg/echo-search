@@ -1,8 +1,13 @@
 import os
 import zoneinfo
 from datetime import datetime
+
+from logger import get_logger
+
 from .base import BaseProvider, SearchResult
-from i18n import t, get_current_language
+
+logger = get_logger("timezone")
+from i18n import get_current_language, t
 
 try:
     import gi
@@ -221,8 +226,8 @@ class TimezoneProvider(BaseProvider):
                     display = Gdk.Display.get_default()
                     if display:
                         display.get_clipboard().set(copy_text)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Clipboard copy failed: %s", e)
 
             return SearchResult(
                 id=f"tz_{city_data['id']}",
@@ -236,7 +241,7 @@ class TimezoneProvider(BaseProvider):
                 action_copy=_copy_callback
             )
         except Exception as e:
-            print(f"Error calculating timezone for {city_data['id']}: {e}")
+            logger.warning("Error calculating timezone for %s: %s", city_data.get("id"), e)
             return None
 
     def search(self, query: str, limit: int = 5, category_filter: str = None) -> list[SearchResult]:
@@ -301,8 +306,8 @@ class TimezoneProvider(BaseProvider):
 
             # 2. Declension match (e.g. в париже, в лондоне, в питере) - only for len >= 4
             elif len(clean_q) >= 4 and (
-                _matches_declined(clean_q, name_ru) or 
-                _matches_declined(clean_q, name_en) or 
+                _matches_declined(clean_q, name_ru) or
+                _matches_declined(clean_q, name_en) or
                 any(_matches_declined(clean_q, k) for k in kws if len(k) >= 4)
             ):
                 score = 145 if has_prefix else 85
@@ -311,16 +316,16 @@ class TimezoneProvider(BaseProvider):
             # If has_prefix: allow any length >= 1 (e.g. "время т...")
             # If no prefix: require at least 3 chars (e.g. "ток...", "лон...")
             elif (has_prefix or len(clean_q) >= 3) and (
-                name_ru.startswith(clean_q) or 
-                name_en.startswith(clean_q) or 
+                name_ru.startswith(clean_q) or
+                name_en.startswith(clean_q) or
                 any(k.startswith(clean_q) for k in kws)
             ):
                 score = 130 if has_prefix else 65
 
             # 4. Substring match only if explicit prefix "время..." and query len >= 3
             elif has_prefix and len(clean_q) >= 3 and (
-                clean_q in name_ru or 
-                clean_q in name_en or 
+                clean_q in name_ru or
+                clean_q in name_en or
                 any(clean_q in k for k in kws)
             ):
                 score = 110

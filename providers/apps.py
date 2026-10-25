@@ -1,20 +1,26 @@
-import os
 import configparser
+import os
 import shlex
 import subprocess
 from pathlib import Path
+
 from rapidfuzz import fuzz
+
+from logger import get_logger
 
 try:
     import gi
     gi.require_version("Gtk", "4.0")
     gi.require_version("Gdk", "4.0")
-    from gi.repository import Gio, GLib, Gdk
+    from gi.repository import Gdk, Gio, GLib
 except (ValueError, ImportError):
     pass
 
+logger = get_logger("apps")
+
+from i18n import i18n, t
+
 from .base import BaseProvider, SearchResult
-from i18n import t, i18n
 
 CATEGORY_KEYS = {
     "Settings": "provider_cat_settings",
@@ -59,7 +65,7 @@ class DesktopApp:
         self.description = ""
         self.developer = "System"
         self.no_display = False
-        
+
         # Pre-calculated in-memory search tokens for 0ms lookup
         self.app_names = []
         self.cached_searchable_text = ""
@@ -123,7 +129,8 @@ class DesktopApp:
                 self.app_names = list(names_set)
                 self.cached_searchable_text = f"{self.name} {self.name_en} {self.categories} {self.keywords} {self.keywords_loc} {self.keywords_ru}".lower()
 
-        except Exception:
+        except Exception as e:
+            logger.debug("Failed parsing desktop file %s: %s", self.path, e)
             self.no_display = True
 
     @property
@@ -180,7 +187,7 @@ class AppProvider(BaseProvider):
                             apps.append(app)
                             seen_execs.add(app.exec_cmd)
             except Exception as e:
-                print(f"Error scanning app dir {d}: {e}")
+                logger.warning("Error scanning app dir %s: %s", d, e)
         self.apps = apps
 
     def _setup_file_monitors(self):
@@ -200,7 +207,7 @@ class AppProvider(BaseProvider):
                     monitor.connect("changed", self._on_dir_changed)
                     self._monitors.append(monitor)
         except Exception as e:
-            print(f"Warning: Could not setup AppProvider file monitors: {e}")
+            logger.warning("Could not setup AppProvider file monitors: %s", e)
 
     def _on_dir_changed(self, monitor, file, other_file, event_type):
         # Debounce reloading to avoid multi-reloads when several desktop files are written
@@ -210,7 +217,8 @@ class AppProvider(BaseProvider):
             if self._reload_timer_id is not None:
                 GLib.source_remove(self._reload_timer_id)
             self._reload_timer_id = GLib.timeout_add(500, self._debounced_reload)
-        except Exception:
+        except Exception as e:
+            logger.debug("Debounce timer error: %s", e)
             self._load_apps()
 
     def _debounced_reload(self):
@@ -231,8 +239,8 @@ class AppProvider(BaseProvider):
                 if app_info:
                     app_info.launch_uris([], None)
                     return
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Gio launch failed for %s: %s", app_data.name, e)
 
             # 2. Secure subprocess spawn without shell=True
             if app_data.exec_cmd:
@@ -248,7 +256,7 @@ class AppProvider(BaseProvider):
                             stderr=subprocess.DEVNULL
                         )
                 except Exception as e:
-                    print(f"Error launching application {app_data.name}: {e}")
+                    logger.error("Error launching application %s: %s", app_data.name, e)
 
         def _loc_callback():
             path = os.path.dirname(app_data.path)
@@ -256,7 +264,8 @@ class AppProvider(BaseProvider):
                 import gi
                 from gi.repository import Gio
                 Gio.AppInfo.launch_default_for_uri(f"file://{path}", None)
-            except Exception:
+            except Exception as e:
+                logger.debug("Gio launch folder failed: %s", e)
                 subprocess.Popen(["xdg-open", path], start_new_session=True)
 
         def _copy_callback():
@@ -268,8 +277,8 @@ class AppProvider(BaseProvider):
                 if display:
                     clipboard = display.get_clipboard()
                     clipboard.set(app_data.path)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Clipboard copy failed: %s", e)
 
         return SearchResult(
             id=app_data.path,
@@ -285,6 +294,7 @@ class AppProvider(BaseProvider):
                 "exec_cmd": app_data.exec_cmd,
                 "generic_name": app_data.generic_name,
                 "categories": app_data.categories,
+                "category": app_data.categories,
                 "description": app_data.description,
                 "developer": app_data.developer
             },
@@ -313,7 +323,7 @@ class AppProvider(BaseProvider):
                 all_sorted = sorted(candidates, key=lambda x: x.name.lower())
                 return [self._create_result(app, 0) for app in all_sorted]
             else:
-                recent_ids = self.history_manager.get_recent_apps(limit)
+                recent_ids = self.history_manager.get_recent_apps(limit) if self.history_manager else []
                 recent_apps = []
                 for app_id in recent_ids:
                     app = next((a for a in candidates if a.path == app_id), None)
@@ -356,7 +366,7 @@ class AppProvider(BaseProvider):
             best_score = score
 
             if best_score >= 65:
-                usage_bonus = self.history_manager.get_score_bonus(app.path, query)
+                usage_bonus = self.history_manager.get_score_bonus(app.path, query) if self.history_manager else 0.0
                 app_results.append(self._create_result(app, best_score + usage_bonus))
 
         app_results.sort(key=lambda x: x.score, reverse=True)

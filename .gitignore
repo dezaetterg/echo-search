@@ -63,3 +63,10 @@ run.sh
 
 # Scratch and temporary testing files
 scratch/
+
+# Type checking
+.mypy_cache/
+
+# Package archives and checksums
+*.pkg.tar.zst
+*.sha256

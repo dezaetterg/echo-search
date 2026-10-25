@@ -1,12 +1,18 @@
 import os
+import re
 import sys
+
+from logger import get_logger
+
+logger = get_logger("utils")
 
 try:
     import gi
     gi.require_version("Gtk", "4.0")
-    from gi.repository import Gtk, Gdk, GdkPixbuf, GLib
+    gi.require_version("Gdk", "4.0")
+    from gi.repository import Gdk, GdkPixbuf, GLib, Gtk
 except ValueError as e:
-    print(f"[FATAL] GTK/LayerShell version error: {e}", file=sys.stderr)
+    logger.critical(f"GTK/LayerShell version error: {e}")
     sys.exit(1)
 
 # In-memory LRU Pixbuf Cache for ultra-fast icon loading
@@ -17,7 +23,6 @@ def set_icon_safe(widget: Gtk.Image, icon_ref: str, fallback_icon: str = "applic
     if pixel_size:
         widget.set_pixel_size(pixel_size)
 
-    # 1. Если передан готовый pixbuf / paintable
     if raw_pixbuf is not None:
         try:
             if is_paintable:
@@ -25,14 +30,13 @@ def set_icon_safe(widget: Gtk.Image, icon_ref: str, fallback_icon: str = "applic
                     texture = Gdk.Texture.new_for_pixbuf(raw_pixbuf)
                     widget.set_from_paintable(texture)
                     return
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug("Texture from pixbuf failed: %s", e)
             widget.set_from_pixbuf(raw_pixbuf)
             return
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Set from raw pixbuf failed: %s", e)
 
-    # 2. Если передан путь к файлу (сверхбыстрый LRU кэш)
     if icon_ref and os.path.isabs(icon_ref):
         cache_key = (icon_ref, pixel_size)
         cached_pixbuf = _PIXBUF_CACHE.get(cache_key)
@@ -46,43 +50,49 @@ def set_icon_safe(widget: Gtk.Image, icon_ref: str, fallback_icon: str = "applic
                     pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(icon_ref, pixel_size, pixel_size, True)
                 else:
                     pixbuf = GdkPixbuf.Pixbuf.new_from_file(icon_ref)
-                
+
                 if len(_PIXBUF_CACHE) >= _MAX_CACHE_SIZE:
                     _PIXBUF_CACHE.pop(next(iter(_PIXBUF_CACHE)))
                 _PIXBUF_CACHE[cache_key] = pixbuf
-                
+
                 widget.set_from_pixbuf(pixbuf)
                 return
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Load file icon failed: %s", e)
 
-    # 3. Если передано системное имя темы иконок
     if icon_ref and not os.path.isabs(icon_ref):
         try:
             widget.set_from_icon_name(icon_ref)
             return
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Load icon name failed: %s", e)
 
-    # 4. Fallback 1: Попытка установить fallback_icon
     if fallback_icon:
         try:
             widget.set_from_icon_name(fallback_icon)
             return
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Load fallback icon failed: %s", e)
 
-    # 5. Ultimate Fallback
     try:
         widget.set_from_icon_name("application-x-executable")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Load generic fallback failed: %s", e)
 
 
 def matches_shortcut(keyval: int, state: int, shortcut: str) -> bool:
     if not shortcut:
         return False
     s = shortcut.strip()
+    if not s:
+        return False
+
+    modifiers = {m.lower() for m in re.findall(r"<([^>]+)>", s)}
+    req_ctrl = bool({"ctrl", "control"} & modifiers)
+    req_alt = "alt" in modifiers
+    req_shift = "shift" in modifiers
+    req_super = bool({"super", "mod4"} & modifiers)
+
     clean_modifiers = (
         Gdk.ModifierType.CONTROL_MASK |
         Gdk.ModifierType.ALT_MASK |
@@ -90,10 +100,6 @@ def matches_shortcut(keyval: int, state: int, shortcut: str) -> bool:
         Gdk.ModifierType.SUPER_MASK
     )
     clean_state = state & clean_modifiers
-    req_ctrl = "<ctrl>" in s.lower() or "<control>" in s.lower()
-    req_alt = "<alt>" in s.lower()
-    req_shift = "<shift>" in s.lower()
-    req_super = "<super>" in s.lower()
 
     if bool(clean_state & Gdk.ModifierType.CONTROL_MASK) != req_ctrl:
         return False
@@ -104,18 +110,19 @@ def matches_shortcut(keyval: int, state: int, shortcut: str) -> bool:
     if bool(clean_state & Gdk.ModifierType.SUPER_MASK) != req_super:
         return False
 
-    base_key = s
-    for mod in ["<Ctrl>", "<ctrl>", "<Control>", "<Alt>", "<alt>", "<Shift>", "<shift>", "<Super>", "<super>"]:
-        base_key = base_key.replace(mod, "")
-    base_key = base_key.strip().lower()
+    base_key = re.sub(r"<[^>]+>", "", s).strip().lower()
+    if not base_key:
+        return False
 
     key_name = (Gdk.keyval_name(keyval) or "").lower()
-    if base_key == "space":
+    if base_key in ("space", "пробел"):
         return keyval in (Gdk.KEY_space, Gdk.KEY_KP_Space) or key_name in ("space", "kp_space")
-    elif base_key == "return":
+    elif base_key in ("return", "enter", "ввод"):
         return keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter) or key_name in ("return", "kp_enter")
-    elif base_key == "tab":
-        return keyval in (Gdk.KEY_Tab, Gdk.KEY_KP_Tab, Gdk.KEY_ISO_Left_Tab)
+    elif base_key in ("tab", "таб"):
+        return keyval in (Gdk.KEY_Tab, Gdk.KEY_KP_Tab, Gdk.KEY_ISO_Left_Tab) or key_name in ("tab", "kp_tab", "iso_left_tab")
+    elif base_key in ("escape", "esc"):
+        return keyval == Gdk.KEY_Escape or key_name in ("escape", "esc")
     else:
         return key_name == base_key
 
@@ -123,25 +130,69 @@ def matches_shortcut(keyval: int, state: int, shortcut: str) -> bool:
 def format_shortcut_display(shortcut: str, lang: str = "en") -> str:
     if not shortcut:
         return "-"
-    s = shortcut
-    s = s.replace("<Super>", "Super + ").replace("<super>", "Super + ")
-    s = s.replace("<Ctrl>", "Ctrl + ").replace("<ctrl>", "Ctrl + ")
-    s = s.replace("<Alt>", "Alt + ").replace("<alt>", "Alt + ")
-    s = s.replace("<Shift>", "Shift + ").replace("<shift>", "Shift + ")
-    parts = s.split(" + ")
-    last = parts[-1].strip().lower()
-    if last == "space":
-        if lang in ("ru", "kk"):
-            last_display = "Пробел"
-        elif lang == "uk":
-            last_display = "Пробіл"
-        else:
-            last_display = "Space"
-    elif last == "return":
-        last_display = "Enter"
-    else:
-        last_display = last.capitalize()
+    s = shortcut.strip()
+    if not s:
+        return "-"
 
-    if len(parts) > 1:
-        return " + ".join(parts[:-1]) + " + " + last_display
-    return last_display
+    mods = re.findall(r"<([^>]+)>", s)
+    base_key = re.sub(r"<[^>]+>", "", s).strip()
+
+    parts = []
+    found_mods = {m.lower() for m in mods}
+
+    if "super" in found_mods or "mod4" in found_mods:
+        parts.append("Super")
+    if "ctrl" in found_mods or "control" in found_mods:
+        parts.append("Ctrl")
+    if "alt" in found_mods:
+        parts.append("Alt")
+    if "shift" in found_mods:
+        parts.append("Shift")
+
+    if base_key:
+        bk_lower = base_key.lower()
+        if bk_lower in ("space", "пробел"):
+            if lang in ("ru", "kk"):
+                parts.append("Пробел")
+            elif lang == "uk":
+                parts.append("Пробіл")
+            else:
+                parts.append("Space")
+        elif bk_lower in ("return", "enter", "ввод"):
+            parts.append("Enter")
+        elif bk_lower in ("tab", "таб"):
+            parts.append("Tab")
+        elif bk_lower in ("escape", "esc"):
+            parts.append("Esc")
+        else:
+            parts.append(base_key.capitalize())
+
+    return " + ".join(parts) if parts else "-"
+
+
+def set_clipboard_text(text: str) -> bool:
+    """Safely set text into the default GDK clipboard."""
+    if text is None:
+        return False
+    try:
+        display = Gdk.Display.get_default()
+        if display:
+            clipboard = display.get_clipboard()
+            if clipboard:
+                clipboard.set(str(text))
+                return True
+    except Exception as e:
+        logger.warning("Failed to set clipboard text: %s", e)
+    return False
+
+
+def normalize_theme_mode(theme_name: str | None) -> str:
+    """Normalize a theme name to one of the 3 base modes: 'light', 'aura_glow', or 'dark'."""
+    raw = (theme_name or "").strip().lower()
+    if raw in ("light", "light_glass"):
+        return "light"
+    elif raw == "aura_glow":
+        return "aura_glow"
+    return "dark"
+
+

@@ -1,0 +1,70 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "echo-search"
+version = "1.4.0"
+description = "Spotlight-style desktop launcher with liquid glass aesthetics, real-time weather, and modular search providers"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    { name = "Demid" }
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [
+    ".git",
+    "__pycache__",
+    "scratch",
+    "build",
+    "dist",
+    "echo-weather",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+ignore = [
+    "E402",  # module level import not at top of file (required for gi.require_version)
+    "E501",  # line too long
+    "E701",  # multiple statements on one line (colon)
+    "E702",  # multiple statements on one line (semicolon)
+    "E721",  # do not compare types, use isinstance()
+    "F401",  # imported but unused (re-exports in __init__)
+    "F841",  # local variable assigned to but never used
+    "W291",  # trailing whitespace in templates
+    "W293",  # blank line contains whitespace in multiline CSS/strings
+]
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+exclude = '''
+/(
+    \.git
+  | __pycache__
+  | scratch
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = false
+warn_unused_configs = true
+ignore_missing_imports = true
+check_untyped_defs = false
+disallow_untyped_defs = false
+follow_imports = "silent"
+exclude = [
+    "scratch",
+]

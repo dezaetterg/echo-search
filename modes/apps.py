@@ -1,13 +1,18 @@
 try:
     import gi
     gi.require_version('Gtk', '4.0')
-    from gi.repository import Gtk, Gdk, Pango, Gio, GLib, GObject
+    from gi.repository import Gdk, Gio, GLib, GObject, Gtk, Pango
 except ValueError:
     pass
 
-from .base import BaseMode
-from utils import set_icon_safe
 from i18n import t
+from logger import get_logger
+from utils import set_icon_safe
+
+from .base import BaseMode
+
+logger = get_logger("apps_mode")
+
 
 class AppItemWrapper(GObject.Object):
     def __init__(self, result):
@@ -16,15 +21,14 @@ class AppItemWrapper(GObject.Object):
 
 class AppsMode(BaseMode):
     category_filter = "Apps"
-    
+
     def _create_widget(self) -> Gtk.Widget:
         self.current_results = []
         self.active_category = "All"
-        
+
         self.left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.left_box.set_hexpand(True)
-        
-        # --- FILTERS ---
+
         self.filters_scroll = Gtk.ScrolledWindow()
         self.filters_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.NEVER)
         self.filters_scroll.set_margin_start(32)
@@ -32,17 +36,17 @@ class AppsMode(BaseMode):
         self.filters_scroll.set_margin_top(8)
         self.filters_scroll.set_margin_bottom(16)
         self.filters_scroll.add_css_class("apps-filters-scroll")
-        
+
         hscrollbar = self.filters_scroll.get_hscrollbar()
         if hscrollbar:
             hscrollbar.set_visible(False)
-            
+
         self.filters_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.filters_box.set_spacing(12)
-        
+
         self.filter_buttons = {}
         categories = ["All", "Utilities", "Development", "Games", "Internet", "Office", "Graphics", "Multimedia", "System"]
-        
+
         self.CAT_MAPPING = {
             "All": None,
             "Utilities": "Utility",
@@ -54,7 +58,7 @@ class AppsMode(BaseMode):
             "Multimedia": "AudioVideo",
             "System": "System"
         }
-        
+
         for cat in categories:
             label_text = t(f"cat_{cat.lower()}")
             btn = Gtk.Button(label=label_text)
@@ -64,43 +68,42 @@ class AppsMode(BaseMode):
             btn.connect("clicked", self.on_category_clicked, cat)
             self.filters_box.append(btn)
             self.filter_buttons[cat] = btn
-            
+
         self.filters_scroll.set_child(self.filters_box)
         self.left_box.append(self.filters_scroll)
-        
-        # --- GridView Setup ---
+
         self.list_store = Gio.ListStore.new(AppItemWrapper)
-        
+
         self.custom_filter = Gtk.CustomFilter.new(self._filter_func)
         self.filter_list_model = Gtk.FilterListModel.new(self.list_store, self.custom_filter)
-        
+
         self.selection_model = Gtk.SingleSelection.new(self.filter_list_model)
         self.selection_model.set_autoselect(False)
         self.selection_model.set_autoselect(False)
-        
+
         factory = Gtk.SignalListItemFactory()
         factory.connect("setup", self._on_factory_setup)
         factory.connect("bind", self._on_factory_bind)
-        
+
         self.grid_view = Gtk.GridView.new(self.selection_model, factory)
         self.grid_view.set_max_columns(6)
         self.grid_view.set_min_columns(1)
         self.grid_view.set_single_click_activate(False)
         self.grid_view.connect("activate", self.on_item_activated)
-        
+
         self.scroll = Gtk.ScrolledWindow()
         self.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.scroll.set_min_content_height(420)
         self.scroll.set_max_content_height(420)
         self.scroll.set_child(self.grid_view)
-        
+
         # Контейнер для эффекта стеклянной поверхности
         self.glass_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.glass_container.add_css_class("apps-glass-container")
         self.glass_container.append(self.scroll)
-        
+
         self.left_box.append(self.glass_container)
-        
+
         self.populated = False
         self.current_query = ""
         GLib.idle_add(self._preload_apps)
@@ -118,7 +121,7 @@ class AppsMode(BaseMode):
         target_cat = self.CAT_MAPPING.get(self.active_category)
         if target_cat and target_cat not in item.result.preview_data.get("categories", ""):
             return False
-            
+
         if self.current_query:
             q = self.current_query.lower()
             t_match = q in item.result.title.lower()
@@ -127,20 +130,20 @@ class AppsMode(BaseMode):
             c_match = bool(item.result.preview_data and q in str(item.result.preview_data.get("categories", "")).lower())
             if not (t_match or s_match or e_match or c_match):
                 return False
-                
+
         return True
 
     def on_category_clicked(self, button, cat_name):
         if self.active_category == cat_name:
             return
-            
+
         if self.active_category in self.filter_buttons:
             self.filter_buttons[self.active_category].remove_css_class("active")
-            
+
         self.active_category = cat_name
         self.filter_buttons[cat_name].add_css_class("active")
         self.custom_filter.set_filter_func(self._filter_func)
-        
+
 
     def _on_factory_setup(self, factory, list_item):
         card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
@@ -148,32 +151,32 @@ class AppsMode(BaseMode):
         card.set_halign(Gtk.Align.CENTER)
         card.set_valign(Gtk.Align.CENTER)
         card.set_size_request(100, 120)
-        
+
         icon = Gtk.Image()
         icon.set_pixel_size(80)
         icon.add_css_class("launchpad-icon")
         card.append(icon)
-        
+
         title = Gtk.Label()
         title.set_max_width_chars(12)
         title.set_ellipsize(Pango.EllipsizeMode.END)
         title.add_css_class("launchpad-title")
         title.set_justify(Gtk.Justification.CENTER)
         card.append(title)
-        
+
         list_item.set_child(card)
 
     def _on_factory_bind(self, factory, list_item):
         card = list_item.get_child()
         icon = card.get_first_child()
         title = icon.get_next_sibling()
-        
+
         wrapper = list_item.get_item()
         if wrapper and wrapper.result:
             if wrapper.result.icon:
                 set_icon_safe(icon, wrapper.result.icon, fallback_icon="application-x-executable", pixel_size=64)
             title.set_label(wrapper.result.title)
-            
+
             if list_item.get_selected():
                 card.add_css_class("selected")
             else:
@@ -185,22 +188,27 @@ class AppsMode(BaseMode):
         if wrapper and wrapper.result:
             self._launch_app(wrapper.result)
 
+
+    def retranslate(self):
+        for cat, btn in self.filter_buttons.items():
+            btn.set_label(t(f"cat_{cat.lower()}"))
+
     def render(self, results: list):
         self.current_query = self.main_window.entry.get_text().strip()
-        
+
         if not self.populated:
             all_apps = self.main_window.engine.get_all_apps()
             for app in all_apps:
                 self.list_store.append(AppItemWrapper(app))
             self.populated = True
-            
+
         self.custom_filter.set_filter_func(self._filter_func)
-        
+
         if self.filter_list_model.get_n_items() > 0:
             self.grid_view.set_visible(True)
         else:
             self.grid_view.set_visible(False)
-            
+
 
     def _launch_app(self, result):
         if getattr(result, 'execute', None):
@@ -219,10 +227,45 @@ class AppsMode(BaseMode):
             self.selection_model.set_selected(new_pos)
             try:
                 self.grid_view.scroll_to(new_pos, Gtk.ListScrollFlags.NONE, None)
-            except Exception:
-                pass
+            except (AttributeError, TypeError, GLib.Error) as e:
+                logger.debug("Apps scroll_to failed: %s", e)
 
-        if keyval == Gdk.KEY_Right:
+        # Мгновенный запуск по Alt + 1..9
+        if (state & Gdk.ModifierType.ALT_MASK) and not (state & Gdk.ModifierType.CONTROL_MASK):
+            alt_digits = {
+                Gdk.KEY_1: 0, Gdk.KEY_KP_1: 0,
+                Gdk.KEY_2: 1, Gdk.KEY_KP_2: 1,
+                Gdk.KEY_3: 2, Gdk.KEY_KP_3: 2,
+                Gdk.KEY_4: 3, Gdk.KEY_KP_4: 3,
+                Gdk.KEY_5: 4, Gdk.KEY_KP_5: 4,
+                Gdk.KEY_6: 5, Gdk.KEY_KP_6: 5,
+                Gdk.KEY_7: 6, Gdk.KEY_KP_7: 6,
+                Gdk.KEY_8: 7, Gdk.KEY_KP_8: 7,
+                Gdk.KEY_9: 8, Gdk.KEY_KP_8: 8,
+            }
+            if keyval in alt_digits:
+                idx = alt_digits[keyval]
+                if idx < n_items:
+                    wrapper = self.filter_list_model.get_item(idx)
+                    if wrapper and wrapper.result:
+                        self._launch_app(wrapper.result)
+                        return True
+
+        # Копирование пути/команды через Alt+C
+        if (keyval in (Gdk.KEY_c, Gdk.KEY_C)) and (
+            (state & Gdk.ModifierType.ALT_MASK) or
+            ((state & Gdk.ModifierType.CONTROL_MASK) and (state & Gdk.ModifierType.SHIFT_MASK))
+        ):
+            pos = self.selection_model.get_selected()
+            if pos != Gtk.INVALID_LIST_POSITION and pos < n_items:
+                wrapper = self.filter_list_model.get_item(pos)
+                if wrapper and wrapper.result:
+                    wrapper.result.copy_value()
+                    self.main_window.hide()
+                    self.main_window.entry.set_text("")
+                    return True
+
+        if keyval == Gdk.KEY_Right or ((state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_f, Gdk.KEY_F)):
             pos = self.selection_model.get_selected()
             if pos == Gtk.INVALID_LIST_POSITION:
                 _select_and_scroll(0)
@@ -238,7 +281,7 @@ class AppsMode(BaseMode):
                 _select_and_scroll(pos - 1)
             return True
 
-        elif keyval == Gdk.KEY_Down:
+        elif keyval == Gdk.KEY_Down or ((state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_n, Gdk.KEY_N, Gdk.KEY_j, Gdk.KEY_J)):
             pos = self.selection_model.get_selected()
             if pos == Gtk.INVALID_LIST_POSITION:
                 _select_and_scroll(0)
@@ -248,7 +291,7 @@ class AppsMode(BaseMode):
                 _select_and_scroll(n_items - 1)
             return True
 
-        elif keyval == Gdk.KEY_Up:
+        elif keyval == Gdk.KEY_Up or ((state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_p, Gdk.KEY_P)):
             pos = self.selection_model.get_selected()
             if pos == Gtk.INVALID_LIST_POSITION:
                 _select_and_scroll(0)
@@ -262,7 +305,7 @@ class AppsMode(BaseMode):
             pos = self.selection_model.get_selected()
             if pos == Gtk.INVALID_LIST_POSITION and n_items > 0:
                 pos = 0
-                
+
             if pos != Gtk.INVALID_LIST_POSITION and pos < n_items:
                 wrapper = self.filter_list_model.get_item(pos)
                 if wrapper and wrapper.result:

@@ -1,19 +1,24 @@
 import functools
-from pathlib import Path
-import os
-import urllib.parse
 import mimetypes
-import threading
+import os
 import subprocess
+import threading
 import time
+import urllib.parse
 from datetime import datetime
+from pathlib import Path
+
+from logger import get_logger
+
 from .base import BaseProvider, SearchResult
+
+logger = get_logger("files")
 
 try:
     import gi
     gi.require_version("GLib", "2.0")
     gi.require_version("Gtk", "4.0")
-    from gi.repository import GLib, Gio, Gtk, Gdk, GObject
+    from gi.repository import Gdk, Gio, GLib, GObject, Gtk
 except (ValueError, ImportError):
     pass
 
@@ -34,11 +39,25 @@ EN_TO_RU = str.maketrans(
 
 # Common directory blacklists to avoid wasting CPU/RAM on build artifacts, runtimes, and caches
 IGNORE_DIRS = {
-    ".git", ".cache", ".local", ".cargo", ".rustup", ".npm", ".nvm",
-    "node_modules", "venv", ".venv", "env", "__pycache__", "target", "build",
-    "dist", ".gemini", ".vscode", ".idea", ".mozilla", ".thunderbird", ".var",
-    ".wine", ".steam", ".flatpak", "flatpak", ".gradle", ".m2", ".dart_tool",
-    ".android", ".composer", "vendor"
+    # Version control
+    ".git", ".svn", ".hg",
+    # Caches and runtime
+    ".cache", ".local", ".config", ".var", ".gemini", ".vscode", ".idea",
+    ".antigravity", ".antigravity-ide", "__pycache__", ".pytest_cache", ".mypy_cache",
+    ".ruff_cache", ".tox",
+    # Build outputs
+    "node_modules", "target", "build", "dist", "out", "bin", "obj", "vendor",
+    # Environments
+    "venv", ".venv", "env", ".env", "virtualenv", "python_env",
+    "site-packages", "dist-packages",
+    # Package managers
+    ".cargo", ".rustup", ".npm", ".nvm", ".yarn", ".pnpm-store", ".gradle", ".m2",
+    # System / apps / games
+    ".mozilla", ".thunderbird", ".steam", ".steam.bak", "steam", "Steam", ".wine", ".wine32", ".wine64",
+    "wine", "games", "steamapps", "faugus", "lutris", "heroic", ".minecraft",
+    ".flatpak", "flatpak", ".android", ".dart_tool", ".composer", ".pki", ".ssh", ".gnupg",
+    # Themes and system assets
+    ".themes", ".icons", ".fonts", "fonts"
 }
 
 # Fast extension to MIME and category lookup table
@@ -46,27 +65,60 @@ EXT_MAP = {
     # PDF
     ".pdf": ("application/pdf", "PDF"),
     ".djvu": ("image/vnd.djvu", "Documents"),
+    ".djv": ("image/vnd.djvu", "Documents"),
     ".epub": ("application/epub+zip", "Documents"),
     ".mobi": ("application/x-mobipocket-ebook", "Documents"),
     ".fb2": ("application/x-fictionbook+xml", "Documents"),
-    # Documents
+    ".azw": ("application/vnd.amazon.ebook", "Documents"),
+    ".azw3": ("application/vnd.amazon.ebook", "Documents"),
+    ".cbr": ("application/x-cbr", "Documents"),
+    ".cbz": ("application/x-cbz", "Documents"),
+    # Documents - Text & Word Processing
     ".doc": ("application/msword", "Documents"),
     ".docx": ("application/vnd.openxmlformats-officedocument.wordprocessingml.document", "Documents"),
+    ".docm": ("application/vnd.ms-word.document.macroenabled.12", "Documents"),
+    ".dot": ("application/msword", "Documents"),
+    ".dotx": ("application/vnd.openxmlformats-officedocument.wordprocessingml.template", "Documents"),
     ".odt": ("application/vnd.oasis.opendocument.text", "Documents"),
+    ".ott": ("application/vnd.oasis.opendocument.text-template", "Documents"),
     ".rtf": ("application/rtf", "Documents"),
     ".txt": ("text/plain", "Documents"),
+    ".text": ("text/plain", "Documents"),
     ".md": ("text/markdown", "Documents"),
     ".markdown": ("text/markdown", "Documents"),
     ".rst": ("text/x-rst", "Documents"),
     ".tex": ("application/x-tex", "Documents"),
+    ".org": ("text/x-org", "Documents"),
+    ".pages": ("application/vnd.apple.pages", "Documents"),
+    ".adoc": ("text/asciidoc", "Documents"),
+    ".asciidoc": ("text/asciidoc", "Documents"),
+    # Documents - Spreadsheets
     ".xlsx": ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Documents"),
     ".xls": ("application/vnd.ms-excel", "Documents"),
+    ".xlsm": ("application/vnd.ms-excel.sheet.macroenabled.12", "Documents"),
+    ".xlsb": ("application/vnd.ms-excel.sheet.binary.macroenabled.12", "Documents"),
     ".ods": ("application/vnd.oasis.opendocument.spreadsheet", "Documents"),
+    ".ots": ("application/vnd.oasis.opendocument.spreadsheet-template", "Documents"),
     ".csv": ("text/csv", "Documents"),
     ".tsv": ("text/tab-separated-values", "Documents"),
+    ".numbers": ("application/vnd.apple.numbers", "Documents"),
+    ".xlt": ("application/vnd.ms-excel", "Documents"),
+    ".xltx": ("application/vnd.openxmlformats-officedocument.spreadsheetml.template", "Documents"),
+    # Documents - Presentations
     ".pptx": ("application/vnd.openxmlformats-officedocument.presentationml.presentation", "Documents"),
     ".ppt": ("application/vnd.ms-powerpoint", "Documents"),
+    ".pptm": ("application/vnd.ms-powerpoint.presentation.macroenabled.12", "Documents"),
+    ".pps": ("application/vnd.ms-powerpoint", "Documents"),
+    ".ppsx": ("application/vnd.openxmlformats-officedocument.presentationml.slideshow", "Documents"),
     ".odp": ("application/vnd.oasis.opendocument.presentation", "Documents"),
+    ".otp": ("application/vnd.oasis.opendocument.presentation-template", "Documents"),
+    ".key": ("application/vnd.apple.keynote", "Documents"),
+    ".keynote": ("application/vnd.apple.keynote", "Documents"),
+    ".pot": ("application/vnd.ms-powerpoint", "Documents"),
+    ".potx": ("application/vnd.openxmlformats-officedocument.presentationml.template", "Documents"),
+    # Documents - Drawings / Graphics
+    ".odg": ("application/vnd.oasis.opendocument.graphics", "Documents"),
+    ".otg": ("application/vnd.oasis.opendocument.graphics-template", "Documents"),
     # Images
     ".png": ("image/png", "Images"),
     ".jpg": ("image/jpeg", "Images"),
@@ -122,6 +174,15 @@ EXT_MAP = {
     ".appimage": ("application/x-executable", "Archives"),
 }
 
+# Code and configuration extensions to prevent dev files from polluting "Documents"
+CODE_EXTENSIONS = {
+    ".py", ".pyw", ".pyx", ".json", ".sh", ".bash", ".zsh", ".js", ".mjs", ".cjs",
+    ".ts", ".mts", ".cts", ".jsx", ".tsx", ".html", ".htm", ".css", ".scss", ".sass",
+    ".less", ".xml", ".yaml", ".yml", ".toml", ".ini", ".conf", ".cfg", ".c", ".cpp",
+    ".cc", ".cxx", ".h", ".hpp", ".hxx", ".rs", ".go", ".java", ".kt", ".kts", ".lua",
+    ".sql", ".diff", ".patch", ".php", ".rb", ".pl", ".swift", ".vue", ".svelte"
+}
+
 def escape_sparql(text: str) -> str:
     return text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("\r", " ")
 
@@ -154,6 +215,7 @@ class FileProvider(BaseProvider):
                 self.conn = Tracker.SparqlConnection.bus_new("org.freedesktop.Tracker3.Miner.Files", None, None)
                 self.tracker_broken = False
             except Exception as e:
+                logger.debug("Tracker SPARQL connection failed, using local indexing: %s", e)
                 self.conn = None
                 self.tracker_broken = True
         else:
@@ -163,7 +225,6 @@ class FileProvider(BaseProvider):
         home = os.path.expanduser("~")
         target_dirs = set()
 
-        # 1. Native XDG directory lookup (supports all languages / distros)
         try:
             for attr in ["DIRECTORY_DOCUMENTS", "DIRECTORY_DOWNLOAD", "DIRECTORY_PICTURES",
                          "DIRECTORY_VIDEOS", "DIRECTORY_MUSIC", "DIRECTORY_DESKTOP",
@@ -173,8 +234,8 @@ class FileProvider(BaseProvider):
                     resolved = GLib.get_user_special_dir(dir_enum)
                     if resolved and os.path.exists(resolved):
                         target_dirs.add(resolved)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("GLib special directories lookup failed: %s", e)
 
         # 2. Add standard English and Russian fallbacks if not caught by XDG
         fallbacks = [
@@ -186,14 +247,19 @@ class FileProvider(BaseProvider):
             if os.path.exists(p):
                 target_dirs.add(p)
 
-        # 3. Add any top-level user directories in ~ (e.g. ~/Projects, ~/Books, ~/pdf, ~/Cloud)
         try:
             for entry in os.scandir(home):
                 if entry.is_dir(follow_symlinks=False):
-                    if not entry.name.startswith(".") and entry.name not in IGNORE_DIRS:
+                    name_lower = entry.name.lower()
+                    if (
+                        not entry.name.startswith(".")
+                        and name_lower not in IGNORE_DIRS
+                        and not name_lower.endswith("-theme")
+                        and not name_lower.endswith("-fonts")
+                    ):
                         target_dirs.add(entry.path)
-        except Exception:
-            pass
+        except OSError as e:
+            logger.debug("Scanning home directory failed: %s", e)
 
         return sorted(list(target_dirs))
 
@@ -203,8 +269,8 @@ class FileProvider(BaseProvider):
         if self.local_cache and not self.is_building_cache:
             try:
                 GLib.idle_add(cb)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Failed to dispatch cache ready callback: %s", e)
 
     def remove_cache_ready_callback(self, cb):
         if cb in self.on_cache_ready_callbacks:
@@ -236,11 +302,16 @@ class FileProvider(BaseProvider):
                     try:
                         with os.scandir(folder_path) as it:
                             for entry in it:
-                                if entry.name.startswith(".") or entry.name in IGNORE_DIRS:
+                                name = entry.name
+                                name_lower = name.lower()
+                                if (
+                                    name.startswith(".")
+                                    or name_lower in IGNORE_DIRS
+                                    or name_lower.endswith("-theme")
+                                    or name_lower.endswith("-fonts")
+                                ):
                                     continue
                                 try:
-                                    name = entry.name
-                                    name_lower = name.lower()
                                     path = entry.path
 
                                     if entry.is_dir(follow_symlinks=False):
@@ -263,10 +334,14 @@ class FileProvider(BaseProvider):
                                     elif entry.is_file(follow_symlinks=False):
                                         ext = os.path.splitext(name)[1].lower()
                                         mime = "application/octet-stream"
-                                        category = "Documents"
+                                        category = "Other"
 
                                         if ext in EXT_MAP:
                                             mime, category = EXT_MAP[ext]
+                                        elif ext in CODE_EXTENSIONS:
+                                            guessed, _ = mimetypes.guess_type(name)
+                                            mime = guessed or "text/plain"
+                                            category = "Code"
                                         else:
                                             guessed, _ = mimetypes.guess_type(name)
                                             if guessed:
@@ -277,10 +352,19 @@ class FileProvider(BaseProvider):
                                                     category = "Videos"
                                                 elif mime.startswith("audio/"):
                                                     category = "Audio"
-                                                elif mime == "application/pdf":
+                                                elif mime == "application/pdf" or mime.endswith("/pdf"):
                                                     category = "PDF"
-                                                elif any(a in mime for a in ["zip", "tar", "rar", "7z", "compressed"]):
+                                                elif any(a in mime for a in ["zip", "tar", "rar", "7z", "compressed", "x-bzip", "x-xz", "x-gzip"]):
                                                     category = "Archives"
+                                                elif (
+                                                    mime == "text/plain"
+                                                    or any(k in mime for k in [
+                                                        "document", "msword", "officedocument",
+                                                        "opendocument", "spreadsheet", "presentation",
+                                                        "rtf", "epub", "fictionbook"
+                                                    ])
+                                                ):
+                                                    category = "Documents"
 
                                         st = entry.stat(follow_symlinks=False)
                                         item = {
@@ -302,8 +386,8 @@ class FileProvider(BaseProvider):
 
                                 except (PermissionError, OSError):
                                     continue
-                    except (PermissionError, OSError):
-                        pass
+                    except (PermissionError, OSError) as e:
+                        logger.debug("Folder scan access error on %s: %s", folder_path, e)
 
                 for base_dir in target_dirs:
                     _scan_folder(base_dir, depth=0, max_depth=8)
@@ -317,24 +401,30 @@ class FileProvider(BaseProvider):
                 self.last_cache_time = time.time()
 
             except Exception as e:
-                print(f"Error building local cache: {e}")
+                logger.warning(f"Error building local cache: {e}")
             finally:
                 self.is_building_cache = False
                 for cb in list(self.on_cache_ready_callbacks):
                     try:
                         GLib.idle_add(cb)
                     except Exception as ex:
-                        print(f"Error executing cache ready callback: {ex}")
+                        logger.warning(f"Error executing cache ready callback: {ex}")
 
         thread = threading.Thread(target=_worker, daemon=True)
         thread.start()
 
     def _format_size(self, size: int) -> str:
-        for unit in ["B", "KB", "MB", "GB", "TB"]:
+        try:
+            from i18n import get_current_language
+            is_ru = (get_current_language() == "ru")
+        except Exception:
+            is_ru = True
+        units = ["Б", "КБ", "МБ", "ГБ", "ТБ"] if is_ru else ["B", "KB", "MB", "GB", "TB"]
+        for unit in units:
             if size < 1024.0:
                 return f"{size:.1f} {unit}"
             size /= 1024.0
-        return f"{size:.1f} PB"
+        return f"{size:.1f} {'ПБ' if is_ru else 'PB'}"
 
     @functools.lru_cache(maxsize=1024)
     def _get_icon_for_mime(self, mime: str, path: str) -> str:
@@ -358,8 +448,8 @@ class FileProvider(BaseProvider):
             thumb_normal = os.path.expanduser(f"~/.cache/thumbnails/normal/{hash_str}.png")
             if os.path.exists(thumb_normal):
                 return thumb_normal
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Thumbnail lookup failed for %s: %s", path, e)
 
         if mime.startswith("image/"):
             return "image-x-generic"
@@ -371,25 +461,60 @@ class FileProvider(BaseProvider):
             return "application-pdf"
         elif "zip" in mime or "tar" in mime or "compressed" in mime or "rar" in mime:
             return "package-x-generic"
+        elif "spreadsheet" in mime or "excel" in mime or "oasis.opendocument.spreadsheet" in mime:
+            return "x-office-spreadsheet"
+        elif "presentation" in mime or "powerpoint" in mime or "oasis.opendocument.presentation" in mime:
+            return "x-office-presentation"
+        elif "msword" in mime or "wordprocessing" in mime or "oasis.opendocument.text" in mime or "rtf" in mime:
+            return "x-office-document"
         elif "text/" in mime or "document" in mime:
             return "text-x-generic"
         elif "directory" in mime or os.path.isdir(path):
             return "folder"
         return "text-x-generic"
 
-    def _create_result(self, path: str, name: str, mime_type: str, score: float) -> SearchResult:
+    def _create_result(self, path: str, name: str, mime_type: str, score: float, category: str = None) -> SearchResult:
+        if not category:
+            ext = os.path.splitext(name)[1].lower()
+            if ext in EXT_MAP:
+                category = EXT_MAP[ext][1]
+            elif ext in CODE_EXTENSIONS:
+                category = "Code"
+            elif mime_type == "inode/directory" or os.path.isdir(path):
+                category = "Folders"
+            elif mime_type.startswith("image/"):
+                category = "Images"
+            elif mime_type.startswith("video/"):
+                category = "Videos"
+            elif mime_type.startswith("audio/"):
+                category = "Audio"
+            elif mime_type == "application/pdf" or mime_type.endswith("/pdf"):
+                category = "PDF"
+            elif any(a in mime_type for a in ["zip", "tar", "rar", "7z", "compressed"]):
+                category = "Archives"
+            elif (
+                mime_type == "text/plain"
+                or any(k in mime_type for k in [
+                    "document", "msword", "officedocument", "opendocument",
+                    "spreadsheet", "presentation", "rtf", "epub", "fictionbook"
+                ])
+            ):
+                category = "Documents"
+            else:
+                category = "Other"
+
         def _exec_callback():
             try:
                 subprocess.Popen(["xdg-open", path], start_new_session=True)
             except Exception as e:
-                print(f"Failed to open file {path}: {e}")
+                logger.error(f"Failed to open file {path}: {e}")
 
         def _loc_callback():
             try:
                 parent_dir = os.path.dirname(path)
                 subprocess.Popen(["xdg-open", parent_dir], start_new_session=True)
             except Exception as e:
-                print(f"Failed to open file location {path}: {e}")
+                logger.error(f"Failed to open file location {path}: {e}")
 
         def _copy_callback():
             try:
@@ -403,15 +528,15 @@ class FileProvider(BaseProvider):
                         val = GObject.Value(Gdk.Texture.__gtype__, tex)
                         clipboard.set(val)
                         return
-                    except Exception:
-                        pass
+                    except (GLib.Error, TypeError) as e:
+                        logger.debug("Failed to copy image texture to clipboard: %s", e)
 
                 gfile = Gio.File.new_for_path(path)
                 flist = Gdk.FileList.new_from_list([gfile])
                 val = GObject.Value(Gdk.FileList.__gtype__, flist)
                 clipboard.set(val)
             except Exception as e:
-                print(f"Clipboard file copy error: {e}")
+                logger.error(f"Clipboard file copy error: {e}")
 
         return SearchResult(
             id=f"file_{path}",
@@ -424,7 +549,8 @@ class FileProvider(BaseProvider):
             preview_data={
                 "type": "file",
                 "path": path,
-                "mime": mime_type
+                "mime": mime_type,
+                "category": category
             },
             action_execute=_exec_callback,
             action_open_location=_loc_callback,
@@ -446,7 +572,7 @@ class FileProvider(BaseProvider):
 
         results = []
         for item in items[:limit]:
-            results.append(self._create_result(item["path"], item["name"], item["mime"], 50))
+            results.append(self._create_result(item["path"], item["name"], item["mime"], 50, item.get("category")))
         return results
 
     def get_recent_files(self, limit: int = 30) -> list[SearchResult]:
@@ -482,6 +608,7 @@ class FileProvider(BaseProvider):
                 if results:
                     return results
             except Exception as e:
+                logger.warning("Tracker recent files query failed: %s", e)
                 self.tracker_broken = True
                 self.conn = None
 
@@ -500,8 +627,8 @@ class FileProvider(BaseProvider):
                     results.append(self._create_result(path, name, mime, 50))
                     if len(results) >= limit:
                         break
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug("Gtk.RecentManager query failed: %s", e)
 
         # If recent files are still sparse, fill from local cache sorted by modification time
         if len(results) < limit and self.local_cache:
@@ -509,7 +636,7 @@ class FileProvider(BaseProvider):
                 p = item["path"]
                 if p not in seen:
                     seen.add(p)
-                    results.append(self._create_result(p, item["name"], item["mime"], 40))
+                    results.append(self._create_result(p, item["name"], item["mime"], 40, item.get("category")))
                     if len(results) >= limit:
                         break
 
@@ -574,8 +701,9 @@ class FileProvider(BaseProvider):
                 elif now - mtime < 30 * 86400:
                     score += 8
 
-                score += self.history_manager.get_score_bonus(item_path, q_orig)
-                results.append(self._create_result(item_path, item_name, item["mime"], score))
+                if self.history_manager:
+                    score += self.history_manager.get_score_bonus(item_path, q_orig)
+                results.append(self._create_result(item_path, item_name, item["mime"], score, item.get("category")))
                 if len(results) >= limit * 3:
                     break
 
@@ -584,7 +712,7 @@ class FileProvider(BaseProvider):
             try:
                 filter_clauses = [f'CONTAINS(LCASE(?name), "{escape_sparql(q)}")' for q in queries]
                 or_filter = " || ".join(filter_clauses)
-                
+
                 sparql = f"""
                 SELECT nie:url(?info) nfo:fileName(?info) nie:mimeType(?info)
                 WHERE {{
@@ -615,13 +743,15 @@ class FileProvider(BaseProvider):
                         score += 30
                     elif any(name_lower.startswith(q) for q in queries):
                         score += 20
-                    score += self.history_manager.get_score_bonus(path, q_orig)
+                    if self.history_manager:
+                        score += self.history_manager.get_score_bonus(path, q_orig)
 
                     results.append(self._create_result(path, name, mime, score))
                     if len(results) >= limit:
                         break
 
             except Exception as e:
+                logger.warning("Tracker search query failed: %s", e)
                 self.tracker_broken = True
                 self.conn = None
 

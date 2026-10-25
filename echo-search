@@ -1,0 +1,27 @@
+#!/bin/sh
+# Echo Search Launcher
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+# 1. Running directly from repository root
+if [ -f "$SCRIPT_DIR/main.py" ]; then
+    exec /usr/bin/env python3 "$SCRIPT_DIR/main.py" "$@"
+# 2. Installed in Flatpak environment (/app)
+elif [ -f "/app/share/echo-search/main.py" ]; then
+    exec /usr/bin/env python3 "/app/share/echo-search/main.py" "$@"
+# 3. Installed in user-space directory ~/.local/share/echo-search
+elif [ -f "${XDG_DATA_HOME:-$HOME/.local/share}/echo-search/main.py" ]; then
+    exec /usr/bin/env python3 "${XDG_DATA_HOME:-$HOME/.local/share}/echo-search/main.py" "$@"
+# 4. Installed system-wide in /usr/lib/echo-search, /opt/echo-search, or /usr/share/echo-search
+elif [ -f "/usr/lib/echo-search/main.py" ]; then
+    exec /usr/bin/env python3 "/usr/lib/echo-search/main.py" "$@"
+elif [ -f "/opt/echo-search/main.py" ]; then
+    exec /usr/bin/env python3 "/opt/echo-search/main.py" "$@"
+elif [ -f "/usr/share/echo-search/main.py" ]; then
+    exec /usr/bin/env python3 "/usr/share/echo-search/main.py" "$@"
+else
+    echo "Error: Echo Search files could not be located." >&2
+    echo "Please ensure the repository is installed properly or run ./install.sh" >&2
+    exit 1
+fi

@@ -1,7 +1,13 @@
-import os
 import json
+import os
+import shutil
+import subprocess
 from pathlib import Path
+
 from i18n import i18n
+from logger import get_logger
+
+logger = get_logger("config")
 
 def _detect_system_theme() -> str:
     """Universal cross-DE / cross-distro dark/light theme detector (Cinnamon, GNOME, KDE, XFCE, etc.)."""
@@ -33,91 +39,117 @@ def _detect_system_theme() -> str:
                 return "dark"
             elif val == 2:
                 return "light"
-    except Exception:
-        pass
+    except Exception as e:
+        logger.debug("Portal theme detection unavailable: %s", e)
 
-    # 2. GNOME / Cinnamon color-scheme via gsettings
-    try:
-        import subprocess
-        res = subprocess.run(
-            ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
-            capture_output=True, text=True, timeout=1
-        )
-        if res.returncode == 0:
-            val = res.stdout.strip().strip("'").lower()
-            if "dark" in val:
-                return "dark"
-            elif "light" in val or "default" in val:
-                return "light"
-    except Exception:
-        pass
+    desktop = os.environ.get("XDG_CURRENT_DESKTOP", "").lower()
+    has_gsettings = shutil.which("gsettings") is not None
 
-    # 3. Cinnamon GTK Theme (e.g. Mint-Y-Dark-Aqua)
-    try:
-        import subprocess
-        res = subprocess.run(
-            ["gsettings", "get", "org.cinnamon.desktop.interface", "gtk-theme"],
-            capture_output=True, text=True, timeout=1
-        )
-        if res.returncode == 0:
-            val = res.stdout.strip().strip("'").lower()
-            if "dark" in val:
-                return "dark"
-            elif val:
-                return "light"
-    except Exception:
-        pass
-
-    # 4. Cinnamon Desktop Theme
-    try:
-        import subprocess
-        res = subprocess.run(
-            ["gsettings", "get", "org.cinnamon.theme", "name"],
-            capture_output=True, text=True, timeout=1
-        )
-        if res.returncode == 0:
-            val = res.stdout.strip().strip("'").lower()
-            if "dark" in val:
-                return "dark"
-    except Exception:
-        pass
-
-    # 5. XFCE Net/ThemeName
-    try:
-        import subprocess
-        res = subprocess.run(
-            ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName"],
-            capture_output=True, text=True, timeout=1
-        )
-        if res.returncode == 0:
-            val = res.stdout.strip().lower()
-            if "dark" in val:
-                return "dark"
-            elif val:
-                return "light"
-    except Exception:
-        pass
-
-    # 6. KDE Plasma kdeglobals
-    try:
-        kdeglobals = Path(os.path.expanduser("~/.config/kdeglobals"))
-        if kdeglobals.exists():
-            with open(kdeglobals, "r", encoding="utf-8") as f:
-                content = f.read().lower()
+    def _check_kde() -> str | None:
+        try:
+            kdeglobals = Path(os.path.expanduser("~/.config/kdeglobals"))
+            if kdeglobals.exists():
+                content = kdeglobals.read_text(encoding="utf-8", errors="ignore").lower()
                 if "colorcheme=breezedark" in content or "dark" in content:
                     return "dark"
                 elif "colorcheme=breeze" in content or "light" in content:
                     return "light"
-    except Exception:
-        pass
+        except Exception as e:
+            logger.debug("KDE theme detection error: %s", e)
+        return None
+
+    def _check_xfce() -> str | None:
+        if shutil.which("xfconf-query"):
+            try:
+                res = subprocess.run(
+                    ["xfconf-query", "-c", "xsettings", "-p", "/Net/ThemeName"],
+                    capture_output=True, text=True, timeout=1
+                )
+                if res.returncode == 0:
+                    val = res.stdout.strip().lower()
+                    if "dark" in val:
+                        return "dark"
+                    elif val:
+                        return "light"
+            except Exception as e:
+                logger.debug("XFCE theme detection error: %s", e)
+        return None
+
+    def _check_cinnamon() -> str | None:
+        if not has_gsettings:
+            return None
+        for schema, key in (
+            ("org.cinnamon.desktop.interface", "gtk-theme"),
+            ("org.cinnamon.theme", "name"),
+        ):
+            try:
+                res = subprocess.run(
+                    ["gsettings", "get", schema, key],
+                    capture_output=True, text=True, timeout=1
+                )
+                if res.returncode == 0:
+                    val = res.stdout.strip().strip("'").lower()
+                    if "dark" in val:
+                        return "dark"
+                    elif val:
+                        return "light"
+            except Exception as e:
+                logger.debug("Cinnamon theme detection error (%s %s): %s", schema, key, e)
+        return None
+
+    def _check_gnome() -> str | None:
+        if not has_gsettings:
+            return None
+        try:
+            res = subprocess.run(
+                ["gsettings", "get", "org.gnome.desktop.interface", "color-scheme"],
+                capture_output=True, text=True, timeout=1
+            )
+            if res.returncode == 0:
+                val = res.stdout.strip().strip("'").lower()
+                if "dark" in val:
+                    return "dark"
+                elif "light" in val or "default" in val:
+                    return "light"
+        except Exception as e:
+            logger.debug("GNOME theme detection error: %s", e)
+        return None
+
+    # Targeted desktop check
+    if "kde" in desktop:
+        theme = _check_kde()
+        if theme:
+            return theme
+    elif "xfce" in desktop:
+        theme = _check_xfce()
+        if theme:
+            return theme
+    elif "cinnamon" in desktop:
+        theme = _check_cinnamon() or _check_gnome()
+        if theme:
+            return theme
+    elif any(d in desktop for d in ("gnome", "ubuntu", "unity", "pantheon")):
+        theme = _check_gnome()
+        if theme:
+            return theme
+
+    # General fallback
+    theme = _check_gnome() or _check_cinnamon() or _check_kde() or _check_xfce()
+    if theme:
+        return theme
 
     return "dark"
 
 class ConfigManager:
-    def __init__(self):
-        self.config_dir = Path(os.path.expanduser("~/.config/echo-search"))
+    def __init__(self, config_dir=None):
+        if config_dir:
+            self.config_dir = Path(config_dir)
+            self._is_custom_dir = True
+        else:
+            self.config_dir = Path(os.path.expanduser("~/.config/echo-search"))
+            self._is_custom_dir = False
         self.config_file = self.config_dir / "config.json"
-        
+
         system_theme = _detect_system_theme()
         self.defaults = {
             "theme": system_theme,
@@ -133,7 +165,7 @@ class ConfigManager:
             "launch_at_login": False,
             "launch_shortcut": "<Super>Space",
             "quick_look_shortcut": "space",
-            
+
             "applications": True,
             "files": True,
             "clipboard": True,
@@ -142,13 +174,24 @@ class ConfigManager:
             "commands": True,
             "timezone": True,
             "weather": True,
-            "weather_default_city": "Нью-Йорк",
+            "weather_default_city": "Новокузнецк",
+            "temperature_unit": "celsius",
             "settings": True,
-            
+
+            "icon_theme": "dark",
             "recent_when_empty": True,
-            "search_history": True
+            "search_history": True,
+            "web_search_engine": "google",
+            "web_search_custom_url": "",
+            "web_search_flags": True,
+            "highlight_matches": True,
+            "show_action_bar": True,
+            "show_alt_badges": True,
+            "group_results_by_category": True,
+            "results_category_order": ["instant", "apps", "files", "clipboard", "emoji", "web"],
+            "max_results_per_category": 5
         }
-        
+
         self.config = {}
         self.load()
 
@@ -169,11 +212,16 @@ class ConfigManager:
                             # Special case: int to float (e.g. 1 to 1.0)
                             elif expected_type == float and isinstance(val, int):
                                 self.config[key] = float(val)
-                    
-                    # Backwards compatibility with Tahoe Settings
+
+                    # Backwards compatibility with legacy configuration schema
                     if self.config.get("theme") == "silver":
                         self.config["theme"] = "dark_glass"
-                    
+
+                    if "results_category_order" in self.config:
+                        val = self.config["results_category_order"]
+                        if not isinstance(val, list) or not val:
+                            self.config["results_category_order"] = list(self.defaults["results_category_order"])
+
                     if "enabled_modes" in user_config:
                         modes = user_config["enabled_modes"]
                         self.config["applications"] = "Apps" in modes
@@ -181,23 +229,25 @@ class ConfigManager:
                         self.config["clipboard"] = "Clipboard" in modes
                         self.config["emoji"] = "Emoji" in modes
             except Exception as e:
-                print(f"Error loading config: {e}")
+                logger.error(f"Error loading config: {e}")
         else:
             self.save()
-            
+
         i18n.set_language(self.config.get("language", "auto"))
-        self._sync_autostart(self.get("launch_at_login"))
-        self._sync_desktop_hotkey(self.get("launch_shortcut", "<Super>Space"))
+        if not self._is_custom_dir:
+            self._sync_autostart(self.get("launch_at_login"))
+            self._sync_desktop_hotkey(self.get("launch_shortcut", "<Super>Space"))
+            self.apply_icon_theme(self.get("icon_theme", "dark"))
 
     def save(self):
         try:
             self.config_dir.mkdir(parents=True, exist_ok=True)
-            # Ensure enabled_modes is explicitly written for Tahoe Settings GUI
+            # Ensure enabled_modes is explicitly written to config file
             self.config["enabled_modes"] = self.get("enabled_modes")
             with open(self.config_file, "w") as f:
                 json.dump(self.config, f, indent=4)
         except Exception as e:
-            print(f"Error saving config: {e}")
+            logger.error(f"Error saving config: {e}")
 
     def get(self, key, default=None):
         if key == "enabled_modes":
@@ -218,7 +268,7 @@ class ConfigManager:
     def apply_to_engine(self, engine):
         if not hasattr(self, '_all_providers_cache') or not self._all_providers_cache:
             self._all_providers_cache = engine.providers.copy()
-            
+
         active = []
         for p in self._all_providers_cache:
             name = p.__class__.__name__
@@ -242,7 +292,7 @@ class ConfigManager:
                 active.append(p)
             elif name == "WeatherProvider" and self.get("weather", True):
                 active.append(p)
-                
+
         engine.providers = active
 
     def set(self, key, value):
@@ -250,15 +300,18 @@ class ConfigManager:
         self.save()
         if key == "language":
             i18n.set_language(value)
-        elif key in ("launch_shortcut", "hotkey"):
-            self._sync_desktop_hotkey(value)
-        elif key == "launch_at_login":
-            self._sync_autostart(value)
+        elif key == "icon_theme":
+            self.apply_icon_theme(value)
+        elif not self._is_custom_dir:
+            if key in ("launch_shortcut", "hotkey"):
+                self._sync_desktop_hotkey(value)
+            elif key == "launch_at_login":
+                self._sync_autostart(value)
 
     def _sync_autostart(self, enabled: bool):
         autostart_dir = Path(os.path.expanduser("~/.config/autostart"))
         desktop_file = autostart_dir / "com.echo.search.desktop"
-        
+
         if enabled:
             autostart_dir.mkdir(parents=True, exist_ok=True)
             content = """[Desktop Entry]
@@ -277,16 +330,18 @@ X-GNOME-Autostart-enabled=true
                 with open(desktop_file, "w") as f:
                     f.write(content)
             except Exception as e:
-                print(f"Error enabling autostart: {e}")
+                logger.error(f"Error enabling autostart: {e}")
         else:
             if desktop_file.exists():
                 try:
                     desktop_file.unlink()
                 except Exception as e:
-                    print(f"Error disabling autostart: {e}")
+                    logger.error(f"Error disabling autostart: {e}")
 
     def _sync_desktop_hotkey(self, hotkey_str):
-        import subprocess, re, ast
+        import ast
+        import re
+        import subprocess
 
         EN_TO_RU = {
             'q': 'Cyrillic_shorti', 'w': 'Cyrillic_tse', 'e': 'Cyrillic_u', 'r': 'Cyrillic_ka', 't': 'Cyrillic_ie',
@@ -315,14 +370,14 @@ X-GNOME-Autostart-enabled=true
             if res.returncode == 0:
                 raw = res.stdout.strip().replace('@as', '').strip()
                 current_paths = ast.literal_eval(raw) if '[' in raw else []
-                
+
                 primary_slot = None
                 for path in current_paths:
                     n = subprocess.run(['gsettings', 'get', f'{CUSTOM_SCHEMA}:{path}', 'name'], capture_output=True, text=True)
                     if n.stdout.strip().strip("'") == 'Echo Search':
                         primary_slot = path
                         break
-                        
+
                 if not primary_slot:
                     for i in range(16):
                         candidate = f'/org/gnome/settings-daemon/plugins/media-keys/custom-keybindings/custom{i}/'
@@ -330,7 +385,7 @@ X-GNOME-Autostart-enabled=true
                             primary_slot = candidate
                             current_paths.append(candidate)
                             break
-                            
+
                 if primary_slot:
                     subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{primary_slot}', 'name', 'Echo Search'])
                     subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{primary_slot}', 'command', 'echo-search'])
@@ -355,7 +410,7 @@ X-GNOME-Autostart-enabled=true
                     if ru_slot:
                         subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{ru_slot}', 'name', 'Echo Search (RU)'])
                         subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{ru_slot}', 'command', 'echo-search'])
-                        subprocess.run(['gsettings', f'set', f'{CUSTOM_SCHEMA}:{ru_slot}', 'binding', ru_binding])
+                        subprocess.run(['gsettings', 'set', f'{CUSTOM_SCHEMA}:{ru_slot}', 'binding', ru_binding])
                 else:
                     if ru_slot and ru_slot in current_paths:
                         subprocess.run(['gsettings', 'reset-recursively', f'{CUSTOM_SCHEMA}:{ru_slot}'])
@@ -363,7 +418,7 @@ X-GNOME-Autostart-enabled=true
 
                 subprocess.run(['gsettings', 'set', MEDIA_KEYS, 'custom-keybindings', str(current_paths)])
         except Exception as e:
-            print(f'Error syncing GNOME hotkey: {e}')
+            logger.warning(f'Error syncing GNOME hotkey: {e}')
 
         # 2. Cinnamon (Linux Mint) - Supports multiple bindings per slot natively
         try:
@@ -393,7 +448,7 @@ X-GNOME-Autostart-enabled=true
                             found_slot = candidate
                             slots.append(candidate)
                             break
-                            
+
                 if found_slot:
                     path = f'/org/cinnamon/desktop/keybindings/custom-keybindings/{found_slot}/'
                     cinnamon_bindings = [hotkey_str]
@@ -406,20 +461,77 @@ X-GNOME-Autostart-enabled=true
                     subprocess.run(['gsettings', 'set', CINNAMON_MAIN, 'custom-list', "['__dummy__']"], capture_output=True)
                     subprocess.run(['gsettings', 'set', CINNAMON_MAIN, 'custom-list', str(slots)], capture_output=True)
         except Exception as e:
-            print(f'Error syncing Cinnamon hotkey: {e}')
+            logger.warning(f'Error syncing Cinnamon hotkey: {e}')
 
         # 3. XFCE
         try:
             subprocess.run(['xfconf-query', '-c', 'xfce4-keyboard-shortcuts', '-p', f'/commands/custom/{hotkey_str}', '-n', '-t', 'string', '-s', 'echo-search'], capture_output=True)
             if ru_binding:
                 subprocess.run(['xfconf-query', '-c', 'xfce4-keyboard-shortcuts', '-p', f'/commands/custom/{ru_binding}', '-n', '-t', 'string', '-s', 'echo-search'], capture_output=True)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f'XFCE hotkey sync error: {e}')
 
         # 4. KDE Plasma
         try:
             kde_tool = 'kwriteconfig6' if subprocess.run(['which', 'kwriteconfig6'], capture_output=True).returncode == 0 else 'kwriteconfig5'
             kde_hotkey = hotkey_str.replace('<Super>', 'Meta+').replace('<Ctrl>', 'Ctrl+').replace('<Alt>', 'Alt+').replace('<Shift>', 'Shift+')
             subprocess.run([kde_tool, '--file', 'kglobalshortcutsrc', '--group', 'com.echo.search.desktop', '--key', '_launch', f'{kde_hotkey},none,Echo'], capture_output=True)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f'KDE hotkey sync error: {e}')
+
+    def apply_icon_theme(self, theme_name: str | None = None) -> bool:
+        """Apply the selected application icon theme (dark, light, aura)."""
+        theme = (theme_name or self.get("icon_theme", "dark")).lower()
+        if theme not in ("dark", "light", "aura"):
+            theme = "dark"
+
+        candidate_dirs = [
+            Path(__file__).parent / "assets" / "icons" / "themes" / theme,
+            Path("/usr/lib/echo-search/assets/icons/themes") / theme,
+            Path("/usr/share/echo-search/assets/icons/themes") / theme,
+            Path(os.path.expanduser("~/.local/share/icons/echo-search/themes")) / theme,
+            Path(os.path.expanduser("~/.local/share/echo-search/assets/icons/themes")) / theme,
+        ]
+        theme_dir = None
+        for d in candidate_dirs:
+            if d.exists():
+                theme_dir = d
+                break
+        if not theme_dir:
+            logger.debug("Icon theme directory for '%s' not found", theme)
+            return False
+
+        user_icons = Path(os.path.expanduser("~/.local/share/icons/hicolor"))
+        sizes = [48, 64, 128, 256, 512]
+        try:
+            for s in sizes:
+                src_png = theme_dir / f"{s}x{s}" / "apps" / "com.echo.search.png"
+                if src_png.exists():
+                    dst_png = user_icons / f"{s}x{s}" / "apps" / "com.echo.search.png"
+                    dst_png.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_png, dst_png)
+
+            scalable_dir = user_icons / "scalable" / "apps"
+            scalable_dir.mkdir(parents=True, exist_ok=True)
+            src_512 = theme_dir / "512x512" / "apps" / "com.echo.search.png"
+            if src_512.exists():
+                import base64
+                with open(src_512, "rb") as f:
+                    b64 = base64.b64encode(f.read()).decode("ascii")
+                svg_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <image width="512" height="512" href="data:image/png;base64,{b64}"/>
+</svg>
+"""
+                (scalable_dir / "com.echo.search.svg").write_text(svg_content, encoding="utf-8")
+
+            if shutil.which("gtk-update-icon-cache"):
+                subprocess.run(
+                    ["gtk-update-icon-cache", "-qtf", str(user_icons)],
+                    capture_output=True, timeout=2
+                )
+            logger.info("Applied icon theme '%s'", theme)
+            return True
+        except Exception as e:
+            logger.error("Failed to apply icon theme '%s': %s", theme, e)
+            return False

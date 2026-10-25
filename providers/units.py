@@ -1,10 +1,12 @@
 import re
-from .base import BaseProvider, SearchResult
-from i18n import t
 
-import re
-from .base import BaseProvider, SearchResult
 from i18n import t
+from logger import get_logger
+
+from .base import BaseProvider, SearchResult
+
+logger = get_logger("units")
+
 
 class UnitConverter:
     # Базовые единицы: метры, килограммы, цельсий, км/ч, кв.метры, литры, секунды, байты
@@ -15,7 +17,7 @@ class UnitConverter:
     VOLUME = {'l': 1, 'ml': 0.001, 'gal': 3.78541, 'oz': 0.0295735}
     TIME = {'s': 1, 'sec': 1, 'min': 60, 'h': 3600, 'hr': 3600, 'd': 86400, 'day': 86400}
     DATA = {'b': 1, 'kb': 1024, 'mb': 1048576, 'gb': 1073741824, 'tb': 1099511627776}
-    
+
     ALIASES = {
         'meter': 'm', 'meters': 'm', 'метр': 'm', 'метры': 'm', 'метров': 'm',
         'kilometer': 'km', 'kilometers': 'km', 'километр': 'km', 'километры': 'km', 'км': 'km',
@@ -52,7 +54,7 @@ class UnitConverter:
     @classmethod
     def convert(cls, query: str) -> str:
         query = query.lower().strip()
-        
+
         # Специальная обработка температуры
         temp_match = re.match(r'^([\d\.\-]+)\s*(?:°)?\s*([a-zа-яё]+)(?:\s*(?:in|to|в|->)\s*(?:°)?\s*([a-zа-яё]+))?$', query)
         if temp_match:
@@ -64,8 +66,8 @@ class UnitConverter:
                     return f"{val}°C = {round(val * 9/5 + 32, 2)}°F"
                 if u_from == 'f' and (u_to in (None, 'c')):
                     return f"{val}°F = {round((val - 32) * 5/9, 2)}°C"
-            except Exception:
-                pass
+            except (ValueError, TypeError) as e:
+                logger.debug("Temperature conversion failed: %s", e)
 
         # Общий парсер: число -> единица -> (опционально: in/to/в -> целевая единица)
         match = re.match(r'^([\d\.]+)\s*([a-zа-яё_]+)(?:\s*(?:in|to|в|->)\s*([a-zа-яё_]+))?$', query)
@@ -75,10 +77,10 @@ class UnitConverter:
         val_str, raw_u_from, raw_u_to = match.groups()
         unit_from = cls.normalize_unit(raw_u_from)
         unit_to = cls.normalize_unit(raw_u_to) if raw_u_to else None
-        
+
         try:
             val = float(val_str)
-        except Exception:
+        except (ValueError, TypeError):
             return None
 
         # Ищем категорию исходной единицы
@@ -87,7 +89,7 @@ class UnitConverter:
             if unit_from in cat:
                 target_category = cat
                 break
-        
+
         if not target_category:
             return None
 
@@ -100,7 +102,7 @@ class UnitConverter:
                 res = base_val / target_category[unit_to]
                 return f"{val} {raw_u_from} = {round(res, 4)} {raw_u_to}"
             return None
-            
+
         # Если не указана, выводим популярные
         results = []
         for u, factor in target_category.items():
@@ -108,10 +110,10 @@ class UnitConverter:
                 res = base_val / factor
                 if 0.001 <= res <= 10000000:
                     results.append(f"{round(res, 2)} {u}")
-                    
+
         if results:
             return f"{val} {raw_u_from} = " + ", ".join(results[:3])
-            
+
         return None
 
 
@@ -124,7 +126,8 @@ class UnitProvider(BaseProvider):
                 from gi.repository import Gdk
                 clipboard = Gdk.Display.get_default().get_clipboard()
                 clipboard.set(str(result_str))
-            except Exception: pass
+            except Exception as e:
+                logger.debug("Clipboard copy failed: %s", e)
 
         return SearchResult(
             id=f"unit_{query}",
@@ -142,7 +145,7 @@ class UnitProvider(BaseProvider):
     def search(self, query: str, limit: int = 10, category_filter: str = None) -> list[SearchResult]:
         if category_filter not in (None, "All", "Units", "Math"):
             return []
-            
+
         res = UnitConverter.convert(query)
         if res:
             return [self._create_result(query, res)]

@@ -1,9 +1,15 @@
 import ast
-import operator
 import math
+import operator
 import os
-from .base import BaseProvider, SearchResult
+
 from i18n import t
+from logger import get_logger
+
+from .base import BaseProvider, SearchResult
+
+logger = get_logger("calculator")
+
 
 class SafeMathEval(ast.NodeVisitor):
     def __init__(self):
@@ -76,7 +82,7 @@ def safe_eval(expr_string: str):
         tree = ast.parse(expr_string, mode='eval')
         evaluator = SafeMathEval()
         result = evaluator.visit(tree.body)
-        
+
         if isinstance(result, float) and result.is_integer():
             return int(result)
         if isinstance(result, float):
@@ -99,8 +105,8 @@ class CalculatorProvider(BaseProvider):
             if os.path.exists(self.history_file):
                 with open(self.history_file, 'r') as f:
                     self.history = json.load(f)
-        except Exception:
-            pass
+        except (OSError, json.JSONDecodeError, ValueError) as e:
+            logger.debug("Failed loading calculator history: %s", e)
 
     def _save_history(self, expr: str, res: str):
         self.history = [{"expr": expr, "res": res}] + [h for h in self.history if h["expr"] != expr][:9]
@@ -109,8 +115,8 @@ class CalculatorProvider(BaseProvider):
             os.makedirs(os.path.dirname(self.history_file), exist_ok=True)
             with open(self.history_file, 'w') as f:
                 json.dump(self.history, f)
-        except Exception:
-            pass
+        except OSError as e:
+            logger.debug("Failed saving calculator history: %s", e)
 
     def _create_result(self, query: str, result: str) -> SearchResult:
         res_str = str(result)
@@ -126,8 +132,8 @@ class CalculatorProvider(BaseProvider):
                 display = Gdk.Display.get_default()
                 if display:
                     display.get_clipboard().set(str(result))
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug("Clipboard copy failed: %s", e)
 
         return SearchResult(
             id=f"math_{query}",

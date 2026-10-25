@@ -5,14 +5,18 @@ try:
 except ValueError:
     pass
 
-from .search import SearchMode
+from i18n import t
+from logger import get_logger
+
+logger = get_logger("mode_manager")
+
 from .apps import AppsMode
-from .files import FilesMode
-from .settings import SettingsMode
 from .clipboard import ClipboardMode
 from .emoji import EmojiMode
+from .files import FilesMode
+from .search import SearchMode
+from .settings import SettingsMode
 
-from i18n import t
 
 class ModeManager:
     def __init__(self, main_window):
@@ -22,8 +26,10 @@ class ModeManager:
         self.stack = Gtk.Stack()
         self.stack.set_transition_type(Gtk.StackTransitionType.CROSSFADE)
         self.stack.set_transition_duration(220)
-        self.stack.set_interpolate_size(False)
-        
+        self.stack.set_vhomogeneous(False)
+        self.stack.set_hhomogeneous(False)
+        self.stack.set_interpolate_size(True)
+
         # Initialize modes
         self.modes = {
             "Search": SearchMode(main_window),
@@ -33,15 +39,15 @@ class ModeManager:
             "Clipboard": ClipboardMode(main_window),
             "Emoji": EmojiMode(main_window)
         }
-        
+
         # Add modes to stack
         for name, mode in self.modes.items():
             self.stack.add_named(mode.get_widget(), name)
-            
+
         self.active_mode_name = "Search"
         self.stack.set_visible_child_name(self.active_mode_name)
         self._search_debounce_timer = None
-        
+
         # Preload data in background idle without blocking UI
         from gi.repository import GLib
         if hasattr(self.modes["Apps"], "_preload_apps"):
@@ -59,10 +65,13 @@ class ModeManager:
             if not self.main_window or not hasattr(self.main_window, "entry"):
                 return False
             query = self.main_window.entry.get_text().strip()
-            if query and self.active_mode_name == "Search":
-                self.on_search_changed(query)
-        except Exception:
-            pass
+            if self.active_mode_name == "Search":
+                active_mode = self.get_active_mode()
+                cat = active_mode.get_category_filter() if hasattr(active_mode, "get_category_filter") else None
+                if query or cat == "Weather":
+                    self.on_search_changed(query)
+        except Exception as e:
+            logger.debug("Error in _on_weather_data_updated: %s", e)
         return False
 
     def get_widget(self) -> Gtk.Widget:
@@ -83,6 +92,13 @@ class ModeManager:
         else:
             self.main_window.entry.set_placeholder_text(t("search_placeholder"))
 
+
+    def retranslate(self):
+        self.refresh_placeholder()
+        for mode in self.modes.values():
+            if hasattr(mode, "retranslate"):
+                mode.retranslate()
+
     def get_active_mode(self):
         return self.modes[self.active_mode_name]
 
@@ -92,11 +108,10 @@ class ModeManager:
                 old_mode = self.modes[self.active_mode_name]
                 if hasattr(old_mode, 'on_deactivated'):
                     old_mode.on_deactivated()
-                    
+
             self.active_mode_name = mode_name
             self.stack.set_visible_child_name(mode_name)
-            
-            # Обновление placeholder текста
+
             if mode_name == "Apps":
                 self.main_window.entry.set_placeholder_text(t("apps_placeholder"))
             elif mode_name == "Files":
@@ -109,7 +124,7 @@ class ModeManager:
                 self.main_window.entry.set_placeholder_text(t("settings_placeholder"))
             else:
                 self.main_window.entry.set_placeholder_text(t("search_placeholder"))
-                
+
             self.modes[mode_name].on_activated()
             self.on_search_changed(self.main_window.entry.get_text())
 
@@ -122,7 +137,7 @@ class ModeManager:
         active_mode = self.get_active_mode()
         category = active_mode.get_category_filter()
         query = query.strip()
-        
+
         if category == "Settings":
             if hasattr(active_mode, "filter_settings"):
                 active_mode.filter_settings(query)
@@ -145,11 +160,17 @@ class ModeManager:
             elif category == "Emoji":
                 self.current_results = self.engine.get_all_emojis()
                 active_mode.render(self.current_results)
+            elif category == "Weather":
+                if hasattr(self.engine, "weather") and self.engine.weather:
+                    self.current_results = self.engine.weather.search("", category_filter="Weather")
+                else:
+                    self.current_results = []
+                active_mode.render(self.current_results)
             else:
                 self.current_results = []
                 active_mode.render(self.current_results)
             return
-                
+
         def _execute_debounced_search():
             self._search_debounce_timer = None
             cfg_limit = self.main_window.config_manager.get("results_limit", 20) if self.main_window.config_manager else 20
@@ -162,7 +183,7 @@ class ModeManager:
     def _on_search_completed(self, results, search_id):
         if self.engine._current_search_id != search_id:
             return
-            
+
         self.current_results = results
         self.get_active_mode().render(results)
 

@@ -1,12 +1,15 @@
 try:
     import gi
     gi.require_version("Gtk", "4.0")
-    from gi.repository import Gtk, Gdk, Pango, GLib
+    from gi.repository import Gdk, GLib, Gtk, Pango
 except ValueError:
     pass
 
+from i18n import SUPPORTED_LANGUAGES, t
+from utils import set_icon_safe
+
 from .base import BaseMode
-from i18n import t, SUPPORTED_LANGUAGES
+
 
 class ShortcutButton(Gtk.Button):
     def __init__(self, current_shortcut: str, on_changed_callback, allow_single_key: bool = False):
@@ -15,20 +18,20 @@ class ShortcutButton(Gtk.Button):
         self.on_changed_callback = on_changed_callback
         self.allow_single_key = allow_single_key
         self.is_recording = False
-        
+
         self.add_css_class("shortcut-button")
         self.set_valign(Gtk.Align.CENTER)
         self.update_label()
-        
+
         self.connect("clicked", self._on_clicked)
-        
+
         self.key_ctrl = Gtk.EventControllerKey.new()
         self.key_ctrl.connect("key-pressed", self._on_key_pressed)
         self.add_controller(self.key_ctrl)
 
     def _format_display(self, shortcut: str) -> str:
-        from utils import format_shortcut_display
         from i18n import get_current_language
+        from utils import format_shortcut_display
         return format_shortcut_display(shortcut, get_current_language())
 
     def update_label(self):
@@ -119,15 +122,15 @@ class ShortcutButton(Gtk.Button):
         self.current_shortcut = new_shortcut
         self.is_recording = False
         self.update_label()
-        
+
         if self.on_changed_callback:
             self.on_changed_callback(new_shortcut)
-            
+
         return True
 
 class SettingsMode(BaseMode):
     category_filter = "Settings"
-    
+
     def _create_widget(self) -> Gtk.Widget:
         self.box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         self.box.add_css_class("settings-main-container")
@@ -210,6 +213,13 @@ class SettingsMode(BaseMode):
                 "builder": lambda: self._create_theme_row(cfg)
             },
             {
+                "id": "icon_theme",
+                "group": t("settings_group_appearance"),
+                "title": t("settings_icon_theme"),
+                "keywords": "иконка значок тема иконки icon icon_theme app icon dark light aura",
+                "builder": lambda: self._create_icon_theme_row(cfg)
+            },
+            {
                 "id": "transparency",
                 "group": t("settings_group_appearance"),
                 "title": t("settings_transparency"),
@@ -269,6 +279,61 @@ class SettingsMode(BaseMode):
                     t("settings_results_limit"), cfg.get("results_limit", 20),
                     5, 50, 1, unit="",
                     callback=lambda val: self._on_setting_changed("results_limit", int(val))
+                )
+            },
+            {
+                "id": "group_results_by_category",
+                "group": t("settings_group_results"),
+                "title": t("settings_group_results_by_cat"),
+                "keywords": "группировка категории блоки секции заголовки group category results order",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_group_results_by_cat"),
+                    t("settings_group_results_by_cat_desc"),
+                    cfg.get("group_results_by_category", True),
+                    lambda active: self._on_setting_changed("group_results_by_category", active)
+                )
+            },
+            {
+                "id": "results_category_order",
+                "group": t("settings_group_results"),
+                "title": t("settings_category_order"),
+                "keywords": "приоритет порядок категорий блоки сначала сверху приложения файлы буфер смайлики category order",
+                "builder": lambda: self._create_category_order_row(cfg)
+            },
+            {
+                "id": "highlight_matches",
+                "group": t("settings_group_results"),
+                "title": t("settings_highlight_matches"),
+                "keywords": "подсветка совпадений highlight matches буквы слова поиск результаты",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_highlight_matches"),
+                    t("settings_highlight_matches_desc"),
+                    cfg.get("highlight_matches", True),
+                    lambda active: self._on_setting_changed("highlight_matches", active)
+                )
+            },
+            {
+                "id": "show_action_bar",
+                "group": t("settings_group_results"),
+                "title": t("settings_show_action_bar"),
+                "keywords": "подсказки подсказка хоткеи клавиши панель быстрых действий action bar hotkey hints клавиш внизу",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_show_action_bar"),
+                    t("settings_show_action_bar_desc"),
+                    cfg.get("show_action_bar", True),
+                    lambda active: self._on_setting_changed("show_action_bar", active)
+                )
+            },
+            {
+                "id": "show_alt_badges",
+                "group": t("settings_group_results"),
+                "title": t("settings_show_alt_badges"),
+                "keywords": "цифровые подсказки alt 1 9 номера бейджи быстрый выбор jump hints",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_show_alt_badges"),
+                    t("settings_show_alt_badges_desc"),
+                    cfg.get("show_alt_badges", True),
+                    lambda active: self._on_setting_changed("show_alt_badges", active)
                 )
             },
             {
@@ -363,6 +428,35 @@ class SettingsMode(BaseMode):
                     t("settings_cat_commands"), None, cfg.get("commands", True),
                     lambda active: self._on_setting_changed("commands", active)
                 )
+            },
+            {
+                "id": "web_search_engine",
+                "group": t("settings_group_web_search"),
+                "title": t("settings_web_search_engine"),
+                "keywords": "интернет веб поиск поисковик браузер google yandex duckduckgo brave bing custom",
+                "builder": lambda: self._create_search_engine_row(cfg)
+            },
+            {
+                "id": "web_search_custom_url",
+                "group": t("settings_group_web_search"),
+                "title": t("settings_web_custom_url"),
+                "keywords": "кастомный пользовательский url ссылка поиск query шаблон",
+                "builder": lambda: self._create_entry_row(
+                    t("settings_web_custom_url"),
+                    cfg.get("web_search_custom_url", ""),
+                    "https://duckduckgo.com/?q={query}",
+                    lambda val: self._on_setting_changed("web_search_custom_url", val)
+                )
+            },
+            {
+                "id": "web_search_flags",
+                "group": t("settings_group_web_search"),
+                "title": t("settings_web_flags"),
+                "keywords": "флаги префиксы быстрый поиск -g -ya -ddg -y -gh -w",
+                "builder": lambda: self._create_switch_row(
+                    t("settings_web_flags"), t("settings_web_flags_desc"), cfg.get("web_search_flags", True),
+                    lambda active: self._on_setting_changed("web_search_flags", active)
+                )
             }
         ]
 
@@ -375,6 +469,7 @@ class SettingsMode(BaseMode):
         # 1. ОФОРМЛЕНИЕ И АНИМАЦИИ (APPEARANCE & ANIMATIONS FIRST)
         group_appearance = self._create_group(t("settings_group_appearance"))
         group_appearance.append(self._create_theme_row(cfg))
+        group_appearance.append(self._create_icon_theme_row(cfg))
         trans_val = int((cfg.get("transparency", 0.30) if cfg.get("transparency") is not None else 0.30) * 100)
         group_appearance.append(self._create_slider_row(
             t("settings_transparency"), trans_val, 0, 100, 1, unit="%",
@@ -421,6 +516,31 @@ class SettingsMode(BaseMode):
             t("settings_results_limit"), cfg.get("results_limit", 20),
             5, 50, 1, unit="",
             callback=lambda val: self._on_setting_changed("results_limit", int(val))
+        ))
+        group_params.append(self._create_switch_row(
+            t("settings_group_results_by_cat"),
+            t("settings_group_results_by_cat_desc"),
+            cfg.get("group_results_by_category", True),
+            lambda active: self._on_setting_changed("group_results_by_category", active)
+        ))
+        group_params.append(self._create_category_order_row(cfg))
+        group_params.append(self._create_switch_row(
+            t("settings_highlight_matches"),
+            t("settings_highlight_matches_desc"),
+            cfg.get("highlight_matches", True),
+            lambda active: self._on_setting_changed("highlight_matches", active)
+        ))
+        group_params.append(self._create_switch_row(
+            t("settings_show_action_bar"),
+            t("settings_show_action_bar_desc"),
+            cfg.get("show_action_bar", True),
+            lambda active: self._on_setting_changed("show_action_bar", active)
+        ))
+        group_params.append(self._create_switch_row(
+            t("settings_show_alt_badges"),
+            t("settings_show_alt_badges_desc"),
+            cfg.get("show_alt_badges", True),
+            lambda active: self._on_setting_changed("show_alt_badges", active)
         ))
 
         # 4. ПАНЕЛЬ ПРЕДПРОСМОТРА
@@ -477,8 +597,23 @@ class SettingsMode(BaseMode):
             placeholder="Новокузнецк, Москва, Лондон...",
             callback=lambda val: self._on_setting_changed("weather_default_city", val.strip() if val else "Новокузнецк")
         ))
+        group_categories.append(self._create_temp_unit_row(cfg))
 
-        # 6. КНОПКА СБРОСА
+        # 6. ПОИСК В ИНТЕРНЕТЕ (WEB SEARCH)
+        group_web = self._create_group(t("settings_group_web_search"))
+        group_web.append(self._create_search_engine_row(cfg))
+        group_web.append(self._create_entry_row(
+            t("settings_web_custom_url"),
+            cfg.get("web_search_custom_url", ""),
+            placeholder="https://duckduckgo.com/?q={query}",
+            callback=lambda val: self._on_setting_changed("web_search_custom_url", val.strip())
+        ))
+        group_web.append(self._create_switch_row(
+            t("settings_web_flags"), t("settings_web_flags_desc"), cfg.get("web_search_flags", True),
+            lambda active: self._on_setting_changed("web_search_flags", active)
+        ))
+
+        # 7. КНОПКА СБРОСА
         reset_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         reset_box.set_halign(Gtk.Align.CENTER)
         reset_box.set_margin_top(8)
@@ -657,6 +792,60 @@ class SettingsMode(BaseMode):
         row.append(ctrl_box)
         return row
 
+    def _create_temp_unit_row(self, cfg) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        label_box.set_halign(Gtk.Align.START)
+        label_box.set_hexpand(True)
+        label_box.set_valign(Gtk.Align.CENTER)
+
+        title_lbl = Gtk.Label(label=t("settings_temp_unit"))
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.add_css_class("settings-row-title")
+        label_box.append(title_lbl)
+
+        desc_lbl = Gtk.Label(label=t("settings_temp_unit_desc"))
+        desc_lbl.set_halign(Gtk.Align.START)
+        desc_lbl.add_css_class("settings-row-subtitle")
+        label_box.append(desc_lbl)
+
+        row.append(label_box)
+
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        btn_box.set_valign(Gtk.Align.CENTER)
+        btn_box.add_css_class("settings-theme-selector")
+
+        current_unit = cfg.get("temperature_unit", "celsius")
+        units = [
+            ("celsius", "°C"),
+            ("fahrenheit", "°F")
+        ]
+
+        buttons = []
+        for code, name in units:
+            btn = Gtk.Button(label=name)
+            btn.add_css_class("theme-pill")
+            if current_unit == code:
+                btn.add_css_class("active")
+            buttons.append((code, btn))
+
+        def _on_unit_click(selected_code):
+            for code, b in buttons:
+                if code == selected_code:
+                    b.add_css_class("active")
+                else:
+                    b.remove_css_class("active")
+            self._on_setting_changed("temperature_unit", selected_code)
+
+        for code, btn in buttons:
+            btn.connect("clicked", lambda _, c=code: _on_unit_click(c))
+            btn_box.append(btn)
+
+        row.append(btn_box)
+        return row
+
     def _create_theme_row(self, cfg) -> Gtk.Box:
         row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         row.add_css_class("settings-row")
@@ -678,7 +867,8 @@ class SettingsMode(BaseMode):
             ("light_glass", t("settings_theme_light_glass")),
             ("dark", t("settings_theme_dark")),
             ("light", t("settings_theme_light")),
-            ("aura_glow", "Aura Glow")
+            ("aura_glow", "Aura Glow"),
+            ("echo_blue", t("settings_theme_echo_blue"))
         ]
 
         for code, name in themes:
@@ -690,6 +880,157 @@ class SettingsMode(BaseMode):
             btn_box.append(btn)
 
         row.append(btn_box)
+        return row
+
+    def _create_icon_theme_row(self, cfg) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        title_lbl = Gtk.Label(label=t("settings_icon_theme"))
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.set_hexpand(True)
+        title_lbl.set_valign(Gtk.Align.CENTER)
+        title_lbl.add_css_class("settings-row-title")
+        row.append(title_lbl)
+
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
+        btn_box.set_valign(Gtk.Align.CENTER)
+        btn_box.add_css_class("settings-theme-selector")
+
+        current_icon_theme = cfg.get("icon_theme", "dark")
+        icon_themes = [
+            ("dark", t("settings_icon_theme_dark")),
+            ("light", t("settings_icon_theme_light")),
+            ("aura", t("settings_icon_theme_aura")),
+        ]
+
+        for code, name in icon_themes:
+            btn = Gtk.Button(label=name)
+            btn.add_css_class("theme-pill")
+            if current_icon_theme == code:
+                btn.add_css_class("active")
+            btn.connect("clicked", lambda b, c=code: self._on_icon_theme_selected(c))
+            btn_box.append(btn)
+
+        row.append(btn_box)
+        return row
+
+    def _on_icon_theme_selected(self, icon_theme_code: str):
+        self.main_window.config_manager.set("icon_theme", icon_theme_code)
+        self.main_window.reload_config()
+        self._build_settings_ui()
+
+    def _create_category_order_row(self, cfg) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        label_box.set_halign(Gtk.Align.START)
+        label_box.set_hexpand(True)
+        label_box.set_valign(Gtk.Align.CENTER)
+
+        title_lbl = Gtk.Label(label=t("settings_category_order"))
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.add_css_class("settings-row-title")
+        label_box.append(title_lbl)
+
+        desc_lbl = Gtk.Label(label=t("settings_category_order_desc"))
+        desc_lbl.set_halign(Gtk.Align.START)
+        desc_lbl.add_css_class("settings-row-subtitle")
+        label_box.append(desc_lbl)
+
+        row.append(label_box)
+
+        order_presets = [
+            ("apps", t("settings_order_preset_apps"), ["instant", "apps", "files", "clipboard", "emoji", "web"]),
+            ("files", t("settings_order_preset_files"), ["files", "instant", "apps", "clipboard", "emoji", "web"]),
+            ("clipboard", t("settings_order_preset_clipboard"), ["clipboard", "instant", "apps", "files", "emoji", "web"]),
+            ("emoji", t("settings_order_preset_emoji"), ["emoji", "instant", "apps", "files", "clipboard", "web"]),
+            ("instant", t("settings_order_preset_instant"), ["instant", "apps", "files", "clipboard", "emoji", "web"]),
+        ]
+
+        current_order = cfg.get("results_category_order", ["instant", "apps", "files", "clipboard", "emoji", "web"])
+        top_cat = current_order[0] if current_order else "apps"
+        if top_cat == "instant" and len(current_order) > 1 and current_order[1] == "apps":
+            top_cat = "apps"
+
+        string_list = Gtk.StringList.new([label for _, label, _ in order_presets])
+        dropdown = Gtk.DropDown.new(string_list, None)
+        dropdown.set_valign(Gtk.Align.CENTER)
+        dropdown.add_css_class("settings-dropdown")
+
+        selected_idx = 0
+        for idx, (code, _, _) in enumerate(order_presets):
+            if code == top_cat:
+                selected_idx = idx
+                break
+        dropdown.set_selected(selected_idx)
+
+        def on_order_changed(dd, param):
+            pos = dd.get_selected()
+            if 0 <= pos < len(order_presets):
+                new_order = order_presets[pos][2]
+                self._on_setting_changed("results_category_order", new_order)
+
+        dropdown.connect("notify::selected", on_order_changed)
+        row.append(dropdown)
+        return row
+
+
+    def _create_search_engine_row(self, cfg) -> Gtk.Box:
+        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        row.add_css_class("settings-row")
+
+        title_lbl = Gtk.Label(label=t("settings_web_search_engine"))
+        title_lbl.set_halign(Gtk.Align.START)
+        title_lbl.set_hexpand(True)
+        title_lbl.set_valign(Gtk.Align.CENTER)
+        title_lbl.add_css_class("settings-row-title")
+        row.append(title_lbl)
+
+        current_engine = cfg.get("web_search_engine", "google")
+        engine_options = [
+            ("google", "Google"),
+            ("yandex", "Яндекс"),
+            ("duckduckgo", "DuckDuckGo"),
+            ("brave", "Brave"),
+            ("bing", "Bing"),
+            ("youtube", "YouTube"),
+            ("github", "GitHub"),
+            ("wikipedia", "Wikipedia"),
+            ("custom", "Пользовательский URL")
+        ]
+
+        from providers.web import get_engine_icon
+
+        engine_icon = Gtk.Image()
+        engine_icon.set_valign(Gtk.Align.CENTER)
+        engine_icon.set_pixel_size(24)
+        set_icon_safe(engine_icon, get_engine_icon(current_engine), fallback_icon="applications-internet-symbolic", pixel_size=24)
+        row.append(engine_icon)
+
+        string_list = Gtk.StringList.new([name for code, name in engine_options])
+        dropdown = Gtk.DropDown.new(string_list, None)
+        dropdown.set_valign(Gtk.Align.CENTER)
+        dropdown.add_css_class("settings-dropdown")
+
+        selected_idx = 0
+        for idx, (code, name) in enumerate(engine_options):
+            if code == current_engine:
+                selected_idx = idx
+                break
+        dropdown.set_selected(selected_idx)
+
+        def on_engine_changed(dd, param):
+            pos = dd.get_selected()
+            if 0 <= pos < len(engine_options):
+                selected_code = engine_options[pos][0]
+                set_icon_safe(engine_icon, get_engine_icon(selected_code), fallback_icon="applications-internet-symbolic", pixel_size=24)
+                if selected_code != cfg.get("web_search_engine"):
+                    self.main_window.config_manager.set("web_search_engine", selected_code)
+
+        dropdown.connect("notify::selected", on_engine_changed)
+        row.append(dropdown)
         return row
 
     def _create_language_row(self, cfg) -> Gtk.Box:
@@ -705,12 +1046,12 @@ class SettingsMode(BaseMode):
 
         current_lang = cfg.get("language", "auto")
         lang_options = [("auto", t("settings_lang_auto"))] + list(SUPPORTED_LANGUAGES.items())
-        
+
         string_list = Gtk.StringList.new([name for code, name in lang_options])
         dropdown = Gtk.DropDown.new(string_list, None)
         dropdown.set_valign(Gtk.Align.CENTER)
         dropdown.add_css_class("settings-dropdown")
-        
+
         selected_idx = 0
         for idx, (code, name) in enumerate(lang_options):
             if code == current_lang:
@@ -827,10 +1168,36 @@ class SettingsMode(BaseMode):
             self.filter_settings(query)
         else:
             self._build_settings_ui()
-        
+
     def render(self, results: list):
         query = self.main_window.entry.get_text() if hasattr(self.main_window, "entry") else ""
         self.filter_settings(query)
 
     def on_key_pressed(self, keyval, state, current_results: list) -> bool:
+        if hasattr(self, "scroll") and self.scroll:
+            adj = self.scroll.get_vadjustment()
+            if adj:
+                page_size = adj.get_page_size()
+                lower = adj.get_lower()
+                upper = adj.get_upper()
+                curr = adj.get_value()
+
+                if keyval in (Gdk.KEY_Page_Down, Gdk.KEY_KP_Page_Down):
+                    adj.set_value(min(upper - page_size, curr + 180.0))
+                    return True
+                elif keyval in (Gdk.KEY_Page_Up, Gdk.KEY_KP_Page_Up):
+                    adj.set_value(max(lower, curr - 180.0))
+                    return True
+                elif keyval in (Gdk.KEY_Down, Gdk.KEY_KP_Down) or ((state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_n, Gdk.KEY_N, Gdk.KEY_j, Gdk.KEY_J)):
+                    adj.set_value(min(upper - page_size, curr + 60.0))
+                    return True
+                elif keyval in (Gdk.KEY_Up, Gdk.KEY_KP_Up) or ((state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_p, Gdk.KEY_P)):
+                    adj.set_value(max(lower, curr - 60.0))
+                    return True
+                elif (state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_Home, Gdk.KEY_KP_Home):
+                    adj.set_value(lower)
+                    return True
+                elif (state & Gdk.ModifierType.CONTROL_MASK) and keyval in (Gdk.KEY_End, Gdk.KEY_KP_End):
+                    adj.set_value(upper - page_size)
+                    return True
         return False

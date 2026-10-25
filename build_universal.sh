@@ -9,7 +9,7 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-VERSION="1.2.0"
+VERSION="1.4.0"
 PKGNAME="echo-search"
 DIST_DIR="$SCRIPT_DIR/dist"
 BUILD_DIR="$SCRIPT_DIR/build/universal-package/echo-search"
@@ -25,7 +25,7 @@ mkdir -p "$BUILD_DIR/assets"
 mkdir -p "$DIST_DIR"
 
 # Copy source files, resources and installer
-cp -p *.py style.css emoji.json install.sh LICENSE README.md "$BUILD_DIR/"
+cp -p *.py style.css emoji.json install.sh uninstall.sh LICENSE README.md "$BUILD_DIR/"
 cp -p modes/*.py "$BUILD_DIR/modes/"
 cp -p providers/*.py "$BUILD_DIR/providers/"
 cp -rp assets/* "$BUILD_DIR/assets/" 2>/dev/null || true
@@ -39,6 +39,7 @@ exec python3 "$SCRIPT_DIR/main.py" "$@"
 BIN_EOF
 chmod +x "$BUILD_DIR/echo-search"
 chmod +x "$BUILD_DIR/install.sh"
+chmod +x "$BUILD_DIR/uninstall.sh"
 
 TAR_NAME="${PKGNAME}_${VERSION}_universal.tar.gz"
 tar -czf "$DIST_DIR/$TAR_NAME" -C "$SCRIPT_DIR/build/universal-package" echo-search

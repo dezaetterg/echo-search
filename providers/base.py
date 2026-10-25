@@ -1,14 +1,15 @@
 from abc import ABC, abstractmethod
-from typing import List, Dict, Any, Callable
+from typing import Any, Callable, Dict, List
+
 
 class SearchResult:
-    def __init__(self, 
-                 id: str, 
-                 title: str, 
-                 subtitle: str, 
-                 icon: str, 
-                 score: float, 
-                 category: str, 
+    def __init__(self,
+                 id: str,
+                 title: str,
+                 subtitle: str,
+                 icon: str,
+                 score: float,
+                 category: str,
                  provider: str,
                  preview_data: Dict[str, Any] = None,
                  action_execute: Callable = None,
@@ -23,7 +24,7 @@ class SearchResult:
         self.category = category
         self.provider = provider
         self.preview_data = preview_data or {}
-        
+
         # Actions
         self._action_execute = action_execute
         self._action_copy = action_copy

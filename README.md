@@ -8,7 +8,7 @@
 
 [English](#echo-search) | [Русский](#echo-search-ru)
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg?style=flat-square)](https://github.com/dezaetterg/echo-search/releases)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg?style=flat-square)](https://github.com/dezaetterg/echo-search/releases)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux-orange.svg?style=flat-square)](https://github.com/dezaetterg/echo-search)
 [![GTK4](https://img.shields.io/badge/UI-GTK%204-brightgreen.svg?style=flat-square)](https://www.gtk.org/)
@@ -33,6 +33,10 @@
 * **System Commands**: Lock screen, reboot, power off, suspend, and log out.
 * **Emoji & Symbol Picker**: Library of symbols and emoji with categories and descriptive search.
 * **Interface**: Translucent design with background blur, system theme adaptation (Portal DBus), and accent color selection.
+* **Bottom Action Bar**: Context-aware bottom bar displaying instant shortcut actions (Launch, Reveal in Folder, Copy Path, Quick Look, and Delete).
+* **Instant Jump (Alt + 1..9)**: Instantly launch or select any of the top 9 search results or grid items without arrow navigation.
+* **App Icon Themes**: Choose between Dark, Light, and Aura Glow icon variants in settings with automated icon cache sync.
+* **Quick Look**: Fast file inspection window with code syntax highlighting, rich media preview, metadata inspection, and F11 fullscreen toggle.
 * **Settings**: Configuration panel for themes, transparency, global hotkeys, and search providers.
 * **Multi-layout Shortcut Support**: Global keybindings work on any keyboard layout (RU / EN).
 
@@ -83,7 +87,7 @@ Pre-built `.deb` package from **[Releases](https://github.com/dezaetterg/echo-se
 sudo apt install ~/Downloads/echo-search_*.deb
 
 # Or via terminal:
-wget -O /tmp/echo-search.deb https://github.com/dezaetterg/echo-search/releases/latest/download/echo-search_1.3.0_all.deb
+wget -O /tmp/echo-search.deb https://github.com/dezaetterg/echo-search/releases/latest/download/echo-search_1.4.0_all.deb
 sudo apt install /tmp/echo-search.deb
 ```
 
@@ -115,6 +119,18 @@ cd echo-search
 python3 main.py
 ```
 
+### Uninstallation
+
+To cleanly remove Echo Search installed via `install.sh`:
+
+```bash
+chmod +x uninstall.sh
+./uninstall.sh
+# To automatically confirm removal:
+./uninstall.sh -y
+```
+*(User configuration and search history in `~/.config/echo-search` and `~/.cache/echo-search` are preserved).*
+
 ### If Packages or Repositories are Missing (Ubuntu / Linux Mint)
 If GTK4 packages or dependencies are missing, enable the `universe` repository:
 
@@ -123,14 +139,39 @@ sudo add-apt-repository universe
 sudo apt update
 ```
 
-## Controls
+## Controls & Shortcuts
 
-* `Super + Space` (or configured hotkey): open or close launcher window
-* `Up / Down Arrows`: navigate results
-* `Enter`: launch selected application, open file, or run action
-* `Space`: file preview (documents, media, syntax-highlighted code)
-* `Tab`: switch category tabs
-* `Esc`: clear input line or close window
+* `Super + Space` (or custom configured shortcut): open or toggle launcher window
+* `Alt + 1` .. `Alt + 9`: instant launch or selection of the corresponding result/card
+* `Up / Down Arrows` (or `Ctrl + N` / `Ctrl + P`): navigate through results
+* `Enter`: launch selected app, open file, or execute action
+* `Shift + Enter`: reveal selected file in its parent directory
+* `Alt + C` or `Ctrl + Shift + C`: copy file path, calculation result, or text to clipboard
+* `Space` or `Ctrl + Y`: toggle Quick Look file inspection
+* `Shift + Delete`: remove entry from clipboard or query history
+* `Ctrl + /` or `Ctrl + ?`: toggle action bar shortcut hints
+* `Tab`: switch between mode categories (Search, Apps, Files, Clipboard, Emoji, Settings)
+* `Esc`: clear query input or dismiss window
+
+### Slash Navigation Commands
+
+Type any of the following commands into the search entry to instantly jump between modes:
+* `/apps` — Applications grid
+* `/files` — File browser & categories
+* `/clip` — Clipboard history
+* `/emoji` — Emoji & symbol picker
+* `/settings` — Settings panel
+
+### CLI Usage
+
+```bash
+echo-search            # Launch or bring Echo Search to focus
+echo-search --toggle   # Toggle launcher window visibility
+echo-search --show     # Force show launcher window
+echo-search --hide     # Hide launcher window
+echo-search --version  # Print current version
+echo-search --help     # Show CLI options
+```
 
 ## Configuration
 
@@ -168,7 +209,7 @@ Author: **[@dezaetterg](https://github.com/dezaetterg)**
 
 [English](#echo-search) | [Русский](#echo-search-ru)
 
-[![Version](https://img.shields.io/badge/version-1.3.0-blue.svg?style=flat-square)](https://github.com/dezaetterg/echo-search/releases)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue.svg?style=flat-square)](https://github.com/dezaetterg/echo-search/releases)
 [![License](https://img.shields.io/badge/license-GPLv3-green.svg?style=flat-square)](LICENSE)
 [![Platform](https://img.shields.io/badge/platform-Linux-orange.svg?style=flat-square)](https://github.com/dezaetterg/echo-search)
 [![GTK4](https://img.shields.io/badge/UI-GTK%204-brightgreen.svg?style=flat-square)](https://www.gtk.org/)
@@ -193,6 +234,10 @@ Author: **[@dezaetterg](https://github.com/dezaetterg)**
 * **Системные команды**: блокировка экрана, перезагрузка, выключение, спящий режим и завершение сеанса.
 * **Поиск символов и эмодзи**: библиотека с категоризацией и поиском по описанию.
 * **Интерфейс**: полупрозрачный дизайн с размытием фона, адаптацией под системную тему (Portal DBus) и выбором акцентных цветов.
+* **Нижняя панель действий (Action Bar)**: контекстная плашка с подсказками доступных горячих клавиш (Запуск, Открыть папку, Скопировать путь, Предпросмотр, Удалить).
+* **Быстрый запуск (Alt + 1..9)**: мгновенный выбор и выполнение любого из первых 9 результатов поиска или плиток без перемещения стрелками.
+* **Темы иконки приложения**: переключение между темами значка (Dark, Light, Aura Glow) в настройках с автоматическим обновлением системного кэша иконок.
+* **Быстрый просмотр Quick Look**: окно предпросмотра файлов по Space или `Ctrl+Y` с подсветкой синтаксиса кода, метаданными и полноэкранным режимом (F11).
 * **Настройки**: панель конфигурации тем оформления, прозрачности, глобальных хоткеев и модулей поиска.
 * **Мультиязычный ввод**: глобальные сочетания клавиш работают на любых раскладках клавиатуры (RU / EN).
 
@@ -243,7 +288,7 @@ chmod +x install.sh
 sudo apt install ~/Загрузки/echo-search_*.deb || sudo apt install ~/Downloads/echo-search_*.deb
 
 # Либо через терминал:
-wget -O /tmp/echo-search.deb https://github.com/dezaetterg/echo-search/releases/latest/download/echo-search_1.3.0_all.deb
+wget -O /tmp/echo-search.deb https://github.com/dezaetterg/echo-search/releases/latest/download/echo-search_1.4.0_all.deb
 sudo apt install /tmp/echo-search.deb
 ```
 
@@ -275,6 +320,18 @@ cd echo-search
 python3 main.py
 ```
 
+### Удаление приложения
+
+Для чистого удаления Echo Search, установленного через `install.sh`:
+
+```bash
+chmod +x uninstall.sh
+./uninstall.sh
+# Для автоматического подтверждения удаления:
+./uninstall.sh -y
+```
+*(Пользовательские настройки и история в `~/.config/echo-search` и `~/.cache/echo-search` сохраняются).*
+
 ### Если пакеты или репозитории недоступны (Linux Mint / Ubuntu)
 
 Если система сообщает, что пакеты GTK4 или зависимости не найдены, включите репозиторий `universe`:
@@ -284,14 +341,39 @@ sudo add-apt-repository universe
 sudo apt update
 ```
 
-## Управление
+## Управление и горячие клавиши
 
 * `Super + Space` (или настроенный хоткей): открыть или скрыть окно лаунчера
-* `Стрелки вверх / вниз`: навигация по результатам
+* `Alt + 1` .. `Alt + 9`: мгновенный выбор или запуск соответствующего результата
+* `Стрелки вверх / вниз` (или `Ctrl + N` / `Ctrl + P`): навигация по списку результатов
 * `Enter`: запуск выбранной программы, открытие файла или выполнение действия
-* `Space`: предпросмотр документа, медиафайла или кода
-* `Tab`: переключение между вкладками категорий
+* `Shift + Enter`: открыть содержащую папку с выбранным файлом
+* `Alt + C` или `Ctrl + Shift + C`: скопировать путь файла, результат вычислений или текст
+* `Space` или `Ctrl + Y`: открыть/закрыть быстрый предпросмотр файла (Quick Look)
+* `Shift + Delete`: удалить запись из истории буфера обмена или недавних запросов
+* `Ctrl + /` или `Ctrl + ?`: скрыть или показать панель подсказок хоткеев (Action Bar)
+* `Tab`: переключение между категориями (Поиск, Приложения, Файлы, Буфер, Эмодзи, Настройки)
 * `Esc`: очистить строку ввода или закрыть окно
+
+### Слэш-команды навигации
+
+В строке поиска можно быстро переключить режим лаунчера, введя команду:
+* `/apps` — Сетка приложений
+* `/files` — Поиск и категории файлов
+* `/clip` — История буфера обмена
+* `/emoji` — Символы и эмодзи
+* `/settings` — Панель настроек
+
+### Консольные команды CLI
+
+```bash
+echo-search            # Запустить или выдвинуть лаунчер на передний план
+echo-search --toggle   # Переключить видимость окна лаунчера
+echo-search --show     # Показать окно лаунчера
+echo-search --hide     # Скрыть окно лаунчера
+echo-search --version  # Показать текущую версию
+echo-search --help     # Справка по консольным аргументам
+```
 
 ## Конфигурация
 
