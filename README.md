@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logo.png" alt="Echo Search Logo" width="120">
+<img src="assets/icons/echo-dark.png" alt="Echo Search Dark Icon" width="128">
 
 # Echo Search
 
@@ -28,7 +28,7 @@
 * **Calculator and Unit Converter**: Evaluate mathematical expressions and convert physical units in the input line.
 * **Currency Converter**: Conversion of world currencies and cryptocurrencies (e.g., `100 usd in rub`, `50 eur in gbp`).
 * **World Clock**: Local time and time zones across cities (`time tokyo`, `time in new york`).
-* **Weather**: Weather summary for cities (temperature, feels like, humidity, wind, precipitation, atmospheric pressure). Background rendering of atmospheric effects with Cairo. Data from Open-Meteo API.
+* **Weather**: Weather summary for cities (temperature, feels like, humidity, wind, precipitation, atmospheric pressure). Atmospheric effects with hardware-accelerated CSS gradients. Data from Open-Meteo API.
 * **Web Search**: Queries to Google, Yandex, DuckDuckGo, YouTube, GitHub, Wikipedia, Bing, and Brave.
 * **System Commands**: Lock screen, reboot, power off, suspend, and log out.
 * **Emoji & Symbol Picker**: Library of symbols and emoji with categories and descriptive search.
@@ -36,6 +36,10 @@
 * **Bottom Action Bar**: Context-aware bottom bar displaying instant shortcut actions (Launch, Reveal in Folder, Copy Path, Quick Look, and Delete).
 * **Instant Jump (Alt + 1..9)**: Instantly launch or select any of the top 9 search results or grid items without arrow navigation.
 * **App Icon Themes**: Choose between Dark, Light, and Aura Glow icon variants in settings with automated icon cache sync.
+  <br>
+  <img src="assets/icons/echo-dark.png" width="54" alt="Dark Theme">
+  <img src="assets/icons/echo-light.png" width="54" alt="Light Theme">
+  <img src="assets/icons/echo-aura.png" width="54" alt="Aura Glow Theme">
 * **Quick Look**: Fast file inspection window with code syntax highlighting, rich media preview, metadata inspection, and F11 fullscreen toggle.
 * **Settings**: Configuration panel for themes, transparency, global hotkeys, and search providers.
 * **Multi-layout Shortcut Support**: Global keybindings work on any keyboard layout (RU / EN).
@@ -201,7 +205,7 @@ Author: **[@dezaetterg](https://github.com/dezaetterg)**
 
 <div align="center">
 
-<img src="assets/logo.png" alt="Echo Search Logo" width="120">
+<img src="assets/icons/echo-dark.png" alt="Echo Search Dark Icon" width="128">
 
 # Echo Search (RU)
 
@@ -229,7 +233,7 @@ Author: **[@dezaetterg](https://github.com/dezaetterg)**
 * **Калькулятор и конвертер единиц**: вычисление математических выражений и перевод физических величин прямо в строке ввода.
 * **Конвертер валют**: пересчет мировых валют и криптовалют (например, `100 usd в rub`, `50 eur in gbp`).
 * **Мировое время**: текущее время и часовые пояса в городах мира (`время токио`, `time in new york`).
-* **Погода**: сводка погоды для городов (температура, ощущаемая температура, влажность, ветер, осадки, атмосферное давление). Фоновый рендеринг атмосферных эффектов на Cairo. Данные из Open-Meteo API.
+* **Погода**: сводка погоды для городов (температура, ощущаемая температура, влажность, ветер, осадки, атмосферное давление). Атмосферные эффекты на аппаратных CSS-градиентах. Данные из Open-Meteo API.
 * **Веб-поиск**: переход к поисковым системам Google, Яндекс, DuckDuckGo, YouTube, GitHub, Wikipedia, Bing и Brave.
 * **Системные команды**: блокировка экрана, перезагрузка, выключение, спящий режим и завершение сеанса.
 * **Поиск символов и эмодзи**: библиотека с категоризацией и поиском по описанию.
@@ -237,6 +241,10 @@ Author: **[@dezaetterg](https://github.com/dezaetterg)**
 * **Нижняя панель действий (Action Bar)**: контекстная плашка с подсказками доступных горячих клавиш (Запуск, Открыть папку, Скопировать путь, Предпросмотр, Удалить).
 * **Быстрый запуск (Alt + 1..9)**: мгновенный выбор и выполнение любого из первых 9 результатов поиска или плиток без перемещения стрелками.
 * **Темы иконки приложения**: переключение между темами значка (Dark, Light, Aura Glow) в настройках с автоматическим обновлением системного кэша иконок.
+  <br>
+  <img src="assets/icons/echo-dark.png" width="54" alt="Темная иконка">
+  <img src="assets/icons/echo-light.png" width="54" alt="Светлая иконка">
+  <img src="assets/icons/echo-aura.png" width="54" alt="Aura Glow">
 * **Быстрый просмотр Quick Look**: окно предпросмотра файлов по Space или `Ctrl+Y` с подсветкой синтаксиса кода, метаданными и полноэкранным режимом (F11).
 * **Настройки**: панель конфигурации тем оформления, прозрачности, глобальных хоткеев и модулей поиска.
 * **Мультиязычный ввод**: глобальные сочетания клавиш работают на любых раскладках клавиатуры (RU / EN).
